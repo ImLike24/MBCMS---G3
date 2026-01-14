@@ -11,10 +11,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
-@WebServlet(name = "RegisterController", urlPatterns = {"/register"})
-public class RegisterController extends HttpServlet {
+@WebServlet(name = "Register", urlPatterns = {"/register"})
+public class Register extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -26,7 +25,7 @@ public class RegisterController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // 1. Get Params
+        // Get Params
         String username = request.getParameter("username");
         String fullName = request.getParameter("fullName");
         String email = request.getParameter("email");
@@ -34,21 +33,21 @@ public class RegisterController extends HttpServlet {
         String password = request.getParameter("password");
         String birthdayStr = request.getParameter("birthday"); // yyyy-MM-dd
 
-        // 2. Validate Empty
+        // Validate Empty
         if (isBlank(username) || isBlank(fullName) || isBlank(email) || isBlank(phone) || isBlank(password)) {
             returnError(request, response, "Please fill in all fields.");
             return;
         }
 
-        // 3. Validate Password Regex
-        if (!PasswordUtil.isStrongPassword(password)) {
+        // Validate Password Regex
+        if (!Password.isValidPassword(password)) {
             returnError(request, response, "Password must be 8+ chars, contain letter, number & special char.");
             return;
         }
 
-        UsersDao usersDao = new UsersDao();
+        Users usersDao = new Users();
 
-        // 4. Check Duplicates
+        // Check Duplicates
         if (usersDao.findByUsername(username) != null) {
             returnError(request, response, "Username is already taken.");
             return;
@@ -62,22 +61,22 @@ public class RegisterController extends HttpServlet {
             return;
         }
 
-        // 5. Get Customer Role ID
-        RolesDao rolesDao = new RolesDao();
+        // Get Customer Role ID
+        Roles rolesDao = new Roles();
         Integer roleId = rolesDao.getRoleIdByName("CUSTOMER");
         if (roleId == null) {
             returnError(request, response, "System Error: Role 'CUSTOMER' not found.");
             return;
         }
 
-        // 6. Create User Object
+        // Create User Object
         User u = new User();
         u.setRoleId(roleId);
         u.setUsername(username);
         u.setFullName(fullName);
         u.setEmail(email);
         u.setPhone(phone);
-        u.setPassword(PasswordUtil.hashPassword(password)); // Hash Password
+        u.setPassword(Password.hashPassword(password)); // Hash Password
         u.setStatus("ACTIVE");
         u.setPoints(0);
 
@@ -85,7 +84,7 @@ public class RegisterController extends HttpServlet {
             u.setBirthday(LocalDate.parse(birthdayStr).atStartOfDay());
         }
 
-        // 7. Insert
+        // Insert
         if (usersDao.insert(u)) {
             response.sendRedirect(request.getContextPath() + "/login?success=true");
         } else {
@@ -99,7 +98,6 @@ public class RegisterController extends HttpServlet {
 
     private void returnError(HttpServletRequest request, HttpServletResponse response, String msg) throws ServletException, IOException {
         request.setAttribute("error", msg);
-        // Keep inputs
         request.setAttribute("username", request.getParameter("username"));
         request.setAttribute("fullName", request.getParameter("fullName"));
         request.setAttribute("email", request.getParameter("email"));
