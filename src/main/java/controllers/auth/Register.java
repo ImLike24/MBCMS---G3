@@ -18,7 +18,7 @@ public class Register extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getRequestDispatcher("/pages/auth/register.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/auth/Register.jsp").forward(request, response);
     }
 
     @Override
@@ -103,6 +103,6 @@ public class Register extends HttpServlet {
         request.setAttribute("email", request.getParameter("email"));
         request.setAttribute("phone", request.getParameter("phone"));
         request.setAttribute("birthday", request.getParameter("birthday"));
-        request.getRequestDispatcher("/pages/auth/register.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/auth/Register.jsp").forward(request, response);
     }
 }

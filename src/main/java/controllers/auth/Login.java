@@ -23,7 +23,7 @@ public class Login extends HttpServlet {
         if ("true".equals(request.getParameter("success"))) {
             request.setAttribute("message", "Registration successful! Please login.");
         }
-        request.getRequestDispatcher("/pages/auth/login.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/auth/Login.jsp").forward(request, response);
     }
 
     @Override
@@ -46,14 +46,14 @@ public class Login extends HttpServlet {
         // 2. Authenticate
         if (user == null || !Password.verifyPassword(password, user.getPassword())) {
             request.setAttribute("error", "Invalid username or password.");
-            request.getRequestDispatcher("/pages/auth/login.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/auth/Login.jsp").forward(request, response);
             return;
         }
 
         // 3. Check Status
         if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
             request.setAttribute("error", "Your account is " + user.getStatus() + ". Please contact admin.");
-            request.getRequestDispatcher("/pages/auth/login.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/auth/Login.jsp").forward(request, response);
             return;
         }
 
