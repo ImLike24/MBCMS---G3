@@ -7,103 +7,18 @@
     <link href="${pageContext.request.contextPath}/css/font-awesome.min.css" rel="stylesheet" >
     <link href="${pageContext.request.contextPath}/css/global.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/css/index.css" rel="stylesheet">
-
     <link href="https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
 </head>
 
 <body>
+
+<!-- Footer Section Begin -->
+<jsp:include page="/common/Header.jsp"/>
+<!-- Footer Section End -->
+
 <div class="main clearfix position-relative">
-    <div class="modal fade" id="exampleModal2" tabindex="-1" aria-labelledby="exampleModalLabel" style="display: none; top:0;" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content bg-transparent border-0">
-                <div class="modal-header border-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i class="fa fa-close"></i></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div class="search_1">
-                        <div class="input-group">
-                            <input type="text" class="form-control bg-white border-0" placeholder="Search...">
-                            <span class="input-group-btn">
-					<button class="btn btn-primary bg_oran border_1 rounded-0 p-3 px-4" type="button">
-						<i class="fa fa-search"></i></button>
-				</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="main_1 clearfix position-absolute top-0 w-100">
-        <section id="header">
-            <nav class="navbar navbar-expand-md navbar-light px_4" id="navbar_sticky">
-                <div class="container-fluid">
-                    <a class="navbar-brand  p-0 fw-bold text-white" href="index.html"><i class="fa fa-modx col_oran"></i> Movie Theme </a>
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                        <ul class="navbar-nav mb-0 ms-auto">
-
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="index.html">Home</a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link" href="about.html">About Us</a>
-                            </li>
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Movies
-                                </a>
-                                <ul class="dropdown-menu drop_1" aria-labelledby="navbarDropdown">
-                                    <li><a class="dropdown-item" href="movies.html"><i class="fa fa-chevron-right font_12 me-1"></i> Movies</a></li>
-                                    <li><a class="dropdown-item border-0" href="detail.html"><i class="fa fa-chevron-right font_12 me-1"></i> Movie Details</a></li>
-                                </ul>
-                            </li>
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Blogs
-                                </a>
-                                <ul class="dropdown-menu drop_1" aria-labelledby="navbarDropdown">
-                                    <li><a class="dropdown-item" href="blog.html"><i class="fa fa-chevron-right font_12 me-1"></i> Blogs</a></li>
-                                    <li><a class="dropdown-item border-0" href="blog_detail.html"><i class="fa fa-chevron-right font_12 me-1"></i> Blog Details</a></li>
-                                </ul>
-                            </li>
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Pages
-                                </a>
-                                <ul class="dropdown-menu drop_1" aria-labelledby="navbarDropdown">
-                                    <li><a class="dropdown-item" href="faq.html"><i class="fa fa-chevron-right font_12 me-1"></i> Faqs</a></li>
-                                    <li><a class="dropdown-item" href="login.html"><i class="fa fa-chevron-right font_12 me-1"></i> Login</a></li>
-                                    <li><a class="dropdown-item" href="register.html"><i class="fa fa-chevron-right font_12 me-1"></i> Register</a></li>
-                                    <li><a class="dropdown-item border-0" href="ticket.html"><i class="fa fa-chevron-right font_12 me-1"></i> Ticket</a></li>
-                                </ul>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link" href="contact.html">Contact Us</a>
-                            </li>
-                        </ul>
-                        <ul class="navbar-nav mb-0 ms-auto">
-                            <li class="nav-item">
-                                <a class="nav-link fs-5 drop_icon" data-bs-target="#exampleModal2" data-bs-toggle="modal" href="#"><i class="fa fa-search"></i></a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link fs-5 drop_icon" href="#"><i class="fa fa-user"></i></a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </nav>
-        </section>
-    </div>
     <div class="main_2 clearfix">
         <section id="center" class="center_home">
             <div id="carouselExampleCaptions" class="carousel slide" data-bs-ride="carousel">
@@ -161,7 +76,6 @@
             </div>
         </section>
     </div>
-
 </div>
 
 <div class="border_dashed">
@@ -865,145 +779,9 @@
     </div>
 </section>
 
-<section id="footer_t">
-    <div class="container-fluid">
-        <div class="footer_t1 row">
-            <div class="col-md-4 p-0">
-                <div class="footer_ti position-relative">
-                    <div class="footer_ti1">
-                        <div class="grid clearfix">
-                            <figure class="effect-jazz mb-0">
-                                <a href="#"><img src="${pageContext.request.contextPath}/img/12.jpg" class="w-100" alt="img25"></a>
-                            </figure>
-                        </div>
-                    </div>
-                    <div class="footer_ti2 bg_back pt-5 text-center px-4 position-absolute w-100 h-100 top-0">
-                        <span class="d-inline-block bg-white rounded-circle col_oran fs-1"><i class="fa fa-youtube-play"></i></span>
-                        <h2 class="mb-0 text-white mt-3">Top 5 Movies in Theaters</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 p-0">
-                <div class="footer_ti position-relative">
-                    <div class="footer_ti1">
-                        <div class="grid clearfix">
-                            <figure class="effect-jazz mb-0">
-                                <a href="#"><img src="${pageContext.request.contextPath}/img/13.jpg" class="w-100" alt="img25"></a>
-                            </figure>
-                        </div>
-                    </div>
-                    <div class="footer_ti2 bg_backn1 pt-5 text-center px-4 position-absolute w-100 h-100 top-0">
-                        <span class="d-inline-block bg-white rounded-circle col_oran fs-2"><i class="fa fa-film"></i></span>
-                        <h2 class="mb-0 text-white mt-3">Watch Coming Soon Movies</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 p-0">
-                <div class="footer_ti position-relative">
-                    <div class="footer_ti1">
-                        <div class="grid clearfix">
-                            <figure class="effect-jazz mb-0">
-                                <a href="#"><img src="${pageContext.request.contextPath}/img/14.jpg" class="w-100" alt="img25"></a>
-                            </figure>
-                        </div>
-                    </div>
-                    <div class="footer_ti2 bg_back pt-5 text-center px-4 position-absolute w-100 h-100 top-0">
-                        <span class="d-inline-block bg-white rounded-circle col_oran fs-1"><i class="fa fa-video-camera"></i></span>
-                        <h2 class="mb-0 text-white mt-3"> Hot Movies Trailers Live Now</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section id="footer" class="p_3 bg-black">
-    <div class="container-xl">
-        <div class="footer_1 row pb-4">
-            <div class="col-md-3">
-                <div class="footer_1l">
-                    <h4 class="mb-0"><a class="fw-bold text-white" href="index.html"><i class="fa fa-modx col_oran"></i> Movie Theme </a></h4>
-                </div>
-            </div>
-            <div class="col-md-9">
-                <div class="footer_1r text-end">
-                    <ul class="mb-0">
-                        <li class="d-inline-block"><a class="text-white-50 a_tag" href="#">Help</a></li>
-                        <li class="d-inline-block text-white-50">/</li>
-                        <li class="d-inline-block me-2"><a class="text-white-50 a_tag" href="#"> Privacy Policy</a></li>
-                        <li class="d-inline-block"><a class="social_icon" href="#"> <i class="fa fa-twitter"></i></a></li>
-                        <li class="d-inline-block"><a class="social_icon" href="#"> <i class="fa fa-facebook"></i></a></li>
-                        <li class="d-inline-block"><a class="social_icon" href="#"> <i class="fa fa-instagram"></i></a></li>
-                        <li class="d-inline-block"><a class="social_icon" href="#"> <i class="fa fa-pinterest"></i></a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="footer_2 row mt-4">
-            <div class="col-md-3">
-                <div class="footer_2i">
-                    <p class="text-white fw-bold fs-5">Buy movie tickets easily with Aovis system nationwide</p>
-                    <h6 class="mb-0 mt-4"><a class="button" href="#">Get Your Ticket</a></h6>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="footer_2i">
-                    <h5 class="col_oran mb-4">Movies</h5>
-                    <div class="row footer_1ism">
-                        <h6 class="fw-normal col-md-12 col-6"><a class="text-white-50 a_tag" href="#"> Action</a></h6>
-                        <h6 class="fw-normal mt-2 col-md-12 col-6"><a class="text-white-50 a_tag" href="#"> Adventure</a></h6>
-                        <h6 class="fw-normal mt-2 col-md-12 col-6"><a class="text-white-50 a_tag" href="#"> Animation</a></h6>
-                        <h6 class="fw-normal mt-2 col-md-12 col-6"><a class="text-white-50 a_tag" href="#"> Thriller</a></h6>
-                        <h6 class="fw-normal mt-2 col-md-12 col-6"><a class="text-white-50 a_tag" href="#"> Crime</a></h6>
-                        <h6 class="fw-normal mt-2 col-md-12 col-6 mb-0"><a class="text-white-50 a_tag" href="#"> Comedy</a></h6>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="footer_2i">
-                    <h5 class="col_oran mb-4">Links</h5>
-                    <div class="row footer_1ism">
-                        <h6 class="fw-normal col-md-12 col-6"><a class="text-white-50 a_tag" href="#"> About Us</a></h6>
-                        <h6 class="fw-normal mt-2 col-md-12 col-6"><a class="text-white-50 a_tag" href="#"> My account</a></h6>
-                        <h6 class="fw-normal mt-2 col-md-12 col-6"><a class="text-white-50 a_tag" href="#"> News</a></h6>
-                        <h6 class="fw-normal mt-2 col-md-12 col-6"><a class="text-white-50 a_tag" href="#"> Latest Events</a></h6>
-                        <h6 class="fw-normal mt-2 col-md-12 col-6"><a class="text-white-50 a_tag" href="#"> Privacy</a></h6>
-                        <h6 class="fw-normal mt-2 col-md-12 col-6 mb-0"><a class="text-white-50 a_tag" href="#"> Contact Us</a></h6>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="footer_2i">
-                    <h5 class="col_oran mb-4">Newsletter</h5>
-                    <p class="text-white-50">Subscribe to Leitmotif newsletter this very day.</p>
-                    <div class="input-group bg-white">
-                        <input type="text" class="form-control bg-transparent rounded-0 border-0" placeholder="Enter Your Email">
-                        <span class="input-group-btn">
-					<button class="btn btn-primary bg-transparent rounded-0 border-0 col_oran p-3" type="button">
-						<i class="fa fa-location-arrow"></i></button>
-				</span>
-                    </div>
-                    <div class="form-check mt-3 text-white-50">
-                        <input class="form-check-input" type="checkbox" value="">
-                        <label class="form-check-label" for="flexCheckDefault">
-                            I agree to all terms and policies of the company
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section id="footer_b" class="pt-3 pb-3 bg-dark">
-    <div class="container-xl">
-        <div class="footer_b1 row text-center">
-            <div class="col-md-12">
-                <p class="mb-0 text-white-50">© 2013 Your Website Name. All Rights Reserved | Design by <a class="col_oran fw-bold" href="http://www.templateonweb.com">TemplateOnWeb</a></p>
-            </div>
-        </div>
-    </div>
-</section>
+<!-- Footer Section Begin -->
+<jsp:include page="/common/Footer.jsp"/>
+<!-- Footer Section End -->
 
 <!-- Video Modal -->
 <div class="modal fade" id="templateVideoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true">
