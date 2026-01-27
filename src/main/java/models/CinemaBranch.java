@@ -17,4 +17,3 @@ public class CinemaBranch {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
-

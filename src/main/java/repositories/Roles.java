@@ -40,7 +40,6 @@ public class Roles extends DBContext {
                     Role role = new Role();
                     role.setRoleId(rs.getInt("role_id"));
                     role.setRoleName(rs.getString("role_name"));
-                    // Các trường timestamp có thể null hoặc không cần thiết lúc login
                     if (rs.getTimestamp("created_at") != null)
                         role.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
                     if (rs.getTimestamp("updated_at") != null)
