@@ -1,4 +1,4 @@
-package controllers.admin;
+package controllers.branchmanager;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -10,8 +10,8 @@ import java.io.IOException;
 import business.AuthService;
 import models.User;
 
-@WebServlet(name = "AdminDashboard", urlPatterns = { "/admin/dashboard" })
-public class AdminDashboard extends HttpServlet {
+@WebServlet(name = "ManagerDashboard", urlPatterns = { "/branch-manager/dashboard" })
+public class ManagerDashboard extends HttpServlet {
 
     private AuthService authService = new AuthService();
 
@@ -35,11 +35,11 @@ public class AdminDashboard extends HttpServlet {
             return;
         }
 
-        if (!"ADMIN".equals(role)) {
+        if (!"BRANCH_MANAGER".equals(role)) {
             response.sendRedirect(request.getContextPath() + "/home");
             return;
         }
 
-        request.getRequestDispatcher("/pages/admin/dashboard.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/manager/dashboard.jsp").forward(request, response);
     }
 }
