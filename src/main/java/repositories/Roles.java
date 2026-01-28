@@ -53,4 +53,25 @@ public class Roles extends DBContext {
         }
         return null;
     }
+
+    public java.util.List<Role> getAllRoles() {
+        java.util.List<Role> roles = new java.util.ArrayList<>();
+        String sql = "SELECT * FROM roles ORDER BY role_name";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                Role role = new Role();
+                role.setRoleId(rs.getInt("role_id"));
+                role.setRoleName(rs.getString("role_name"));
+                if (rs.getTimestamp("created_at") != null)
+                    role.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+                if (rs.getTimestamp("updated_at") != null)
+                    role.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+                roles.add(role);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return roles;
+    }
 }

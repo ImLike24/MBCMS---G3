@@ -42,7 +42,8 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, username);
             try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return mapResultSetToUser(rs);
+                if (rs.next())
+                    return mapResultSetToUser(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -55,7 +56,8 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, email);
             try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return mapResultSetToUser(rs);
+                if (rs.next())
+                    return mapResultSetToUser(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -68,7 +70,8 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, phone);
             try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return mapResultSetToUser(rs);
+                if (rs.next())
+                    return mapResultSetToUser(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -77,7 +80,8 @@ public class Users extends DBContext {
     }
 
     public boolean insert(User u) {
-        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points) " +
+        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points) "
+                +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, u.getRoleId());
@@ -110,5 +114,79 @@ public class Users extends DBContext {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    // Admin Management Methods
+
+    public java.util.List<User> getAllUsers() {
+        java.util.List<User> users = new java.util.ArrayList<>();
+        String sql = "SELECT * FROM users ORDER BY created_at DESC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                users.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
+
+    public java.util.List<User> getUsersWithFilters(String status, Integer roleId) {
+        java.util.List<User> users = new java.util.ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT * FROM users WHERE 1=1");
+
+        if (status != null && !status.isEmpty()) {
+            sql.append(" AND status = ?");
+        }
+        if (roleId != null) {
+            sql.append(" AND role_id = ?");
+        }
+        sql.append(" ORDER BY created_at DESC");
+
+        try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
+            int paramIndex = 1;
+            if (status != null && !status.isEmpty()) {
+                st.setString(paramIndex++, status);
+            }
+            if (roleId != null) {
+                st.setInt(paramIndex++, roleId);
+            }
+
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    users.add(mapResultSetToUser(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
+
+    public boolean updateUserStatus(int userId, String status) {
+        String sql = "UPDATE users SET status = ? WHERE user_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, status);
+            st.setInt(2, userId);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public User getUserById(int userId) {
+        String sql = "SELECT * FROM users WHERE user_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, userId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next())
+                    return mapResultSetToUser(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
