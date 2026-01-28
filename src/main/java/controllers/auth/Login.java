@@ -10,7 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
-@WebServlet(name = "login", urlPatterns = {"/login"})
+@WebServlet(name = "login", urlPatterns = { "/login" })
 public class Login extends HttpServlet {
 
     private final AuthService authService = new AuthService();
@@ -64,7 +64,7 @@ public class Login extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/admin/dashboard");
                     break;
                 case "BRANCH_MANAGER":
-                    response.sendRedirect(request.getContextPath() + "/manager/dashboard");
+                    response.sendRedirect(request.getContextPath() + "/branch-manager/dashboard");
                     break;
                 case "CINEMA_STAFF":
                     response.sendRedirect(request.getContextPath() + "/staff/pos");
