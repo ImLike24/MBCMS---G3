@@ -111,4 +111,63 @@ public class Users extends DBContext {
             e.printStackTrace();
         }
     }
+    
+    public boolean updateUser(User u) {
+        StringBuilder sql = new StringBuilder(
+            "UPDATE users SET role_id = ?, username = ?, email = ?, fullName = ?, " +
+            "birthday = ?, phone = ?, status = ?, points = ?"
+        );
+
+        // Chỉ update password nếu có giá trị mới
+        if (u.getPassword() != null && !u.getPassword().equals(findById(u.getUserId()).getPassword())) {
+            sql.append(", password = ?");
+        }
+
+        sql.append(", updated_at = SYSDATETIME() WHERE user_id = ?");
+
+        try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
+            int paramIndex = 1;
+            st.setInt(paramIndex++, u.getRoleId());
+            st.setString(paramIndex++, u.getUsername());
+            st.setString(paramIndex++, u.getEmail());
+            st.setString(paramIndex++, u.getFullName());
+
+            if (u.getBirthday() != null) {
+                st.setTimestamp(paramIndex++, Timestamp.valueOf(u.getBirthday()));
+            } else {
+                st.setNull(paramIndex++, java.sql.Types.TIMESTAMP);
+            }
+
+            st.setString(paramIndex++, u.getPhone());
+            st.setString(paramIndex++, u.getStatus());
+            st.setInt(paramIndex++, u.getPoints());
+
+            // Nếu có password mới thì thêm tham số
+            if (u.getPassword() != null && sql.toString().contains("password = ?")) {
+                st.setString(paramIndex++, u.getPassword());
+            }
+
+            st.setInt(paramIndex, u.getUserId());
+
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public User findById(int id) {
+        String sql = "SELECT * FROM users WHERE user_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, id);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToUser(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

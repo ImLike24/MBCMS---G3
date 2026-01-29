@@ -5,65 +5,63 @@
 <html>
 <head>
     <title>User Profile</title>
-    <link href="${pageContext.request.contextPath}/css/bootstrap.min.css" rel="stylesheet" >
-    <link href="${pageContext.request.contextPath}/css/font-awesome.min.css" rel="stylesheet" >
+
+    <!-- CSS -->
+    <link href="${pageContext.request.contextPath}/css/bootstrap.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/css/font-awesome.min.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/css/global.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/css/index.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+
+    <!-- JS -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+
+    <!-- CLOUDINARY -->
+    <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
+        .profile-wrapper {
+            width: 1000px;
+            margin: 90px auto;
+            display: flex;
+            gap: 24px;
         }
 
-        .profile-card {
-            width: 420px;
-            margin: 80px auto;
+        .profile-left {
+            width: 260px;
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .profile-right {
+            flex: 3;
             background: #fff;
             border-radius: 12px;
             padding: 24px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        .avatar {
-            text-align: center;
-            margin-bottom: 16px;
-        }
-
-        .avatar img {
-            width: 140px;
-            height: 140px;
+        .avatar-img {
+            width: 160px;
+            height: 160px;
             border-radius: 50%;
             object-fit: cover;
+            cursor: pointer;
             border: 3px solid #ddd;
-        }
-
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
+            padding: 10px 0;
             border-bottom: 1px solid #eee;
         }
 
-        .label {
-            color: #666;
-        }
-
-        .value {
-            font-weight: 500;
-        }
-
-        .points {
-            color: #ff9800;
-            font-weight: bold;
+        .password-mask {
+            letter-spacing: 3px;
         }
     </style>
 </head>
@@ -73,41 +71,162 @@
 <!-- HEADER -->
 <jsp:include page="/components/layout/header.jsp" />
 
-<!-- PROFILE -->
-<div class="profile-card">
+<div class="profile-wrapper">
 
-    <div class="avatar">
-        <img src="${empty u.avatarUrl ? 'assets/default-avatar.png' : u.avatarUrl}">
+    <!-- LEFT PANEL -->
+    <div class="profile-left">
+        <img id="avatar"
+             class="avatar-img"
+             src="${empty u.avatarUrl ? 'assets/default-avatar.png' : u.avatarUrl}"
+             onclick="uploadAvatar()">
+
+        <h5 class="mt-3">${u.username}</h5>
+
+        <button class="btn btn-outline-primary w-100 mt-3" onclick="showView()">
+            View Profile
+        </button>
+
+        <button class="btn btn-primary w-100 mt-2" onclick="showEdit()">
+            Update Profile
+        </button>
     </div>
 
-    <h2>${u.fullName}</h2>
+    <!-- RIGHT PANEL -->
+    <div class="profile-right">
 
-    <div class="info-row">
-        <span class="label">Username</span>
-        <span class="value">${u.username}</span>
+        <!-- VIEW MODE -->
+        <div id="viewMode">
+            <h4 class="mb-3">User Information</h4>
+
+            <div class="info-row">
+                <span>Full Name</span>
+                <span>${u.fullName}</span>
+            </div>
+
+            <div class="info-row">
+                <span>Email</span>
+                <span>${u.email}</span>
+            </div>
+
+            <div class="info-row">
+                <span>Phone</span>
+                <span>${u.phone}</span>
+            </div>
+
+            <div class="info-row">
+                <span>Birthday</span>
+                <span>${u.birthday}</span>
+            </div>
+
+            <div class="info-row">
+                <span>Points</span>
+                <span class="text-warning fw-bold">${u.points}</span>
+            </div>
+        </div>
+
+        <!-- EDIT MODE -->
+        <div id="editMode" class="d-none">
+            <h4 class="mb-3">Update Information</h4>
+
+            <form action="${pageContext.request.contextPath}/profile" method="post">
+
+                <!-- Full Name -->
+                <div class="mb-2">
+                    <label>Full Name</label>
+                    <input class="form-control"
+                           name="fullName"
+                           value="${u.fullName}"
+                           required>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-2">
+                    <label>Email</label>
+                    <input type="email"
+                           class="form-control"
+                           name="email"
+                           value="${u.email}"
+                           required>
+                </div>
+
+                <!-- Phone -->
+                <div class="mb-2">
+                    <label>Phone</label>
+                    <input class="form-control"
+                           name="phone"
+                           value="${u.phone}">
+                </div>
+
+                <!-- Birthday -->
+                <div class="mb-2">
+                    <label>Birthday</label>
+                    <input type="date"
+                           class="form-control"
+                           name="birthday"
+                           value="${u.birthday != null ? u.birthday.toLocalDate() : ''}">
+                </div>
+
+                <!-- Password -->
+                <div class="mb-2">
+                    <label>New Password</label>
+                    <input type="password"
+                           class="form-control"
+                           name="password"
+                           placeholder="Leave blank if not change">
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="mb-3">
+                    <label>Confirm Password</label>
+                    <input type="password"
+                           class="form-control"
+                           name="confirmPassword">
+                </div>
+
+                <!-- NOTE: POINT KHÔNG CÓ TRONG FORM -->
+                <!-- points chỉ hiển thị ở viewMode -->
+
+                <button class="btn btn-success">Save Changes</button>
+                <button type="button"
+                        class="btn btn-secondary ms-2"
+                        onclick="showView()">
+                    Cancel
+                </button>
+            </form>
+        </div>
+
+
     </div>
-
-    <div class="info-row">
-        <span class="label">Email</span>
-        <span class="value">${u.email}</span>
-    </div>
-
-    <div class="info-row">
-        <span class="label">Phone</span>
-        <span class="value">${u.phone}</span>
-    </div>
-
-    <div class="info-row">
-        <span class="label">Birthday</span>
-        <span class="value">${u.birthday}</span>
-    </div>
-
-    <div class="info-row">
-        <span class="label">Points</span>
-        <span class="value points">${u.points}</span>
-    </div>
-
 </div>
+
+<script>
+    function showEdit() {
+        $("#viewMode").addClass("d-none");
+        $("#editMode").removeClass("d-none");
+    }
+
+    function showView() {
+        $("#editMode").addClass("d-none");
+        $("#viewMode").removeClass("d-none");
+    }
+
+    function uploadAvatar() {
+        cloudinary.openUploadWidget({
+            cloudName: "djuy8teqe",
+            uploadPreset: "avatar_upload",
+            sources: ["local", "url", "camera"],
+            cropping: true
+        }, function (error, result) {
+            if (!error && result && result.event === "success") {
+                $("#avatar").attr("src", result.info.secure_url);
+
+                $.post("${pageContext.request.contextPath}/update-avatar", {
+                    avatarUrl: result.info.secure_url
+                });
+            }
+        });
+    }
+</script>
 
 </body>
 </html>
