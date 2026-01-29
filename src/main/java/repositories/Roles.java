@@ -52,4 +52,52 @@ public class Roles extends DBContext {
         }
         return null;
     }
+
+    /**
+     * Get all roles from the database
+     */
+    public java.util.List<Role> getAllRoles() {
+        String sql = "SELECT * FROM roles ORDER BY role_name";
+        java.util.List<Role> roles = new java.util.ArrayList<>();
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                Role role = new Role();
+                role.setRoleId(rs.getInt("role_id"));
+                role.setRoleName(rs.getString("role_name"));
+                if (rs.getTimestamp("created_at") != null)
+                    role.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+                if (rs.getTimestamp("updated_at") != null)
+                    role.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+                roles.add(role);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return roles;
+    }
+
+    /**
+     * Get ADMIN, CINEMA_STAFF, STAFF and BRANCH_MANAGER roles for user creation
+     */
+    public java.util.List<Role> getCreatableRoles() {
+        String sql = "SELECT * FROM roles WHERE role_name IN ('ADMIN', 'CINEMA_STAFF', 'STAFF', 'BRANCH_MANAGER') ORDER BY role_name";
+        java.util.List<Role> roles = new java.util.ArrayList<>();
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                Role role = new Role();
+                role.setRoleId(rs.getInt("role_id"));
+                role.setRoleName(rs.getString("role_name"));
+                if (rs.getTimestamp("created_at") != null)
+                    role.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+                if (rs.getTimestamp("updated_at") != null)
+                    role.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+                roles.add(role);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return roles;
+    }
 }

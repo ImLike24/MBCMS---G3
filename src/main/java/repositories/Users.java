@@ -42,7 +42,8 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, username);
             try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return mapResultSetToUser(rs);
+                if (rs.next())
+                    return mapResultSetToUser(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -55,7 +56,8 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, email);
             try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return mapResultSetToUser(rs);
+                if (rs.next())
+                    return mapResultSetToUser(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -68,7 +70,8 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, phone);
             try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return mapResultSetToUser(rs);
+                if (rs.next())
+                    return mapResultSetToUser(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -77,7 +80,8 @@ public class Users extends DBContext {
     }
 
     public boolean insert(User u) {
-        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points) " +
+        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points) "
+                +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, u.getRoleId());
@@ -110,5 +114,121 @@ public class Users extends DBContext {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    // Admin User Management Methods
+
+    public java.util.List<User> getAllUsers() {
+        String sql = "SELECT * FROM users ORDER BY created_at DESC";
+        java.util.List<User> users = new java.util.ArrayList<>();
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                users.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
+
+    public java.util.List<User> getUsersByRole(int roleId) {
+        String sql = "SELECT * FROM users WHERE role_id = ? ORDER BY created_at DESC";
+        java.util.List<User> users = new java.util.ArrayList<>();
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, roleId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    users.add(mapResultSetToUser(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
+
+    public java.util.List<User> getUsersByStatus(String status) {
+        String sql = "SELECT * FROM users WHERE status = ? ORDER BY created_at DESC";
+        java.util.List<User> users = new java.util.ArrayList<>();
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, status);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    users.add(mapResultSetToUser(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
+
+    public java.util.List<User> searchUsers(String keyword) {
+        String sql = "SELECT * FROM users WHERE username LIKE ? OR email LIKE ? OR fullName LIKE ? ORDER BY created_at DESC";
+        java.util.List<User> users = new java.util.ArrayList<>();
+        String searchPattern = "%" + keyword + "%";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, searchPattern);
+            st.setString(2, searchPattern);
+            st.setString(3, searchPattern);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    users.add(mapResultSetToUser(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
+
+    public boolean updateUserStatus(int userId, String status) {
+        String sql = "UPDATE users SET status = ? WHERE user_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, status);
+            st.setInt(2, userId);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public User getUserById(int userId) {
+        String sql = "SELECT * FROM users WHERE user_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, userId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next())
+                    return mapResultSetToUser(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean checkUsernameExists(String username) {
+        return findByUsername(username) != null;
+    }
+
+    public boolean checkEmailExists(String email) {
+        return findByEmail(email) != null;
+    }
+
+    public boolean checkPhoneExists(String phone) {
+        return findByPhone(phone) != null;
+    }
+
+    public boolean deleteUser(int userId) {
+        String sql = "DELETE FROM users WHERE user_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, userId);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
