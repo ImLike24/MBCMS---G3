@@ -30,7 +30,7 @@
     <div class="container-fluid">
 
         <a class="navbar-brand fw-bold" href="${pageContext.request.contextPath}/home">
-            <i class="fa fa-modx text-warning"></i> Movie Theme
+            <i class="fa fa-modx text-warning"></i>
         </a>
 
         <button class="navbar-toggler" type="button"
@@ -44,7 +44,7 @@
             <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
                 <li class="nav-item">
                     <a class="nav-link active" href="${pageContext.request.contextPath}/home">
-                        Home
+                        Trang chủ
                     </a>
                 </li>
                 <li class="nav-item">
@@ -82,25 +82,25 @@
                             <c:when test="${not empty sessionScope.user}">
                                 <li>
                                     <a class="dropdown-item" href="${pageContext.request.contextPath}/profile">
-                                        Profile
+                                        Hồ sơ người dùng
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" href="${pageContext.request.contextPath}/logout">
-                                        Logout
+                                        Đăng xuất
                                     </a>
                                 </li>
                             </c:when>
                             <c:otherwise>
                                 <li>
                                     <a class="dropdown-item" href="${pageContext.request.contextPath}/login">
-                                        Login
+                                        Đăng nhập
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item" href="${pageContext.request.contextPath}/register">
-                                        Register
+                                        Đăng ký
                                     </a>
                                 </li>
                             </c:otherwise>
