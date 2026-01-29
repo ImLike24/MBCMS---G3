@@ -7,8 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import business.AuthService;
 import models.User;
+import services.AuthService;
 
 @WebServlet(name = "AdminDashboard", urlPatterns = { "/admin/dashboard" })
 public class AdminDashboard extends HttpServlet {
