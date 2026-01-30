@@ -1,6 +1,7 @@
 package repositories;
 
 import config.DBContext;
+import java.sql.Connection;
 import models.User;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -154,6 +155,21 @@ public class Users extends DBContext {
             e.printStackTrace();
         }
         return false;
+    }
+    
+    public void updateAvatar(int userId, String avatarUrl) {
+        String sql = "UPDATE users SET avatar_url = ? WHERE user_id = ?";
+
+        try (Connection con = new DBContext().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, avatarUrl);
+            ps.setInt(2, userId);
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // Admin User Management Methods
