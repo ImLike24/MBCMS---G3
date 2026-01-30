@@ -1,6 +1,6 @@
 package controllers.auth;
 
-import business.AuthService;
+import services.AuthService;
 import utils.Password;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
