@@ -124,7 +124,12 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql);
                 ResultSet rs = st.executeQuery()) {
             while (rs.next()) {
-                users.add(mapResultSetToUser(rs));
+                try {
+                    users.add(mapResultSetToUser(rs));
+                } catch (Exception e) {
+                    System.err.println("Error mapping user at row: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -139,7 +144,12 @@ public class Users extends DBContext {
             st.setInt(1, roleId);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in getUsersByRole: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -155,7 +165,12 @@ public class Users extends DBContext {
             st.setString(1, status);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in getUsersByStatus: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -174,7 +189,12 @@ public class Users extends DBContext {
             st.setString(3, searchPattern);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in searchUsers: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {

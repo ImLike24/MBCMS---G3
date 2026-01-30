@@ -15,12 +15,6 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/admin/create-user" class="nav-link text-white">
-                    <i class="fa fa-user-plus me-2"></i>
-                    Create User
-                </a>
-            </li>
-            <li class="nav-item">
                 <a href="#" class="nav-link text-white">
                     <i class="fa fa-film me-2"></i>
                     Manage Movies
