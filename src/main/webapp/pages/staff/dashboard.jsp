@@ -448,7 +448,7 @@
                 </a>
             </li>
             <li>
-                <a href="${pageContext.request.contextPath}/staff/pos">
+                <a href="${pageContext.request.contextPath}/staff/counter-booking">
                     <i class="fas fa-ticket-alt"></i>
                     <span>Counter Booking</span>
                 </a>
@@ -561,8 +561,8 @@
         <div class="quick-actions">
             <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
             <div class="action-buttons">
-                <a href="${pageContext.request.contextPath}/staff/pos" class="action-btn">
-                    <i class="fas fa-cash-register"></i>
+                <a href="${pageContext.request.contextPath}/staff/counter-booking" class="action-btn">
+                    <i class="fas fa-ticket-alt"></i>
                     <span>Start Counter Booking</span>
                 </a>
                 <a href="${pageContext.request.contextPath}/staff/schedule" class="action-btn">
