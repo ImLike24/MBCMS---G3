@@ -6,7 +6,7 @@ import jakarta.servlet.http.*;
 import models.User;
 import repositories.Users;
 import java.io.IOException;
-import java.time.LocalDate;
+import utils.Password;
 
 @WebServlet(name = "UserProfile", urlPatterns = {"/profile"})
 public class UserProfile extends HttpServlet {
@@ -27,13 +27,10 @@ public class UserProfile extends HttpServlet {
         request.getRequestDispatcher("/pages/user/profile.jsp")
                .forward(request, response);
     }
-
+    
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        // Đảm bảo xử lý tiếng Việt và ký tự đặc biệt
-        request.setCharacterEncoding("UTF-8");
 
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
@@ -41,96 +38,53 @@ public class UserProfile extends HttpServlet {
             return;
         }
 
-        User currentUser = (User) session.getAttribute("user");
-        int userId = currentUser.getUserId();
+        User user = (User) session.getAttribute("user");
 
-        // Lấy dữ liệu từ form
-        String fullName     = request.getParameter("fullName");
-        String email        = request.getParameter("email");
-        String phone        = request.getParameter("phone");
-        String birthdayStr  = request.getParameter("birthday");
-        String newPassword  = request.getParameter("password");
-        String confirmPass  = request.getParameter("confirmPassword");
+        String fullName = request.getParameter("fullName");
+        String email = request.getParameter("email");
+        String phone = request.getParameter("phone");
+        String birthdayStr = request.getParameter("birthday");
+        String password = request.getParameter("password");
+        String confirm = request.getParameter("confirmPassword");
 
-        String error = null;
-
-        // Validate cơ bản
-        if (fullName == null || fullName.trim().isEmpty()) {
-            error = "Họ và tên không được để trống.";
-        } else if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            error = "Email không đúng định dạng.";
-        } else if (newPassword != null && !newPassword.trim().isEmpty()) {
-            if (!newPassword.equals(confirmPass)) {
-                error = "Mật khẩu xác nhận không khớp.";
-            }
-            if (newPassword.length() < 6) {
-                error = "Mật khẩu mới phải có ít nhất 6 ký tự.";
-            }
-        }
-
-        if (error != null) {
-            request.setAttribute("error", error);
-            request.setAttribute("u", currentUser); // giữ dữ liệu cũ để hiển thị lại form
-            request.getRequestDispatcher("/pages/user/profile.jsp").forward(request, response);
-            return;
-        }
-
-        // Tạo đối tượng User để cập nhật (dựa trên user hiện tại)
-        User updatedUser = new User();
-        updatedUser.setUserId(userId);
-
-        // Giữ nguyên các trường không cho phép thay đổi từ form
-        updatedUser.setRoleId(currentUser.getRoleId());
-        updatedUser.setUsername(currentUser.getUsername());
-        updatedUser.setStatus(currentUser.getStatus());
-        updatedUser.setPoints(currentUser.getPoints());
-        updatedUser.setCreatedAt(currentUser.getCreatedAt());
-        updatedUser.setLastLogin(currentUser.getLastLogin());
-        updatedUser.setAvatarUrl(currentUser.getAvatarUrl());
-
-        // Cập nhật các trường từ form
-        updatedUser.setFullName(fullName.trim());
-        updatedUser.setEmail(email.trim());
-        updatedUser.setPhone(phone != null && !phone.trim().isEmpty() ? phone.trim() : null);
-
-        // Xử lý birthday
-        if (birthdayStr != null && !birthdayStr.trim().isEmpty()) {
-            try {
-                LocalDate date = LocalDate.parse(birthdayStr);
-                updatedUser.setBirthday(date.atStartOfDay());
-            } catch (Exception e) {
-                // Nếu ngày sinh không hợp lệ, giữ nguyên giá trị cũ
-                updatedUser.setBirthday(currentUser.getBirthday());
-            }
+        // parse birthday
+        if (birthdayStr != null && !birthdayStr.isEmpty()) {
+            user.setBirthday(java.time.LocalDate.parse(birthdayStr).atStartOfDay());
         } else {
-            updatedUser.setBirthday(currentUser.getBirthday());
+            user.setBirthday(null);
         }
 
-        // Xử lý password
-        if (newPassword != null && !newPassword.trim().isEmpty()) {
-            // Ở đây bạn NÊN hash password trước khi lưu
-            // Ví dụ: updatedUser.setPassword(BCrypt.hashpw(newPassword, BCrypt.gensalt()));
-            updatedUser.setPassword(newPassword); // tạm thời để plain text (KHÔNG AN TOÀN)
-        } else {
-            updatedUser.setPassword(currentUser.getPassword());
-        }
+        user.setFullName(fullName);
+        user.setEmail(email);
+        user.setPhone(phone);
 
-        // Thực hiện update
-        boolean success = userRepo.updateUser(updatedUser);
+        // nếu có đổi mật khẩu
+        if (password != null && !password.isEmpty()) {
 
-        if (success) {
-            // Lấy lại thông tin mới nhất từ DB và cập nhật session
-            User freshUser = userRepo.findById(userId);
-            if (freshUser != null) {
-                session.setAttribute("user", freshUser);
+            if (!password.equals(confirm)) {
+                request.setAttribute("error", "Password confirmation does not match");
+                request.setAttribute("u", user);
+                request.getRequestDispatcher("/pages/user/profile.jsp").forward(request, response);
+                return;
             }
-            request.setAttribute("message", "Cập nhật thông tin thành công!");
-        } else {
-            request.setAttribute("error", "Cập nhật thất bại, vui lòng thử lại.");
+
+            if (!Password.isValidPassword(password)) {
+                request.setAttribute("error", "Password must be at least 8 characters, include letter, number and special character");
+                request.setAttribute("u", user);
+                request.getRequestDispatcher("/pages/user/profile.jsp").forward(request, response);
+                return;
+            }
+
+            String hashedPassword = Password.hashPassword(password);
+            user.setPassword(hashedPassword);
         }
 
-        // Load lại trang (vẫn ở chế độ view)
-        request.setAttribute("u", session.getAttribute("user"));
-        request.getRequestDispatcher("/pages/user/profile.jsp").forward(request, response);
+        userRepo.updateProfile(user);
+
+        // cập nhật lại session
+        session.setAttribute("user", user);
+
+        response.sendRedirect(request.getContextPath() + "/profile");
     }
+
 }

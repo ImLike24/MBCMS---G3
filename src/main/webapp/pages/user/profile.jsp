@@ -69,7 +69,7 @@
 <body>
 
 <!-- HEADER -->
-<jsp:include page="/components/layout/header.jsp" />
+<jsp:include page="/components/layout/Header.jsp" />
 
 <div class="profile-wrapper">
 
@@ -115,7 +115,10 @@
 
             <div class="info-row">
                 <span>Birthday</span>
-                <span>${u.birthday}</span>
+                <span>
+                    ${u.birthday != null ? u.birthday.toLocalDate() : ''}
+                </span>
+
             </div>
 
             <div class="info-row">
@@ -182,9 +185,6 @@
                            class="form-control"
                            name="confirmPassword">
                 </div>
-
-                <!-- NOTE: POINT KHÔNG CÓ TRONG FORM -->
-                <!-- points chỉ hiển thị ở viewMode -->
 
                 <button class="btn btn-success">Save Changes</button>
                 <button type="button"
