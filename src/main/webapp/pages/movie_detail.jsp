@@ -258,16 +258,16 @@
                                 <jsp:include page="/components/fragments/list-reviews.jsp" />
 
                                 <c:if test="${reviews.isEmpty()}">
-                                    <p class="text-muted" id="noReviewsMsg">No reviews yet. Be the first to review!</p>
+                                    <p class="text-muted" id="noReviewsMsg">Chưa có đánh giá nào cho bộ phim này. Hãy trở thành người đầu tiên!</p>
                                 </c:if>
                             </div>
 
                             <!-- Load More Button -->
                             <div class="col-12 text-center mt-3">
                                 <button id="loadMoreBtn" class="btn-load" onclick="loadMoreReviews()">
-                                    Load More Reviews
+                                    Tải thêm đánh giá
                                 </button>
-                                <p id="noMoreReviews" class="text-dark mt-2" style="display:none;">No more reviews.</p>
+                                <p id="noMoreReviews" class="text-dark mt-2" style="display:none;">Đã tải tất cả đánh giá cho bộ phim này.</p>
                             </div>
                         </div>
                     </div>
@@ -362,17 +362,17 @@
                     if (message === 'success') {
                         Swal.fire({
                             icon: 'success',
-                            title: 'Success!',
-                            text: 'Review posted successfully!',
+                            title: 'Thành công!',
+                            text: 'Đánh giá của bạn đã được đăng!',
                             confirmButtonColor: '#d96c2c'
                         });
                         // Optional: Clean URL
                         window.history.replaceState({}, document.title, window.location.pathname + "?movieId=" + movieId);
-                    } else if (message === 'invalid_rating_or_comment') {
+                    } else if (message === 'failed') {
                         Swal.fire({
                             icon: 'error',
                             title: 'Oops...',
-                            text: 'Invalid Review: Please provide a rating greater than 0 and a non-empty comment.',
+                            text: 'Hình như bạn đang quên chấm điểm cho bộ phim này.',
                             confirmButtonColor: '#d96c2c'
                         });
                         // Optional: Clean URL
