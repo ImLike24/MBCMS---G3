@@ -18,7 +18,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f6fa;
+            background: #0c121d;
             overflow-x: hidden;
         }
 
@@ -29,11 +29,12 @@
             top: 0;
             height: 100vh;
             width: 260px;
-            background: linear-gradient(135deg, #9ACBD0 0%, #006A71 100%);
+            background: #010202;
+            border-right: 1px solid #262625;
             padding: 20px 0;
             transition: all 0.3s ease;
             z-index: 1000;
-            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.3);
         }
 
         .sidebar.collapsed {
@@ -44,7 +45,7 @@
             padding: 20px;
             text-align: center;
             color: white;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid #262625;
             margin-bottom: 20px;
         }
 
@@ -79,7 +80,7 @@
             display: flex;
             align-items: center;
             padding: 15px 20px;
-            color: rgba(255, 255, 255, 0.9);
+            color: #ccc;
             text-decoration: none;
             border-radius: 10px;
             transition: all 0.3s ease;
@@ -88,15 +89,15 @@
         }
 
         .sidebar-menu a:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
+            background: #111;
+            color: #d96c2c;
             transform: translateX(5px);
         }
 
         .sidebar-menu a.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            background: rgba(217, 108, 44, 0.2);
+            color: #d96c2c;
+            border-left: 3px solid #d96c2c;
         }
 
         .sidebar-menu a i {
@@ -126,7 +127,7 @@
             left: 0;
             right: 0;
             padding: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid #262625;
         }
 
         .sidebar-user .user-info {
@@ -139,13 +140,13 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: white;
+            background: #d96c2c;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-right: 12px;
             font-size: 18px;
-            color: #006A71;
+            color: white;
             font-weight: 600;
         }
 
@@ -177,15 +178,15 @@
             right: -15px;
             width: 30px;
             height: 30px;
-            background: white;
+            background: #d96c2c;
             border: none;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #006A71;
+            color: white;
             z-index: 1001;
             transition: transform 0.3s;
         }
@@ -208,10 +209,11 @@
 
         /* Top Bar */
         .top-bar {
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #262625;
             padding: 20px 30px;
             border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -220,9 +222,13 @@
 
         .top-bar h1 {
             font-size: 28px;
-            color: #2c3e50;
+            color: white;
             margin: 0;
             font-weight: 600;
+        }
+
+        .top-bar h1 i {
+            color: #d96c2c;
         }
 
         .top-bar-actions {
@@ -235,17 +241,17 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            color: #7f8c8d;
+            color: #ccc;
             font-size: 14px;
         }
 
         .current-time i {
-            color: #006A71;
+            color: #d96c2c;
         }
 
         .btn-logout {
             padding: 10px 20px;
-            background: linear-gradient(135deg, #9ACBD0 0%, #006A71 100%);
+            background: #d96c2c;
             color: white;
             border: none;
             border-radius: 8px;
@@ -258,9 +264,10 @@
         }
 
         .btn-logout:hover {
+            background: #fff;
+            color: #000;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 106, 113, 0.4);
-            color: white;
+            box-shadow: 0 4px 12px rgba(217, 108, 44, 0.4);
         }
 
         /* Dashboard Cards */
@@ -272,16 +279,18 @@
         }
 
         .dashboard-card {
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #262625;
             padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             transition: transform 0.3s, box-shadow 0.3s;
         }
 
         .dashboard-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 20px rgba(217, 108, 44, 0.2);
+            border-color: #d96c2c;
         }
 
         .dashboard-card .card-icon {
@@ -296,71 +305,79 @@
         }
 
         .dashboard-card.card-primary .card-icon {
-            background: linear-gradient(135deg, #9ACBD0 0%, #006A71 100%);
+            background: #d96c2c;
             color: white;
         }
 
         .dashboard-card.card-success .card-icon {
-            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            background: rgba(217, 108, 44, 0.8);
             color: white;
         }
 
         .dashboard-card.card-warning .card-icon {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: rgba(217, 108, 44, 0.6);
             color: white;
         }
 
         .dashboard-card.card-info .card-icon {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
+            background: #262625;
+            color: #d96c2c;
         }
 
         .dashboard-card h3 {
             font-size: 32px;
             font-weight: 700;
-            color: #2c3e50;
+            color: white;
             margin-bottom: 5px;
         }
 
         .dashboard-card p {
-            color: #7f8c8d;
+            color: #ccc;
             font-size: 14px;
             margin: 0;
         }
 
         /* Welcome Section */
         .welcome-section {
-            background: linear-gradient(135deg, #9ACBD0 0%, #006A71 100%);
+            background: #1a1a1a;
+            border: 1px solid #262625;
             color: white;
             padding: 40px;
             border-radius: 15px;
             margin-bottom: 30px;
-            box-shadow: 0 5px 20px rgba(0, 106, 113, 0.3);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
         }
 
         .welcome-section h2 {
+            color: #d96c2c;
             font-size: 32px;
             margin-bottom: 10px;
         }
 
         .welcome-section p {
             font-size: 16px;
+            color: #ccc;
             opacity: 0.9;
         }
 
         /* Quick Actions */
         .quick-actions {
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #262625;
             padding: 30px;
             border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .quick-actions h3 {
             font-size: 20px;
-            color: #2c3e50;
+            color: white;
             margin-bottom: 20px;
             font-weight: 600;
+        }
+
+        .quick-actions h3 i {
+            color: #d96c2c;
         }
 
         .action-buttons {
@@ -374,19 +391,19 @@
             align-items: center;
             gap: 12px;
             padding: 15px 20px;
-            background: #f8f9fa;
-            border: 2px solid transparent;
+            background: #262625;
+            border: 2px solid #262625;
             border-radius: 10px;
             text-decoration: none;
-            color: #2c3e50;
+            color: #ccc;
             font-weight: 500;
             transition: all 0.3s;
         }
 
         .action-btn:hover {
-            background: white;
-            border-color: #006A71;
-            color: #006A71;
+            background: transparent;
+            border-color: #d96c2c;
+            color: #d96c2c;
             transform: translateX(5px);
         }
 
@@ -397,7 +414,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: white;
+            background: #d96c2c;
+            color: white;
             border-radius: 8px;
         }
 

@@ -18,7 +18,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f6fa;
+            background: #0c121d;
         }
 
         /* Sidebar Styles */
@@ -28,11 +28,12 @@
             top: 0;
             height: 100vh;
             width: 260px;
-            background: linear-gradient(135deg, #9ACBD0 0%, #006A71 100%);
+            background: #010202;
+            border-right: 1px solid #262625;
             padding: 20px 0;
             transition: all 0.3s ease;
             z-index: 1000;
-            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.3);
         }
 
         .sidebar.collapsed {
@@ -43,7 +44,7 @@
             padding: 20px;
             text-align: center;
             color: white;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid #262625;
             margin-bottom: 20px;
         }
 
@@ -77,22 +78,22 @@
             display: flex;
             align-items: center;
             padding: 15px 20px;
-            color: rgba(255, 255, 255, 0.9);
+            color: #ccc;
             text-decoration: none;
             border-radius: 10px;
             transition: all 0.3s ease;
         }
 
         .sidebar-menu a:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
+            background: #111;
+            color: #d96c2c;
             transform: translateX(5px);
         }
 
         .sidebar-menu a.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            background: rgba(217, 108, 44, 0.2);
+            color: #d96c2c;
+            border-left: 3px solid #d96c2c;
         }
 
         .sidebar-menu a i {
@@ -121,7 +122,7 @@
             left: 0;
             right: 0;
             padding: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid #262625;
         }
 
         .sidebar-user .user-info {
@@ -134,13 +135,13 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: white;
+            background: #d96c2c;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-right: 12px;
             font-size: 18px;
-            color: #006A71;
+            color: white;
             font-weight: 600;
         }
 
@@ -171,15 +172,15 @@
             right: -15px;
             width: 30px;
             height: 30px;
-            background: white;
+            background: #d96c2c;
             border: none;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #006A71;
+            color: white;
             z-index: 1001;
             transition: transform 0.3s;
         }
@@ -202,10 +203,11 @@
 
         /* Top Bar */
         .top-bar {
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #262625;
             padding: 20px 30px;
             border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -214,9 +216,13 @@
 
         .top-bar h1 {
             font-size: 28px;
-            color: #2c3e50;
+            color: white;
             margin: 0;
             font-weight: 600;
+        }
+
+        .top-bar h1 i {
+            color: #d96c2c;
         }
 
         .top-bar-actions {
@@ -225,25 +231,43 @@
             gap: 15px;
         }
 
+        .top-bar-actions .btn-outline-secondary {
+            border-color: #262625;
+            color: #ccc;
+        }
+
+        .top-bar-actions .btn-outline-secondary:hover {
+            background: #d96c2c;
+            border-color: #d96c2c;
+            color: white;
+        }
+
         /* Date Selector */
         .date-selector {
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #262625;
             padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             margin-bottom: 30px;
         }
 
         .date-selector h3 {
             font-size: 18px;
-            color: #2c3e50;
+            color: white;
             margin-bottom: 15px;
             font-weight: 600;
         }
 
+        .date-selector h3 i {
+            color: #d96c2c;
+        }
+
         .date-selector input[type="date"] {
             padding: 12px 20px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid #262625;
+            background: #0c121d;
+            color: white;
             border-radius: 8px;
             font-size: 16px;
             width: 250px;
@@ -252,8 +276,8 @@
 
         .date-selector input[type="date"]:focus {
             outline: none;
-            border-color: #006A71;
-            box-shadow: 0 0 0 3px rgba(0, 106, 113, 0.1);
+            border-color: #d96c2c;
+            box-shadow: 0 0 0 3px rgba(217, 108, 44, 0.2);
         }
 
         /* Movies Grid */
@@ -265,24 +289,26 @@
         }
 
         .movie-card {
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #262625;
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
             cursor: pointer;
         }
 
         .movie-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 5px 20px rgba(217, 108, 44, 0.2);
+            border-color: #d96c2c;
         }
 
         .movie-poster {
             width: 100%;
             height: 380px;
             object-fit: cover;
-            background: linear-gradient(135deg, #9ACBD0 0%, #006A71 100%);
+            background: #262625;
         }
 
         .movie-info {
@@ -292,7 +318,7 @@
         .movie-title {
             font-size: 18px;
             font-weight: 600;
-            color: #2c3e50;
+            color: white;
             margin-bottom: 10px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -312,18 +338,18 @@
             align-items: center;
             gap: 5px;
             font-size: 14px;
-            color: #7f8c8d;
+            color: #ccc;
         }
 
         .movie-meta i {
-            color: #006A71;
+            color: #d96c2c;
         }
 
         .movie-genre {
             display: inline-block;
             padding: 5px 12px;
-            background: #e8f5f7;
-            color: #006A71;
+            background: rgba(217, 108, 44, 0.2);
+            color: #d96c2c;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 500;
@@ -339,7 +365,7 @@
         .btn-select-movie {
             flex: 1;
             padding: 12px 20px;
-            background: linear-gradient(135deg, #9ACBD0 0%, #006A71 100%);
+            background: #d96c2c;
             color: white;
             border: none;
             border-radius: 8px;
@@ -352,34 +378,36 @@
         }
 
         .btn-select-movie:hover {
+            background: #fff;
+            color: #000;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 106, 113, 0.4);
-            color: white;
+            box-shadow: 0 4px 12px rgba(217, 108, 44, 0.4);
         }
 
         /* Empty State */
         .empty-state {
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #262625;
             padding: 60px 40px;
             border-radius: 15px;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .empty-state i {
             font-size: 64px;
-            color: #e0e0e0;
+            color: #d96c2c;
             margin-bottom: 20px;
         }
 
         .empty-state h3 {
             font-size: 24px;
-            color: #2c3e50;
+            color: white;
             margin-bottom: 10px;
         }
 
         .empty-state p {
-            color: #7f8c8d;
+            color: #ccc;
             font-size: 16px;
         }
 
