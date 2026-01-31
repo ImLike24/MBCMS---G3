@@ -81,7 +81,7 @@ public class MovieDetail extends HttpServlet {
             int movieId = Integer.parseInt(movieIdStr);
             int rating = Integer.parseInt(ratingStr);
 
-            if (rating > 0 && !comment.isEmpty()) {
+            if (rating > 0) {
                 Review review = new Review();
 
                 review.setUserId(user.getUserId());
@@ -95,7 +95,7 @@ public class MovieDetail extends HttpServlet {
                         request.getContextPath() + "/movie?movieId=" + movieId + "&message=success");
             } else {
                 response.sendRedirect(request.getContextPath() + "/movie?movieId=" + movieId
-                        + "&message=invalid_rating_or_comment");
+                        + "&message=failed");
             }
 
         } catch (Exception e) {
