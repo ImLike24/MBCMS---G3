@@ -41,7 +41,7 @@ public class Showtimes extends DBContext {
     public List<Showtime> getActiveShowtimes(int movieId, LocalDate date){
         List<Showtime> activeShowtimes = new ArrayList<>();
         String sql = """
-                SELECT * FROM Showtimes
+                SELECT * FROM showtimes
                 WHERE movie_id = ? AND show_date = ? AND status IN ('SCHEDULED', 'ONGOING')
                 ORDER BY start_time ASC
                 """;
