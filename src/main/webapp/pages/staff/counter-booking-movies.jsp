@@ -727,7 +727,7 @@
                 <div class="movies-grid">
                     <c:forEach items="${movies}" var="movie">
                         <div class="movie-card">
-                            <c:set var="defaultPoster" value="https://placehold.co/280x380/1a1a1a/666?text=No+Poster" />
+                            <c:set var="defaultPoster" value="${pageContext.request.contextPath}/images/default_poster.jpg" />
                             <c:set var="posterSrc" value="${not empty movie.posterUrl ? movie.posterUrl : defaultPoster}" />
                             <img src="${posterSrc}" alt="${movie.title}" class="movie-poster"
                                  onerror="this.onerror=null; this.src='${defaultPoster}';">
