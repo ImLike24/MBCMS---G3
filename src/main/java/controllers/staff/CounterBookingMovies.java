@@ -16,7 +16,7 @@ import java.util.List;
 @WebServlet(name = "counterBookingMovies", urlPatterns = {"/staff/counter-booking"})
 public class CounterBookingMovies extends HttpServlet {
 
-    private final Movies moviesRepo = new Movies();
+    private static final int PAGE_SIZE = 8; // Movies per page
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -36,24 +36,65 @@ public class CounterBookingMovies extends HttpServlet {
             return;
         }
 
+        // Mỗi request dùng connection riêng, tránh "connection is closed" khi nhiều request đồng thời
+        Movies moviesRepo = null;
         try {
+            moviesRepo = new Movies();
             // Get date parameter (default to today)
             String dateParam = request.getParameter("date");
             LocalDate selectedDate = (dateParam != null && !dateParam.isEmpty()) 
                 ? LocalDate.parse(dateParam) 
                 : LocalDate.now();
 
-            // Get movies showing on selected date
-            List<Movie> movies;
-            if (selectedDate.equals(LocalDate.now())) {
-                movies = moviesRepo.getMoviesShowingToday();
-            } else {
-                movies = moviesRepo.getMoviesShowingOnDate(selectedDate);
+            // Get search parameter
+            String search = request.getParameter("search");
+            
+            // Get filter parameters
+            String genre = request.getParameter("genre");
+            String ageRating = request.getParameter("ageRating");
+            
+            // Get pagination parameter
+            int page = 1;
+            String pageParam = request.getParameter("page");
+            if (pageParam != null && !pageParam.isEmpty()) {
+                try {
+                    page = Integer.parseInt(pageParam);
+                    if (page < 1) page = 1;
+                } catch (NumberFormatException e) {
+                    page = 1;
+                }
             }
 
+            // Get movies with filter, search and pagination
+            List<Movie> movies = moviesRepo.getMoviesShowingOnDateWithFilter(
+                selectedDate, search, genre, ageRating, page, PAGE_SIZE);
+            
+            // Get total count for pagination
+            int totalMovies = moviesRepo.countMoviesShowingOnDateWithFilter(
+                selectedDate, search, genre, ageRating);
+            int totalPages = (int) Math.ceil((double) totalMovies / PAGE_SIZE);
+            
+            // Get genres and age ratings for filter dropdowns
+            List<String> genres = moviesRepo.getGenresShowingOnDate(selectedDate);
+            List<String> ageRatings = moviesRepo.getAgeRatingsShowingOnDate(selectedDate);
+
+            // Set attributes for JSP
             request.setAttribute("movies", movies);
             request.setAttribute("selectedDate", selectedDate);
             request.setAttribute("today", LocalDate.now());
+            
+            // Pagination attributes
+            request.setAttribute("currentPage", page);
+            request.setAttribute("totalPages", totalPages);
+            request.setAttribute("totalMovies", totalMovies);
+            request.setAttribute("pageSize", PAGE_SIZE);
+            
+            // Filter attributes
+            request.setAttribute("genres", genres);
+            request.setAttribute("ageRatings", ageRatings);
+            request.setAttribute("selectedGenre", genre);
+            request.setAttribute("selectedAgeRating", ageRating);
+            request.setAttribute("searchQuery", search);
             
             request.getRequestDispatcher("/pages/staff/counter-booking-movies.jsp").forward(request, response);
             
@@ -62,7 +103,9 @@ public class CounterBookingMovies extends HttpServlet {
             request.setAttribute("error", "Error loading movies: " + e.getMessage());
             request.getRequestDispatcher("/pages/staff/counter-booking-movies.jsp").forward(request, response);
         } finally {
-            moviesRepo.closeConnection();
+            if (moviesRepo != null) {
+                moviesRepo.closeConnection();
+            }
         }
     }
 }

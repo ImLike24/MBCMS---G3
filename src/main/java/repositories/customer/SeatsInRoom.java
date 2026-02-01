@@ -1,4 +1,4 @@
-import repositories.customer;
+package repositories.customer;
 
 import models.Seat;
 import config.DBContext;

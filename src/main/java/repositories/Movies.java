@@ -123,6 +123,181 @@ public class Movies extends DBContext {
     }
 
     /**
+     * Get movies showing on date with search, filter and pagination
+     */
+    public List<Movie> getMoviesShowingOnDateWithFilter(LocalDate date, String search, String genre, 
+            String ageRating, int page, int pageSize) {
+        List<Movie> movies = new ArrayList<>();
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT DISTINCT m.* FROM movies m ")
+           .append("INNER JOIN showtimes s ON m.movie_id = s.movie_id ")
+           .append("WHERE m.is_active = 1 ")
+           .append("AND s.show_date = ? ")
+           .append("AND s.status IN ('SCHEDULED', 'ONGOING') ");
+        
+        List<Object> params = new ArrayList<>();
+        params.add(java.sql.Date.valueOf(date));
+        
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.cast LIKE ?) ");
+            String searchPattern = "%" + search.trim() + "%";
+            params.add(searchPattern);
+            params.add(searchPattern);
+            params.add(searchPattern);
+        }
+        
+        if (genre != null && !genre.trim().isEmpty()) {
+            sql.append("AND m.genre LIKE ? ");
+            params.add("%" + genre.trim() + "%");
+        }
+        
+        if (ageRating != null && !ageRating.trim().isEmpty()) {
+            sql.append("AND m.age_rating = ? ");
+            params.add(ageRating.trim());
+        }
+        
+        sql.append("ORDER BY m.title ");
+        sql.append("OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        
+        int offset = (page - 1) * pageSize;
+        params.add(offset);
+        params.add(pageSize);
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof java.sql.Date) {
+                    pstmt.setDate(i + 1, (java.sql.Date) param);
+                } else if (param instanceof Integer) {
+                    pstmt.setInt(i + 1, (Integer) param);
+                } else {
+                    pstmt.setString(i + 1, (String) param);
+                }
+            }
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    movies.add(mapResultSetToMovie(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return movies;
+    }
+
+    /**
+     * Count movies showing on date with search and filter
+     */
+    public int countMoviesShowingOnDateWithFilter(LocalDate date, String search, String genre, String ageRating) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT COUNT(DISTINCT m.movie_id) FROM movies m ")
+           .append("INNER JOIN showtimes s ON m.movie_id = s.movie_id ")
+           .append("WHERE m.is_active = 1 ")
+           .append("AND s.show_date = ? ")
+           .append("AND s.status IN ('SCHEDULED', 'ONGOING') ");
+        
+        List<Object> params = new ArrayList<>();
+        params.add(java.sql.Date.valueOf(date));
+        
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.cast LIKE ?) ");
+            String searchPattern = "%" + search.trim() + "%";
+            params.add(searchPattern);
+            params.add(searchPattern);
+            params.add(searchPattern);
+        }
+        
+        if (genre != null && !genre.trim().isEmpty()) {
+            sql.append("AND m.genre LIKE ? ");
+            params.add("%" + genre.trim() + "%");
+        }
+        
+        if (ageRating != null && !ageRating.trim().isEmpty()) {
+            sql.append("AND m.age_rating = ? ");
+            params.add(ageRating.trim());
+        }
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof java.sql.Date) {
+                    pstmt.setDate(i + 1, (java.sql.Date) param);
+                } else {
+                    pstmt.setString(i + 1, (String) param);
+                }
+            }
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Get distinct genres from movies showing on date
+     */
+    public List<String> getGenresShowingOnDate(LocalDate date) {
+        List<String> genres = new ArrayList<>();
+        String sql = "SELECT DISTINCT m.genre FROM movies m " +
+                    "INNER JOIN showtimes s ON m.movie_id = s.movie_id " +
+                    "WHERE m.is_active = 1 AND m.genre IS NOT NULL " +
+                    "AND s.show_date = ? " +
+                    "AND s.status IN ('SCHEDULED', 'ONGOING') " +
+                    "ORDER BY m.genre";
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setDate(1, java.sql.Date.valueOf(date));
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    String genre = rs.getString("genre");
+                    if (genre != null && !genre.trim().isEmpty()) {
+                        genres.add(genre);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return genres;
+    }
+
+    /**
+     * Get distinct age ratings from movies showing on date
+     */
+    public List<String> getAgeRatingsShowingOnDate(LocalDate date) {
+        List<String> ageRatings = new ArrayList<>();
+        String sql = "SELECT DISTINCT m.age_rating FROM movies m " +
+                    "INNER JOIN showtimes s ON m.movie_id = s.movie_id " +
+                    "WHERE m.is_active = 1 AND m.age_rating IS NOT NULL " +
+                    "AND s.show_date = ? " +
+                    "AND s.status IN ('SCHEDULED', 'ONGOING') " +
+                    "ORDER BY m.age_rating";
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setDate(1, java.sql.Date.valueOf(date));
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    String ageRating = rs.getString("age_rating");
+                    if (ageRating != null && !ageRating.trim().isEmpty()) {
+                        ageRatings.add(ageRating);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ageRatings;
+    }
+
+    /**
      * Helper method to map ResultSet to Movie object
      */
     private Movie mapResultSetToMovie(ResultSet rs) throws SQLException {
