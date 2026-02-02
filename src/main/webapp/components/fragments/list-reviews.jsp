@@ -23,7 +23,9 @@
                         </c:choose>
                     </c:forEach>
                 </div>
-                <p class="card-text text-light">${review.comment}</p>
+                <div class="card-text text-light review-content">
+                    <c:out value="${review.comment}" escapeXml="false" />
+                </div>
             </div>
         </div>
     </c:forEach>

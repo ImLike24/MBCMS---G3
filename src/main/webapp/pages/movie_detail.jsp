@@ -17,6 +17,9 @@
                 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
                 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
                 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                <script
+                    src="https://cdn.tiny.cloud/1/3r6p3w9fdtbe83dz1ri0eh608u5jwrt1fm3jsdl05bwfvvxe/tinymce/6/tinymce.min.js"
+                    referrerpolicy="origin"></script>
 
                 <style>
                     .movie-detail-container {
@@ -146,6 +149,11 @@
                     .star-rating .star-icon.selected {
                         color: #ffc107;
                     }
+
+                    .review-content,
+                    .review-content * {
+                        color: #fff !important;
+                    }
                 </style>
             </head>
 
@@ -204,7 +212,8 @@
                                         </a>
                                     </c:if>
                                     <c:if test="${!movie.active}">
-                                        <button class="btn btn-secondary btn-lg mt-4" disabled>Phim đã dừng chiếu</button>
+                                        <button class="btn btn-secondary btn-lg mt-4" disabled>Phim đã dừng
+                                            chiếu</button>
                                     </c:if>
                                 </div>
                             </div>
@@ -235,7 +244,7 @@
                                                 </div>
                                                 <div class="mb-3">
                                                     <textarea class="form-control bg-light text-secondary border-0"
-                                                        name="comment" rows="3"
+                                                        name="comment" id="reviewComment" rows="3"
                                                         placeholder="Hãy viết cảm nhận của bạn về bộ phim này..."></textarea>
                                                 </div>
                                                 <button type="submit" class="btn btn-warning">Đánh giá</button>
@@ -258,7 +267,8 @@
                                 <jsp:include page="/components/fragments/list-reviews.jsp" />
 
                                 <c:if test="${reviews.isEmpty()}">
-                                    <p class="text-muted" id="noReviewsMsg">Chưa có đánh giá nào cho bộ phim này. Hãy trở thành người đầu tiên!</p>
+                                    <p class="text-muted" id="noReviewsMsg">Chưa có đánh giá nào cho bộ phim này. Hãy
+                                        trở thành người đầu tiên!</p>
                                 </c:if>
                             </div>
 
@@ -267,7 +277,8 @@
                                 <button id="loadMoreBtn" class="btn-load" onclick="loadMoreReviews()">
                                     Tải thêm đánh giá
                                 </button>
-                                <p id="noMoreReviews" class="text-dark mt-2" style="display:none;">Đã tải tất cả đánh giá cho bộ phim này.</p>
+                                <p id="noMoreReviews" class="text-dark mt-2" style="display:none;">Đã tải tất cả đánh
+                                    giá cho bộ phim này.</p>
                             </div>
                         </div>
                     </div>
@@ -315,7 +326,22 @@
                         });
                     }
 
-                   
+
+                    // TinyMCE
+                    tinymce.init({
+                        selector: '#reviewComment',
+                        height: 200,
+                        menubar: false,
+                        plugins: 'emoticons lists autolink',
+                        toolbar: '',
+                        statusbar: false,
+                        setup: function (editor) {
+                            editor.on('change', function () {
+                                editor.save();
+                            });
+                        }
+                    });
+
                     // Star Rating Interaction
                     $(document).ready(function () {
                         const stars = $('.star-icon');
@@ -380,6 +406,9 @@
                     }
 
                     $('form[action="movie"]').on('submit', function () {
+                        if (tinymce.get('reviewComment')) {
+                            tinymce.triggerSave();
+                        }
                         sessionStorage.setItem('scrollPosition', window.scrollY);
                     });
                 </script>
