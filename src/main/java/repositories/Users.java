@@ -231,4 +231,43 @@ public class Users extends DBContext {
         }
         return false;
     }
+
+    // Get available branch managers (not assigned to any branch)
+    public java.util.List<User> getAvailableBranchManagers() {
+        java.util.List<User> managers = new java.util.ArrayList<>();
+        String sql = "SELECT u.* FROM users u " +
+                "INNER JOIN roles r ON u.role_id = r.role_id " +
+                "WHERE r.role_name = 'BRANCH_MANAGER' " +
+                "AND u.user_id NOT IN (SELECT manager_id FROM cinema_branches WHERE manager_id IS NOT NULL) " +
+                "AND u.status = 'ACTIVE' " +
+                "ORDER BY u.fullName ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                managers.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return managers;
+    }
+
+    // Get all branch managers (including assigned ones)
+    public java.util.List<User> getAllBranchManagers() {
+        java.util.List<User> managers = new java.util.ArrayList<>();
+        String sql = "SELECT u.* FROM users u " +
+                "INNER JOIN roles r ON u.role_id = r.role_id " +
+                "WHERE r.role_name = 'BRANCH_MANAGER' " +
+                "AND u.status = 'ACTIVE' " +
+                "ORDER BY u.fullName ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                managers.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return managers;
+    }
 }
