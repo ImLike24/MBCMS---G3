@@ -1,6 +1,6 @@
 package controllers.auth;
 
-import business.AuthService;
+import services.AuthService;
 import models.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -67,7 +67,7 @@ public class Login extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/branch-manager/dashboard");
                     break;
                 case "CINEMA_STAFF":
-                    response.sendRedirect(request.getContextPath() + "/staff/pos");
+                    response.sendRedirect(request.getContextPath() + "/staff/dashboard");
                     break;
                 case "CUSTOMER":
                 default:

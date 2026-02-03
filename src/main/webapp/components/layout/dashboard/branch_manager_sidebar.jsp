@@ -9,26 +9,30 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link text-white">
+                <a href="${pageContext.request.contextPath}/branch-manager/manage-cinema-halls"
+                    class="nav-link text-white">
                     <i class="fa fa-building me-2"></i>
-                    Manage Cinema Branches
+                    Manage Cinema Halls
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link text-white">
+                <a href="${pageContext.request.contextPath}/branch-manager/configure-seat-layout"
+                    class="nav-link text-white">
                     <i class="fa fa-th me-2"></i>
                     Configure Seat Layout
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link text-white">
+                <a href="${pageContext.request.contextPath}/branch-manager/manage-seat-type"
+                    class="nav-link text-white">
                     <i class="fa fa-wheelchair me-2"></i>
                     Manage Seat Type
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link text-white">
-                    <i class="fa fa-check-square-o me-2"></i>
+                <a href="${pageContext.request.contextPath}/branch-manager/manage-seat-status"
+                    class="nav-link text-white">
+                    <i class="fa fa-wrench me-2"></i>
                     Manage Seat Status
                 </a>
             </li>
