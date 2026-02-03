@@ -1,8 +1,6 @@
 package controllers.admin;
 
 import models.CinemaBranch;
-import models.User;
-import repositories.Users;
 import services.BranchService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -16,7 +14,6 @@ import java.util.List;
 public class Branch extends HttpServlet {
 
     private final BranchService branchService = new BranchService();
-    private final Users usersDao = new Users();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -78,48 +75,15 @@ public class Branch extends HttpServlet {
 
     private void listBranches(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        // 1. Lấy tham số tìm kiếm & lọc
-        String search = request.getParameter("search");
-        String statusStr = request.getParameter("status");
-
-        // Xử lý status (null: all, true: active, false: inactive)
-        Boolean isActive = null;
-        if (statusStr != null && !statusStr.isEmpty()) {
-            isActive = Boolean.parseBoolean(statusStr);
-        }
-
-        // 2. Xử lý phân trang
-        int page = 1;
-        try {
-            String pageStr = request.getParameter("page");
-            if (pageStr != null) page = Integer.parseInt(pageStr);
-        } catch (Exception e) { page = 1; }
-
-        int pageSize = 5;
-
-        // 3. Gọi Service
-        List<CinemaBranch> list = branchService.getBranches(search, isActive, page, pageSize);
-        int totalPages = branchService.getTotalPages(search, isActive, pageSize);
-
-        // 4. Gửi dữ liệu sang JSP
+        List<CinemaBranch> list = branchService.getAllBranches();
         request.setAttribute("branches", list);
-        request.setAttribute("currentPage", page);
-        request.setAttribute("totalPages", totalPages);
-
-        // Quan trọng: Gửi lại từ khóa để giữ trên thanh tìm kiếm
-        request.setAttribute("currentSearch", search);
-        request.setAttribute("currentStatus", statusStr);
-
-        request.getRequestDispatcher("/pages/admin/branch/list.jsp").forward(request, response);
+        // Tạo file index.jsp trong folder webapp/pages/admin/branch/
+        request.getRequestDispatcher("/pages/admin/branch/index.jsp").forward(request, response);
     }
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // Lấy danh sách manager để đổ vào dropdown
-        List<User> managers = usersDao.findUsersByRoleName("BRANCH_MANAGER");
-        request.setAttribute("managers", managers);
-
+        // Tạo file form.jsp trong folder webapp/pages/admin/branch/
         request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
     }
 
@@ -127,11 +91,6 @@ public class Branch extends HttpServlet {
             throws ServletException, IOException {
         int id = Integer.parseInt(request.getParameter("id"));
         CinemaBranch existingBranch = branchService.getBranchById(id);
-
-        // Lấy danh sách manager
-        List<User> managers = usersDao.findUsersByRoleName("BRANCH_MANAGER");
-        request.setAttribute("managers", managers);
-
         request.setAttribute("branch", existingBranch);
         request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
     }

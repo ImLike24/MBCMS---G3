@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.List;
 
 public class Users extends DBContext {
 
@@ -341,5 +342,9 @@ public class Users extends DBContext {
             e.printStackTrace();
         }
         return managers;
+    }
+
+    public List<User> findUsersByRoleName(String branch_manager) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }
