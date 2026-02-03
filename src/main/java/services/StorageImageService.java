@@ -44,16 +44,16 @@ public class StorageImageService {
         // Validate file type
         String contentType = filePart.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IOException("Invalid file type. Only image files are allowed.");
+            throw new IOException("Định dạng file không hợp lệ. Vui lòng tải lên một hình ảnh." );
         }
 
         // Validate file size (max 5MB)
         long fileSize = filePart.getSize();
         if (fileSize > 5 * 1024 * 1024) {
-            throw new IOException("File size too large. Maximum size is 5MB.");
+            throw new IOException("Kích thước file vượt quá giới hạn 5MB." );
         }
 
-        // Create temporary file
+        // giu mot phan file tam thoi de upload
         String originalFileName = filePart.getSubmittedFileName();
         String fileExtension = getFileExtension(originalFileName);
         String tempFileName = UUID.randomUUID().toString() + "." + fileExtension;
@@ -70,38 +70,34 @@ public class StorageImageService {
         }
 
         try {
-            // Upload to Cloudinary
+            // upload den cloudinary
             Map uploadResult = cloudinary.uploader().upload(tempFile, ObjectUtils.emptyMap());
             return (String) uploadResult.get("secure_url");
         } catch (Exception e) {
-            throw new IOException("Failed to upload image to Cloudinary: " + e.getMessage(), e);
+            throw new IOException("Lỗi khi tải hình ảnh lên Cloudinary: " + e.getMessage(), e);
         } finally {
-            // Clean up temporary file
+            // don dep file tam thoi
             if (tempFile.exists()) {
                 tempFile.delete();
             }
         }
     }
 
-    /**
-     * Get file extension from filename
-     */
+    //LAY FILE MO RONG
     private String getFileExtension(String fileName) {
         if (fileName == null || fileName.lastIndexOf('.') == -1) {
-            return "jpg"; // default extension
+            return "jpg"; // default
         }
         return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
     }
 
-    /**
-     * Validate image URL
-     */
+    //LAY URL HINH ANH HOP LE
     public boolean isValidImageUrl(String url) {
         if (url == null || url.trim().isEmpty()) {
             return false;
         }
 
-        // Basic URL validation
+        // Kiem tra dinh dang URL dang can ban
         try {
             new java.net.URL(url);
             return url.startsWith("http://") || url.startsWith("https://");
