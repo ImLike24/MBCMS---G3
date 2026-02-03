@@ -74,8 +74,9 @@ public class CinemaBranches extends DBContext {
                 "LEFT JOIN users u ON b.manager_id = u.user_id " +
                 "ORDER BY b.branch_id DESC";
         try (PreparedStatement st = connection.prepareStatement(sql);
-             ResultSet rs = st.executeQuery()) {
-            while (rs.next()) list.add(mapRow(rs));
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -134,7 +135,8 @@ public class CinemaBranches extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, id);
             try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return mapRow(rs);
+                if (rs.next())
+                    return mapRow(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -150,8 +152,10 @@ public class CinemaBranches extends DBContext {
             st.setString(3, b.getPhone());
             st.setString(4, b.getEmail());
 
-            if (b.getManagerId() != null) st.setInt(5, b.getManagerId());
-            else st.setNull(5, java.sql.Types.INTEGER);
+            if (b.getManagerId() != null)
+                st.setInt(5, b.getManagerId());
+            else
+                st.setNull(5, java.sql.Types.INTEGER);
 
             st.setBoolean(6, b.isActive());
             return st.executeUpdate() > 0;
@@ -169,12 +173,76 @@ public class CinemaBranches extends DBContext {
             st.setString(3, b.getPhone());
             st.setString(4, b.getEmail());
 
-            if (b.getManagerId() != null) st.setInt(5, b.getManagerId());
-            else st.setNull(5, java.sql.Types.INTEGER);
+            if (b.getManagerId() != null)
+                st.setInt(5, b.getManagerId());
+            else
+                st.setNull(5, java.sql.Types.INTEGER);
 
             st.setBoolean(6, b.isActive());
             st.setInt(7, b.getBranchId());
 
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public CinemaBranch getBranchByManagerId(int managerId) {
+        String sql = "SELECT * FROM cinema_branches WHERE manager_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, managerId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next())
+                    return mapRow(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Check if branch name exists (for duplicate validation)
+    public boolean branchNameExists(String branchName, Integer excludeBranchId) {
+        String sql = "SELECT COUNT(*) FROM cinema_branches WHERE branch_name = ? AND branch_id != ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, branchName);
+            if (excludeBranchId != null) {
+                st.setInt(2, excludeBranchId);
+            } else {
+                st.setInt(2, -1); // No exclusion
+            }
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Get all active branches
+    public List<CinemaBranch> getActiveBranches() {
+        List<CinemaBranch> list = new ArrayList<>();
+        String sql = "SELECT * FROM cinema_branches WHERE is_active = 1 ORDER BY branch_name ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // Update branch status
+    public boolean updateBranchStatus(int branchId, boolean isActive) {
+        String sql = "UPDATE cinema_branches SET is_active = ?, updated_at = SYSDATETIME() WHERE branch_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setBoolean(1, isActive);
+            st.setInt(2, branchId);
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
