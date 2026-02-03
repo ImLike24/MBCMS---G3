@@ -16,4 +16,5 @@ public class CinemaBranch {
     private boolean isActive = true;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String managerName;
 }
