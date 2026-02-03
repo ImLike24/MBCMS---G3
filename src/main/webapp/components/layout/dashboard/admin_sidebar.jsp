@@ -9,6 +9,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/admin/manage-users" class="nav-link text-white">
+                    <i class="fa fa-users me-2"></i>
+                    Manage Users
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="#" class="nav-link text-white">
                     <i class="fa fa-film me-2"></i>
                     Manage Movies

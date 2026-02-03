@@ -67,7 +67,7 @@ public class Login extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/branch-manager/dashboard");
                     break;
                 case "CINEMA_STAFF":
-                    response.sendRedirect(request.getContextPath() + "/staff/pos");
+                    response.sendRedirect(request.getContextPath() + "/staff/dashboard");
                     break;
                 case "CUSTOMER":
                 default:
