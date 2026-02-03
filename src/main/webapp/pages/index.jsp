@@ -15,7 +15,7 @@
 <body>
 
 <!-- Header Section -->
-<jsp:include page="/components/layout/Header.jsp"/>
+<jsp:include page="/components/layout/Header.jsp" />
 
 <div class="main clearfix position-relative">
     <div class="main_2 clearfix">

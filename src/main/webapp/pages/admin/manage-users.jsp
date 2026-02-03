@@ -469,8 +469,8 @@
                                                         <td>
                                                             <c:choose>
                                                                 <c:when test="${user.lastLogin != null}">
-                                                                    <fmt:formatDate value="${user.lastLogin}"
-                                                                        pattern="yyyy-MM-dd HH:mm" />
+                                                                    ${user.lastLoginFormatted}
+
                                                                 </c:when>
                                                                 <c:otherwise>
                                                                     <span class="text-muted">Never</span>

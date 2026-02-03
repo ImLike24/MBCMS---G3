@@ -1,6 +1,7 @@
 package repositories;
 
 import config.DBContext;
+import java.sql.Connection;
 import models.User;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -116,6 +117,61 @@ public class Users extends DBContext {
         }
     }
 
+    public boolean updateProfile(User u) {
+        String sql = """
+            UPDATE users 
+            SET fullName = ?, email = ?, phone = ?, birthday = ?, password = ?, updated_at = SYSDATETIME()
+            WHERE user_id = ?
+        """;
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, u.getFullName());
+            st.setString(2, u.getEmail());
+            st.setString(3, u.getPhone());
+
+            if (u.getBirthday() != null)
+                st.setTimestamp(4, Timestamp.valueOf(u.getBirthday()));
+            else
+                st.setNull(4, java.sql.Types.TIMESTAMP);
+
+            st.setString(5, u.getPassword());
+            st.setInt(6, u.getUserId());
+
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    public boolean checkPhoneExists(String phone) {
+        String sql = "SELECT 1 FROM users WHERE phone = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, phone);
+            try (ResultSet rs = st.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    public void updateAvatar(int userId, String avatarUrl) {
+        String sql = "UPDATE users SET avatar_url = ? WHERE user_id = ?";
+
+        try (Connection con = new DBContext().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, avatarUrl);
+            ps.setInt(2, userId);
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     // Admin User Management Methods
 
     public java.util.List<User> getAllUsers() {
@@ -124,7 +180,12 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql);
                 ResultSet rs = st.executeQuery()) {
             while (rs.next()) {
-                users.add(mapResultSetToUser(rs));
+                try {
+                    users.add(mapResultSetToUser(rs));
+                } catch (Exception e) {
+                    System.err.println("Error mapping user at row: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -139,7 +200,12 @@ public class Users extends DBContext {
             st.setInt(1, roleId);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in getUsersByRole: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -155,7 +221,12 @@ public class Users extends DBContext {
             st.setString(1, status);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in getUsersByStatus: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -174,7 +245,12 @@ public class Users extends DBContext {
             st.setString(3, searchPattern);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in searchUsers: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -215,10 +291,6 @@ public class Users extends DBContext {
 
     public boolean checkEmailExists(String email) {
         return findByEmail(email) != null;
-    }
-
-    public boolean checkPhoneExists(String phone) {
-        return findByPhone(phone) != null;
     }
 
     public boolean deleteUser(int userId) {

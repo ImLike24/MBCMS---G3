@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Data
 @NoArgsConstructor
@@ -23,4 +24,11 @@ public class User {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLogin;
+
+    public String getLastLoginFormatted() {
+        if (lastLogin == null) {
+            return null;
+        }
+        return lastLogin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+    }
 }

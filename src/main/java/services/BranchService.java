@@ -7,8 +7,14 @@ import java.util.List;
 public class BranchService {
     private final CinemaBranches branchDao = new CinemaBranches();
 
-    public List<CinemaBranch> getAllBranches() {
-        return branchDao.findAll();
+    public List<CinemaBranch> getBranches(String keyword, Boolean isActive, int page, int pageSize) {
+        return branchDao.findAll(keyword, isActive, page, pageSize);
+    }
+
+    // Tính tổng số trang
+    public int getTotalPages(String keyword, Boolean isActive, int pageSize) {
+        int totalRecords = branchDao.countAll(keyword, isActive);
+        return (int) Math.ceil((double) totalRecords / pageSize);
     }
 
     public CinemaBranch getBranchById(int id) {
