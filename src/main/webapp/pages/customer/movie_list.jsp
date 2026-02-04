@@ -1,6 +1,13 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ page import="java.time.LocalDateTime" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
+<%@ page import="models.Movie" %>
+
+<%
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+ %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,7 +32,18 @@
                         <p class="card-text"><small class="text-muted">Thể loại: ${movie.genre}</small></p>
                         <p class="card-text"><small class="text-muted">Đạo diễn: ${movie.director}</small></p>
                         <p class="card-text"><small class="text-muted">Thời lượng: ${movie.duration} phút</small></p>
-                        <p class="card-text"><small class="text-muted">Ngày phát hành: <fmt:formatDate value="${movie.releaseDate}" pattern="dd/MM/yyyy"/></small></p>
+                        <p class="card-text">
+    <small class="text-muted">
+        Ngày phát hành:
+        <%
+            Movie m = (Movie) pageContext.getAttribute("movie");
+            if (m != null && m.getReleaseDate() != null) {
+                out.print(m.getReleaseDate().format(formatter));
+            }
+        %>
+    </small>
+</p>
+
                         <div class="mt-auto">
                             <a href="${pageContext.request.contextPath}/pages/movie_detail.jsp?movieId=${movie.movieId}" class="btn btn-primary">Xem Chi Tiết</a>
                             <a href="${pageContext.request.contextPath}/customer/online-booking-showtimes?movieId=${movie.movieId}" class="btn btn-success ms-2">Đặt Vé</a>
