@@ -9,11 +9,11 @@ public class RoomService {
     private final ScreeningRooms roomDao = new ScreeningRooms();
 
     public List<ScreeningRoom> getRoomsByBranch(int branchId) {
-        return roomDao.getAllRoomsByBranch(branchId);
+        return roomDao.findByBranchId(branchId);
     }
 
     public ScreeningRoom getRoomById(int id) {
-        return roomDao.getRoomById(id);
+        return roomDao.findById(id);
     }
 
     public void createRoom(ScreeningRoom room) throws Exception {
@@ -21,23 +21,17 @@ public class RoomService {
             throw new Exception("Tên phòng không được để trống");
         }
         // Có thể thêm validate status phải thuộc (ACTIVE, CLOSED, MAINTENANCE) nếu cần
-        if (!roomDao.insertRoom(room)) {
-            throw new Exception("Failed to create room");
-        }
+        roomDao.insert(room);
     }
 
     public void updateRoom(ScreeningRoom room) throws Exception {
-        if (roomDao.getRoomById(room.getRoomId()) == null) {
+        if (roomDao.findById(room.getRoomId()) == null) {
             throw new Exception("Phòng chiếu không tồn tại");
         }
-        if (!roomDao.updateRoom(room)) {
-            throw new Exception("Failed to update room");
-        }
+        roomDao.update(room);
     }
 
     public void deleteRoom(int id) {
-        if (!roomDao.deleteRoom(id)) {
-            // Maybe throw exception, but original doesn't
-        }
+        roomDao.delete(id);
     }
 }
