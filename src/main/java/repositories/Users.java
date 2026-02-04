@@ -1,11 +1,13 @@
 package repositories;
 
 import config.DBContext;
+import java.sql.Connection;
 import models.User;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.List;
 
 public class Users extends DBContext {
 
@@ -112,6 +114,61 @@ public class Users extends DBContext {
             st.setInt(1, userId);
             st.executeUpdate();
         } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean updateProfile(User u) {
+        String sql = """
+            UPDATE users 
+            SET fullName = ?, email = ?, phone = ?, birthday = ?, password = ?, updated_at = SYSDATETIME()
+            WHERE user_id = ?
+        """;
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, u.getFullName());
+            st.setString(2, u.getEmail());
+            st.setString(3, u.getPhone());
+
+            if (u.getBirthday() != null)
+                st.setTimestamp(4, Timestamp.valueOf(u.getBirthday()));
+            else
+                st.setNull(4, java.sql.Types.TIMESTAMP);
+
+            st.setString(5, u.getPassword());
+            st.setInt(6, u.getUserId());
+
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    public boolean checkPhoneExists(String phone) {
+        String sql = "SELECT 1 FROM users WHERE phone = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, phone);
+            try (ResultSet rs = st.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    public void updateAvatar(int userId, String avatarUrl) {
+        String sql = "UPDATE users SET avatar_url = ? WHERE user_id = ?";
+
+        try (Connection con = new DBContext().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, avatarUrl);
+            ps.setInt(2, userId);
+            ps.executeUpdate();
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -237,10 +294,6 @@ public class Users extends DBContext {
         return findByEmail(email) != null;
     }
 
-    public boolean checkPhoneExists(String phone) {
-        return findByPhone(phone) != null;
-    }
-
     public boolean deleteUser(int userId) {
         String sql = "DELETE FROM users WHERE user_id = ?";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
@@ -250,5 +303,48 @@ public class Users extends DBContext {
             e.printStackTrace();
         }
         return false;
+    }
+
+    // Get available branch managers (not assigned to any branch)
+    public java.util.List<User> getAvailableBranchManagers() {
+        java.util.List<User> managers = new java.util.ArrayList<>();
+        String sql = "SELECT u.* FROM users u " +
+                "INNER JOIN roles r ON u.role_id = r.role_id " +
+                "WHERE r.role_name = 'BRANCH_MANAGER' " +
+                "AND u.user_id NOT IN (SELECT manager_id FROM cinema_branches WHERE manager_id IS NOT NULL) " +
+                "AND u.status = 'ACTIVE' " +
+                "ORDER BY u.fullName ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                managers.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return managers;
+    }
+
+    // Get all branch managers (including assigned ones)
+    public java.util.List<User> getAllBranchManagers() {
+        java.util.List<User> managers = new java.util.ArrayList<>();
+        String sql = "SELECT u.* FROM users u " +
+                "INNER JOIN roles r ON u.role_id = r.role_id " +
+                "WHERE r.role_name = 'BRANCH_MANAGER' " +
+                "AND u.status = 'ACTIVE' " +
+                "ORDER BY u.fullName ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                managers.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return managers;
+    }
+
+    public List<User> findUsersByRoleName(String branch_manager) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }

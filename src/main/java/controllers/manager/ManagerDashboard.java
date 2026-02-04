@@ -1,4 +1,4 @@
-package controllers.branchmanager;
+package controllers.manager;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -7,8 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import models.User;
 import services.AuthService;
+import models.User;
 
 @WebServlet(name = "ManagerDashboard", urlPatterns = { "/branch-manager/dashboard" })
 public class ManagerDashboard extends HttpServlet {

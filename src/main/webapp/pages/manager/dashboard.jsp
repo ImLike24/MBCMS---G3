@@ -17,7 +17,7 @@
         <jsp:include page="/components/layout/dashboard/dashboard_header.jsp" />
 
         <!-- Sidebar -->
-        <jsp:include page="/components/layout/dashboard/branch_manager_sidebar.jsp" />
+        <jsp:include page="/components/layout/dashboard/manager_sidebar.jsp" />
 
         <!-- Main Content -->
         <main>

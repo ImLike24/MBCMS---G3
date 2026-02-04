@@ -18,7 +18,7 @@
 <jsp:include page="/components/layout/Sidebar.jsp"/>
 
 <!-- Header Section -->
-<jsp:include page="/components/layout/Header.jsp"/>
+<jsp:include page="/components/layout/Header.jsp" />
 
 <div class="main clearfix position-relative" style="margin-top: 70px;">
     <div class="main_2 clearfix">
