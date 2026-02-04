@@ -13,7 +13,7 @@ public class RoomService {
     }
 
     public ScreeningRoom getRoomById(int id) {
-        return roomDao.findById(id);
+        return roomDao.getRoomById(id);
     }
 
     public void createRoom(ScreeningRoom room) throws Exception {
@@ -21,17 +21,17 @@ public class RoomService {
             throw new Exception("Tên phòng không được để trống");
         }
         // Có thể thêm validate status phải thuộc (ACTIVE, CLOSED, MAINTENANCE) nếu cần
-        roomDao.insert(room);
+        roomDao.insertRoom(room);
     }
 
     public void updateRoom(ScreeningRoom room) throws Exception {
-        if (roomDao.findById(room.getRoomId()) == null) {
+        if (roomDao.getRoomById(room.getRoomId()) == null) {
             throw new Exception("Phòng chiếu không tồn tại");
         }
-        roomDao.update(room);
+        roomDao.updateRoom(room);
     }
 
     public void deleteRoom(int id) {
-        roomDao.delete(id);
+        roomDao.deleteRoom(id);
     }
 }

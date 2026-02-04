@@ -148,4 +148,19 @@ public class ScreeningRooms extends DBContext {
         }
         return 0;
     }
+    
+    // Lấy tất cả phòng của 1 chi nhánh cụ thể
+    public List<ScreeningRoom> findByBranchId(int branchId) {
+        List<ScreeningRoom> list = new ArrayList<>();
+        String sql = "SELECT * FROM screening_rooms WHERE branch_id = ? ORDER BY room_name ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, branchId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) list.add(mapResultSetToScreeningRoom(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }

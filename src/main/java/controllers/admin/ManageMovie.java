@@ -51,7 +51,7 @@ public class ManageMovie extends HttpServlet {
             m.setDuration(Integer.parseInt(request.getParameter("duration")));
             m.setRating(Double.parseDouble(request.getParameter("rating")));
             m.setActive(true);
-            movieRepo.insertMovie(m);
+//            movieRepo.insertMovie(m);
 
         } else if ("update".equals(action)) {
             Movie m = new Movie();
@@ -61,11 +61,11 @@ public class ManageMovie extends HttpServlet {
             m.setDuration(Integer.parseInt(request.getParameter("duration")));
             m.setRating(Double.parseDouble(request.getParameter("rating")));
             m.setActive(Boolean.parseBoolean(request.getParameter("active")));
-            movieRepo.updateMovie(m);
+//            movieRepo.updateMovie(m);
 
         } else if ("delete".equals(action)) {
             int id = Integer.parseInt(request.getParameter("id"));
-            movieRepo.deleteMovie(id);
+//            movieRepo.deleteMovie(id);
         }
 
         response.sendRedirect(request.getContextPath() + "/admin/manage-movie/manage-movies");

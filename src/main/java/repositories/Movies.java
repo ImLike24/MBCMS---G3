@@ -12,9 +12,25 @@ import java.util.List;
 
 public class Movies extends DBContext {
 
-    /**
-     * Get all active movies
-     */
+    // Get all movies
+    public List<Movie> getAllMovies() {
+        List<Movie> movies = new ArrayList<>();
+        String sql = "SELECT * FROM movies ORDER BY release_date DESC";  // sắp xếp mới nhất trước
+
+        try (PreparedStatement st = connection.prepareStatement(sql);
+             ResultSet rs = st.executeQuery()) {
+
+            while (rs.next()) {
+                movies.add(mapResultSetToMovie(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return movies;
+    }
+
+    // Get all active movies
     public List<Movie> getAllActiveMovies() {
         List<Movie> movies = new ArrayList<>();
         String sql = "SELECT * FROM movies WHERE is_active = 1 ORDER BY release_date DESC";
@@ -31,9 +47,7 @@ public class Movies extends DBContext {
         return movies;
     }
 
-    /**
-     * Get movies showing today (with showtimes)
-     */
+    // Get movies showing today (with showtimes)
     public List<Movie> getMoviesShowingToday() {
         List<Movie> movies = new ArrayList<>();
         String sql = "SELECT DISTINCT m.* FROM movies m " +
