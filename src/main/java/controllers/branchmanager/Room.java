@@ -1,4 +1,4 @@
-package controllers.manager;
+package controllers.branchmanager;
 
 import models.CinemaBranch;
 import models.ScreeningRoom;

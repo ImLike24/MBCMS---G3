@@ -1,4 +1,4 @@
-package business;
+package services;
 
 import models.User;
 import repositories.Users;
