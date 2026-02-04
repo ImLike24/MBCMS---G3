@@ -12,10 +12,17 @@
                 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/font-awesome.min.css">
                 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/global.css">
                 <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+
                     body {
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        background: #0c121d;
                         padding-top: 56px;
                         overflow-x: hidden;
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                         min-height: 100vh;
                     }
 
@@ -45,10 +52,11 @@
 
                     /* Page Header */
                     .page-header {
-                        background: white;
+                        background: #1a1a1a;
+                        border: 1px solid #262625;
                         padding: 25px 30px;
                         border-radius: 15px;
-                        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                         margin-bottom: 30px;
                         display: flex;
                         justify-content: space-between;
@@ -57,37 +65,51 @@
 
                     .page-header h2 {
                         margin: 0;
-                        color: #2d3748;
-                        font-weight: 700;
+                        color: white;
+                        font-weight: 600;
                         font-size: 28px;
                     }
 
                     .page-header h2 i {
-                        color: #667eea;
+                        color: #d96c2c;
                         margin-right: 12px;
                     }
 
                     .btn-create-user {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        background: #d96c2c;
                         border: none;
+                        color: white;
                         padding: 12px 28px;
                         border-radius: 10px;
                         font-weight: 600;
                         transition: all 0.3s;
-                        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
                     }
 
                     .btn-create-user:hover {
+                        background: #fff;
+                        color: #000;
                         transform: translateY(-2px);
-                        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+                        box-shadow: 0 4px 12px rgba(217, 108, 44, 0.4);
                     }
 
                     /* Alert Styling */
                     .alert {
                         border-radius: 12px;
-                        border: none;
-                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                        border: 1px solid #262625;
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                         animation: slideDown 0.3s ease-out;
+                    }
+
+                    .alert-success {
+                        background: rgba(72, 187, 120, 0.2);
+                        color: #48bb78;
+                        border-color: #48bb78;
+                    }
+
+                    .alert-danger {
+                        background: rgba(245, 101, 101, 0.2);
+                        color: #f56565;
+                        border-color: #f56565;
                     }
 
                     @keyframes slideDown {
@@ -104,37 +126,57 @@
 
                     /* Filter Section */
                     .filter-section {
-                        background: white;
+                        background: #1a1a1a;
+                        border: 1px solid #262625;
                         padding: 25px;
                         border-radius: 15px;
                         margin-bottom: 25px;
-                        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                     }
 
                     .filter-section .form-label {
                         font-weight: 600;
-                        color: #4a5568;
+                        color: #ccc;
                         margin-bottom: 8px;
                         font-size: 14px;
+                    }
+
+                    .filter-section .form-label i {
+                        color: #d96c2c;
                     }
 
                     .filter-section .form-select,
                     .filter-section .form-control {
                         border-radius: 10px;
-                        border: 2px solid #e2e8f0;
+                        border: 2px solid #262625;
+                        background: #0c121d;
+                        color: white;
                         padding: 10px 15px;
                         transition: all 0.3s;
                     }
 
                     .filter-section .form-select:focus,
                     .filter-section .form-control:focus {
-                        border-color: #667eea;
-                        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                        outline: none;
+                        border-color: #d96c2c;
+                        box-shadow: 0 0 0 3px rgba(217, 108, 44, 0.2);
+                        background: #0c121d;
+                        color: white;
+                    }
+
+                    .filter-section .form-control::placeholder {
+                        color: #666;
+                    }
+
+                    .filter-section .form-select option {
+                        background: #1a1a1a;
+                        color: white;
                     }
 
                     .btn-filter {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        background: #d96c2c;
                         border: none;
+                        color: white;
                         padding: 10px 0;
                         border-radius: 10px;
                         font-weight: 600;
@@ -142,16 +184,19 @@
                     }
 
                     .btn-filter:hover {
+                        background: #fff;
+                        color: #000;
                         transform: translateY(-2px);
-                        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                        box-shadow: 0 4px 12px rgba(217, 108, 44, 0.4);
                     }
 
                     /* Users Table */
                     .users-table-container {
-                        background: white;
+                        background: #1a1a1a;
+                        border: 1px solid #262625;
                         border-radius: 15px;
                         overflow: hidden;
-                        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                     }
 
                     .table {
@@ -159,7 +204,7 @@
                     }
 
                     .table thead th {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        background: #d96c2c;
                         color: white;
                         border: none;
                         font-weight: 600;
@@ -171,20 +216,26 @@
 
                     .table tbody tr {
                         transition: all 0.3s;
-                        border-bottom: 1px solid #f7fafc;
+                        border-bottom: 1px solid #262625;
+                        background: #1a1a1a;
                     }
 
                     .table tbody tr:hover {
-                        background-color: #f7fafc;
-                        transform: scale(1.01);
-                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+                        background-color: #262625;
+                        transform: scale(1.005);
+                        box-shadow: 0 2px 8px rgba(217, 108, 44, 0.2);
                     }
 
                     .table tbody td {
                         padding: 18px 15px;
                         vertical-align: middle;
-                        color: #4a5568;
+                        color: #ccc;
                         font-size: 14px;
+                        border-color: #262625;
+                    }
+
+                    .table tbody td strong {
+                        color: white;
                     }
 
                     /* Status Badges */
@@ -199,32 +250,32 @@
                     }
 
                     .status-active {
-                        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-                        color: white;
-                        box-shadow: 0 2px 10px rgba(72, 187, 120, 0.3);
+                        background: rgba(72, 187, 120, 0.2);
+                        color: #48bb78;
+                        border: 1px solid #48bb78;
                     }
 
                     .status-locked {
-                        background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-                        color: white;
-                        box-shadow: 0 2px 10px rgba(245, 101, 101, 0.3);
+                        background: rgba(245, 101, 101, 0.2);
+                        color: #f56565;
+                        border: 1px solid #f56565;
                     }
 
                     .status-inactive {
-                        background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
-                        color: white;
-                        box-shadow: 0 2px 10px rgba(160, 174, 192, 0.3);
+                        background: rgba(160, 174, 192, 0.2);
+                        color: #a0aec0;
+                        border: 1px solid #a0aec0;
                     }
 
                     /* Role Badge */
                     .role-badge {
-                        background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-                        color: white;
+                        background: rgba(217, 108, 44, 0.2);
+                        color: #d96c2c;
+                        border: 1px solid #d96c2c;
                         padding: 6px 14px;
                         border-radius: 20px;
                         font-size: 12px;
                         font-weight: 600;
-                        box-shadow: 0 2px 10px rgba(66, 153, 225, 0.3);
                     }
 
                     /* Action Buttons */
@@ -240,47 +291,68 @@
 
                     .action-btn:hover {
                         transform: translateY(-2px);
-                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
                     }
 
                     .btn-warning {
-                        background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+                        background: #ed8936;
                         border: none;
+                        color: white;
+                    }
+
+                    .btn-warning:hover {
+                        background: #dd6b20;
                     }
 
                     .btn-success {
-                        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+                        background: #48bb78;
                         border: none;
+                        color: white;
+                    }
+
+                    .btn-success:hover {
+                        background: #38a169;
                     }
 
                     .btn-danger {
-                        background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+                        background: #f56565;
                         border: none;
+                        color: white;
+                    }
+
+                    .btn-danger:hover {
+                        background: #e53e3e;
                     }
 
                     .btn-dark {
-                        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+                        background: #2d3748;
                         border: none;
+                        color: white;
+                    }
+
+                    .btn-dark:hover {
+                        background: #1a202c;
                     }
 
                     /* User Count */
                     .user-count {
-                        background: white;
+                        background: #1a1a1a;
+                        border: 1px solid #262625;
                         padding: 15px 25px;
                         border-radius: 12px;
                         margin-top: 20px;
-                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-                        color: #4a5568;
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+                        color: #ccc;
                         font-size: 14px;
                     }
 
                     .user-count i {
-                        color: #667eea;
+                        color: #d96c2c;
                         margin-right: 8px;
                     }
 
                     .user-count strong {
-                        color: #2d3748;
+                        color: white;
                         font-size: 18px;
                         font-weight: 700;
                     }
@@ -289,13 +361,14 @@
                     .empty-state {
                         padding: 60px 20px;
                         text-align: center;
-                        color: #a0aec0;
+                        color: #666;
                     }
 
                     .empty-state i {
                         font-size: 64px;
                         margin-bottom: 20px;
                         opacity: 0.5;
+                        color: #d96c2c;
                     }
 
                     /* Responsive */

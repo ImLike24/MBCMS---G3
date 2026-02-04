@@ -11,10 +11,17 @@
             <link rel="stylesheet" href="${pageContext.request.contextPath}/css/font-awesome.min.css">
             <link rel="stylesheet" href="${pageContext.request.contextPath}/css/global.css">
             <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+
                 body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background: #0c121d;
                     padding-top: 56px;
                     overflow-x: hidden;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     min-height: 100vh;
                 }
 
@@ -44,10 +51,11 @@
 
                 /* Page Header */
                 .page-header {
-                    background: white;
+                    background: #1a1a1a;
+                    border: 1px solid #262625;
                     padding: 25px 30px;
                     border-radius: 15px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                     margin-bottom: 30px;
                     display: flex;
                     justify-content: space-between;
@@ -56,39 +64,45 @@
 
                 .page-header h2 {
                     margin: 0;
-                    color: #2d3748;
-                    font-weight: 700;
+                    color: white;
+                    font-weight: 600;
                     font-size: 28px;
                 }
 
                 .page-header h2 i {
-                    color: #667eea;
+                    color: #d96c2c;
                     margin-right: 12px;
                 }
 
                 .btn-back {
-                    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
-                    border: none;
+                    background: transparent;
+                    border: 2px solid #262625;
+                    color: #ccc;
                     padding: 12px 28px;
                     border-radius: 10px;
                     font-weight: 600;
                     transition: all 0.3s;
-                    box-shadow: 0 4px 15px rgba(160, 174, 192, 0.4);
-                    color: white;
                 }
 
                 .btn-back:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(160, 174, 192, 0.6);
+                    background: #d96c2c;
+                    border-color: #d96c2c;
                     color: white;
+                    transform: translateY(-2px);
                 }
 
                 /* Alert Styling */
                 .alert {
                     border-radius: 12px;
-                    border: none;
-                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                    border: 1px solid #262625;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                     animation: slideDown 0.3s ease-out;
+                }
+
+                .alert-danger {
+                    background: rgba(245, 101, 101, 0.2);
+                    color: #f56565;
+                    border-color: #f56565;
                 }
 
                 @keyframes slideDown {
@@ -105,23 +119,24 @@
 
                 /* Form Container */
                 .form-container {
-                    background: white;
+                    background: #1a1a1a;
+                    border: 1px solid #262625;
                     padding: 35px;
                     border-radius: 15px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                     max-width: 900px;
                     margin: 0 auto;
                 }
 
                 .form-label {
                     font-weight: 600;
-                    color: #4a5568;
+                    color: #ccc;
                     margin-bottom: 8px;
                     font-size: 14px;
                 }
 
                 .form-label i {
-                    color: #667eea;
+                    color: #d96c2c;
                     margin-right: 6px;
                 }
 
@@ -134,7 +149,9 @@
                 .form-control,
                 .form-select {
                     border-radius: 10px;
-                    border: 2px solid #e2e8f0;
+                    border: 2px solid #262625;
+                    background: #0c121d;
+                    color: white;
                     padding: 12px 16px;
                     transition: all 0.3s;
                     font-size: 14px;
@@ -142,25 +159,44 @@
 
                 .form-control:focus,
                 .form-select:focus {
-                    border-color: #667eea;
-                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                    outline: none;
+                    border-color: #d96c2c;
+                    box-shadow: 0 0 0 3px rgba(217, 108, 44, 0.2);
+                    background: #0c121d;
+                    color: white;
+                }
+
+                .form-control::placeholder {
+                    color: #666;
+                }
+
+                .form-select option {
+                    background: #1a1a1a;
+                    color: white;
                 }
 
                 .form-text {
-                    color: #a0aec0;
+                    color: #999;
                     font-size: 12px;
                     margin-top: 6px;
                 }
 
+                /* Date input calendar icon */
+                .form-control[type="date"]::-webkit-calendar-picker-indicator {
+                    filter: invert(1);
+                    opacity: 0.9;
+                    cursor: pointer;
+                }
+
                 /* Role Information Alert */
                 .alert-info {
-                    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-                    color: white;
-                    border: none;
+                    background: rgba(217, 108, 44, 0.2);
+                    color: #d96c2c;
+                    border: 1px solid #d96c2c;
                 }
 
                 .alert-info h6 {
-                    color: white;
+                    color: #d96c2c;
                     font-weight: 700;
                     margin-bottom: 15px;
                 }
@@ -172,10 +208,11 @@
                 .alert-info li {
                     margin-bottom: 8px;
                     line-height: 1.6;
+                    color: #ccc;
                 }
 
                 .alert-info strong {
-                    color: #fff;
+                    color: #d96c2c;
                     font-weight: 700;
                 }
 
@@ -186,37 +223,40 @@
                     justify-content: flex-end;
                     margin-top: 30px;
                     padding-top: 25px;
-                    border-top: 2px solid #f7fafc;
+                    border-top: 2px solid #262625;
                 }
 
                 .btn-cancel {
-                    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
-                    border: none;
+                    background: transparent;
+                    border: 2px solid #262625;
+                    color: #ccc;
                     padding: 12px 30px;
                     border-radius: 10px;
                     font-weight: 600;
                     transition: all 0.3s;
-                    box-shadow: 0 4px 15px rgba(160, 174, 192, 0.3);
                 }
 
                 .btn-cancel:hover {
+                    border-color: #d96c2c;
+                    color: #d96c2c;
                     transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(160, 174, 192, 0.5);
                 }
 
                 .btn-create {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: #d96c2c;
                     border: none;
+                    color: white;
                     padding: 12px 30px;
                     border-radius: 10px;
                     font-weight: 600;
                     transition: all 0.3s;
-                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
                 }
 
                 .btn-create:hover {
+                    background: #fff;
+                    color: #000;
                     transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+                    box-shadow: 0 4px 12px rgba(217, 108, 44, 0.4);
                 }
 
                 /* Form Validation */
