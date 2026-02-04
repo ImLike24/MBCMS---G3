@@ -15,13 +15,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/admin/create-user" class="nav-link text-white">
-                    <i class="fa fa-user-plus me-2"></i>
-                    Create User
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/admin/manage-movie/manage-movies" class="nav-link text-white">
+                <a href="#" class="nav-link text-white">
                     <i class="fa fa-film me-2"></i>
                     Manage Movies
                 </a>
@@ -33,7 +27,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link text-white">
+                <a href="${pageContext.request.contextPath}/admin/manage-cinema-branches" class="nav-link text-white">
                     <i class="fa fa-building me-2"></i>
                     Manage Cinema Branches
                 </a>

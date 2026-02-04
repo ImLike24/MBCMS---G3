@@ -16,25 +16,22 @@
                     rel="stylesheet">
                 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
                 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                <script
+                    src="https://cdn.tiny.cloud/1/3r6p3w9fdtbe83dz1ri0eh608u5jwrt1fm3jsdl05bwfvvxe/tinymce/6/tinymce.min.js"
+                    referrerpolicy="origin"></script>
 
                 <style>
-                    body {
-                        background-color: #0c121d;
-                        color: #fff;
-                    }
-
                     .movie-detail-container {
                         padding-top: 120px;
                         padding-bottom: 60px;
                         min-height: 100vh;
-                        background: linear-gradient(180deg, rgba(12, 18, 29, 0.8) 0%, rgba(12, 18, 29, 1) 100%),
-                        url('${movie.posterUrl}') no-repeat center center fixed;
+                        background: #fff;
                         background-size: cover;
                     }
 
                     .movie-card {
-                        background: rgba(0, 0, 0, 0.6);
-                        backdrop-filter: blur(10px);
+                        background: #212529;
                         border: 1px solid rgba(255, 255, 255, 0.1);
                         border-radius: 15px;
                         padding: 30px;
@@ -121,13 +118,49 @@
                         color: #d96c2c;
                         box-shadow: 0 0 15px rgba(217, 108, 44, 0.5);
                     }
+
+                    .btn-load {
+                        background-color: #fff;
+                        color: #212529;
+                        border: 1px solid #212529;
+                        border-radius: 10px;
+                        padding: 5px 10px;
+                        transition: all 0.3s ease;
+                    }
+
+                    .btn-load:hover {
+                        background-color: #212529;
+                        color: #fff
+                    }
+
+                    .star-rating .star-icon {
+                        font-size: 1rem;
+                        cursor: pointer;
+                        margin-right: 5px;
+                        color: #fff;
+                        -webkit-text-stroke: 1px #ffc107;
+                        transition: all 0.2s ease;
+                    }
+
+                    .star-rating .star-icon.hovered {
+                        color: #ffc107;
+                    }
+
+                    .star-rating .star-icon.selected {
+                        color: #ffc107;
+                    }
+
+                    .review-content,
+                    .review-content * {
+                        color: #fff !important;
+                    }
                 </style>
             </head>
 
             <body>
 
-                <!-- Header Section -->
-                <jsp:include page="/components/layout/header.jsp" />
+                <!-- Header -->
+                <jsp:include page="/components/layout/Header.jsp" />
 
                 <div class="movie-detail-container">
                     <div class="container">
@@ -159,36 +192,228 @@
 
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <h4 class="section-title">Director</h4>
-                                            <p>${movie.director}</p>
+                                            <h4 class="section-title">Đạo diễn</h4>
+                                            <p class="text-light">${movie.director}</p>
                                         </div>
                                         <div class="col-md-6">
-                                            <h4 class="section-title">Genre</h4>
-                                            <p>${movie.genre}</p>
+                                            <h4 class="section-title">Thể loại</h4>
+                                            <p class="text-light">${movie.genre}</p>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <h4 class="section-title">Cast</h4>
-                                        <p>${movie.cast}</p>
+                                        <h4 class="section-title">Diễn Viên</h4>
+                                        <p class="text-light">${movie.cast}</p>
                                     </div>
 
                                     <c:if test="${movie.active}">
                                         <a href="${pageContext.request.contextPath}/booking?movieId=${movie.movieId}"
-                                            class="btn-book">
-                                            Book Now <i class="fa fa-ticket ms-2"></i>
+                                            class="btn-book"> Đặt vé ngay <i class="fa fa-ticket ms-2"></i>
                                         </a>
                                     </c:if>
                                     <c:if test="${!movie.active}">
-                                        <button class="btn btn-secondary btn-lg mt-4" disabled>Not Available</button>
+                                        <button class="btn btn-secondary btn-lg mt-4" disabled>Phim đã dừng
+                                            chiếu</button>
                                     </c:if>
                                 </div>
                             </div>
                         </div>
+                        <!-- Review Section -->
+                        <div class="row mt-5">
+                            <div class="col-12">
+                                <h3 class="section-title">Đánh giá phim</h3>
+                            </div>
+
+                            <!-- Review Form  -->
+                            <c:if test="${sessionScope.user != null}">
+                                <div class="col-12 mb-4">
+                                    <div class="card bg-dark border-secondary">
+                                        <div class="card-body">
+                                            <h5 class="card-title text-warning">Viết đánh giá</h5>
+                                            <form action="movie" method="post">
+                                                <input type="hidden" name="movieId" value="${movie.movieId}">
+                                                <div>
+                                                    <div class="star-rating mb-2">
+                                                        <i class="fa fa-star star-icon" data-value="1"></i>
+                                                        <i class="fa fa-star star-icon" data-value="2"></i>
+                                                        <i class="fa fa-star star-icon" data-value="3"></i>
+                                                        <i class="fa fa-star star-icon" data-value="4"></i>
+                                                        <i class="fa fa-star star-icon" data-value="5"></i>
+                                                    </div>
+                                                    <input type="hidden" name="rating" id="ratingInput" value="0">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <textarea class="form-control bg-light text-secondary border-0"
+                                                        name="comment" id="reviewComment" rows="3"
+                                                        placeholder="Hãy viết cảm nhận của bạn về bộ phim này..."></textarea>
+                                                </div>
+                                                <button type="submit" class="btn btn-warning">Đánh giá</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </c:if>
+                            <c:if test="${sessionScope.user == null}">
+                                <div class="col-12 mb-4">
+                                    <div class="alert alert-dark border-secondary">
+                                        Please <a href="${pageContext.request.contextPath}/login"
+                                            class="text-warning">login</a> to write a review.
+                                    </div>
+                                </div>
+                            </c:if>
+
+                            <!-- Reviews List -->
+                            <div class="col-12" id="reviewsList">
+                                <jsp:include page="/components/fragments/list-reviews.jsp" />
+
+                                <c:if test="${reviews.isEmpty()}">
+                                    <p class="text-muted" id="noReviewsMsg">Chưa có đánh giá nào cho bộ phim này. Hãy
+                                        trở thành người đầu tiên!</p>
+                                </c:if>
+                            </div>
+
+                            <!-- Load More Button -->
+                            <div class="col-12 text-center mt-3">
+                                <button id="loadMoreBtn" class="btn-load" onclick="loadMoreReviews()">
+                                    Tải thêm đánh giá
+                                </button>
+                                <p id="noMoreReviews" class="text-dark mt-2" style="display:none;">Đã tải tất cả đánh
+                                    giá cho bộ phim này.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                </div>
 
-                <!-- Footer could be included here if available -->
+                <script>
+                    var currentOffset = ${ reviews != null ? reviews.size() : 0};
+                    var limit = 3;
+                    var movieId = ${ movie.movieId };
+
+                    function loadMoreReviews() {
+                        $('#loadMoreBtn').prop('disabled', true).text('Loading...');
+
+                        $.ajax({
+                            url: '${pageContext.request.contextPath}/load-reviews',
+                            type: 'GET',
+                            data: {
+                                movieId: movieId,
+                                offset: currentOffset,
+                                limit: limit
+                            },
+                            success: function (response) {
+                                var trimmedResponse = response.trim();
+                                if (trimmedResponse.length > 0) {
+                                    $('#reviewsList').append(response);
+
+                                    var newItemsCount = (response.match(/class="card/g) || []).length;
+                                    currentOffset += newItemsCount;
+
+                                    if (newItemsCount < limit) {
+                                        $('#loadMoreBtn').hide();
+                                        $('#noMoreReviews').show();
+                                    } else {
+                                        $('#loadMoreBtn').prop('disabled', false).text('Load More Reviews');
+                                    }
+                                } else {
+                                    $('#loadMoreBtn').hide();
+                                    $('#noMoreReviews').show();
+                                }
+                            },
+                            error: function () {
+                                $('#loadMoreBtn').prop('disabled', false).text('Load More Reviews');
+                            }
+                        });
+                    }
+
+
+                    // TinyMCE
+                    tinymce.init({
+                        selector: '#reviewComment',
+                        height: 200,
+                        menubar: false,
+                        plugins: 'emoticons lists autolink',
+                        toolbar: '',
+                        statusbar: false,
+                        setup: function (editor) {
+                            editor.on('change', function () {
+                                editor.save();
+                            });
+                        }
+                    });
+
+                    // Star Rating Interaction
+                    $(document).ready(function () {
+                        const stars = $('.star-icon');
+                        const ratingInput = $('#ratingInput');
+
+                        // Hover effect
+                        stars.on('mouseenter', function () {
+                            const value = $(this).data('value');
+                            highlightStars(value, 'hovered');
+                        });
+
+                        stars.on('mouseleave', function () {
+                            stars.removeClass('hovered');
+                        });
+
+                        // Click to select
+                        stars.on('click', function () {
+                            const value = $(this).data('value');
+                            ratingInput.val(value);
+                            stars.removeClass('selected');
+                            highlightStars(value, 'selected');
+                        });
+
+                        function highlightStars(count, className) {
+                            stars.each(function () {
+                                if ($(this).data('value') <= count) {
+                                    $(this).addClass(className);
+                                }
+                            });
+                        }
+                    });
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const message = urlParams.get('message');
+
+                    if (message) {
+                        const savedScroll = sessionStorage.getItem('scrollPosition');
+                        if (savedScroll) {
+                            window.scrollTo(0, parseInt(savedScroll));
+                            sessionStorage.removeItem('scrollPosition');
+                        }
+                    }
+
+                    if (message === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công!',
+                            text: 'Đánh giá của bạn đã được đăng!',
+                            confirmButtonColor: '#d96c2c'
+                        });
+                        // Optional: Clean URL
+                        window.history.replaceState({}, document.title, window.location.pathname + "?movieId=" + movieId);
+                    } else if (message === 'failed') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: 'Hình như bạn đang quên chấm điểm cho bộ phim này.',
+                            confirmButtonColor: '#d96c2c'
+                        });
+                        // Optional: Clean URL
+                        window.history.replaceState({}, document.title, window.location.pathname + "?movieId=" + movieId);
+                    }
+
+                    $('form[action="movie"]').on('submit', function () {
+                        if (tinymce.get('reviewComment')) {
+                            tinymce.triggerSave();
+                        }
+                        sessionStorage.setItem('scrollPosition', window.scrollY);
+                    });
+                </script>
+
+                <!-- Footer -->
 
                 <script src="${pageContext.request.contextPath}/js/common.js"></script>
             </body>

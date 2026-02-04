@@ -20,6 +20,7 @@ public class CinemaBranches extends DBContext {
         b.setEmail(rs.getString("email"));
 
         int mgrId = rs.getInt("manager_id");
+        // Kiểm tra null cho manager_id
         b.setManagerId(rs.wasNull() ? null : mgrId);
 
         b.setActive(rs.getBoolean("is_active"));
@@ -30,14 +31,94 @@ public class CinemaBranches extends DBContext {
         if (rs.getTimestamp("updated_at") != null)
             b.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
 
+        try {
+            b.setManagerName(rs.getString("manager_name"));
+        } catch (SQLException e) {
+        }
+
         return b;
+    }
+
+    public int countAll(String keyword, Boolean isActive) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM cinema_branches WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append(" AND branch_name LIKE ?");
+            params.add("%" + keyword + "%");
+        }
+
+        if (isActive != null) {
+            sql.append(" AND is_active = ?");
+            params.add(isActive);
+        }
+
+        try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                st.setObject(i + 1, params.get(i));
+            }
+            ResultSet rs = st.executeQuery();
+            if (rs.next()) return rs.getInt(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
     public List<CinemaBranch> findAll() {
         List<CinemaBranch> list = new ArrayList<>();
-        String sql = "SELECT * FROM cinema_branches ORDER BY branch_id DESC";
+        // Sử dụng LEFT JOIN để lấy tên quản lý.
+        // LEFT JOIN đảm bảo vẫn lấy được chi nhánh kể cả khi chưa có quản lý.
+        String sql = "SELECT b.*, u.fullName as manager_name " +
+                "FROM cinema_branches b " +
+                "LEFT JOIN users u ON b.manager_id = u.user_id " +
+                "ORDER BY b.branch_id DESC";
         try (PreparedStatement st = connection.prepareStatement(sql);
-             ResultSet rs = st.executeQuery()) {
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<CinemaBranch> findAll(String keyword, Boolean isActive, int page, int pageSize) {
+        List<CinemaBranch> list = new ArrayList<>();
+        int offset = (page - 1) * pageSize;
+
+        StringBuilder sql = new StringBuilder(
+                "SELECT b.*, u.fullName as manager_name " +
+                        "FROM cinema_branches b " +
+                        "LEFT JOIN users u ON b.manager_id = u.user_id " +
+                        "WHERE 1=1 ");
+
+        List<Object> params = new ArrayList<>();
+
+        // Logic thêm điều kiện tìm kiếm
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append(" AND b.branch_name LIKE ?");
+            params.add("%" + keyword + "%");
+        }
+
+        // Logic thêm điều kiện lọc status
+        if (isActive != null) {
+            sql.append(" AND b.is_active = ?");
+            params.add(isActive);
+        }
+
+        // Logic phân trang
+        sql.append(" ORDER BY b.branch_id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        params.add(offset);
+        params.add(pageSize);
+
+        try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
+            // Set tham số động
+            for (int i = 0; i < params.size(); i++) {
+                st.setObject(i + 1, params.get(i));
+            }
+
+            ResultSet rs = st.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
             e.printStackTrace();
@@ -46,11 +127,16 @@ public class CinemaBranches extends DBContext {
     }
 
     public CinemaBranch findById(int id) {
-        String sql = "SELECT * FROM cinema_branches WHERE branch_id = ?";
+        // Cũng dùng LEFT JOIN ở đây để khi Edit form hiện lên có thể biết tên quản lý cũ
+        String sql = "SELECT b.*, u.fullName as manager_name " +
+                "FROM cinema_branches b " +
+                "LEFT JOIN users u ON b.manager_id = u.user_id " +
+                "WHERE b.branch_id = ?";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, id);
             try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return mapRow(rs);
+                if (rs.next())
+                    return mapRow(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -59,7 +145,6 @@ public class CinemaBranches extends DBContext {
     }
 
     public boolean insert(CinemaBranch b) {
-        // Lưu ý: created_at và updated_at để DB tự lo (default GETDATE())
         String sql = "INSERT INTO cinema_branches (branch_name, address, phone, email, manager_id, is_active) VALUES (?, ?, ?, ?, ?, ?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, b.getBranchName());
@@ -67,8 +152,10 @@ public class CinemaBranches extends DBContext {
             st.setString(3, b.getPhone());
             st.setString(4, b.getEmail());
 
-            if (b.getManagerId() != null) st.setInt(5, b.getManagerId());
-            else st.setNull(5, java.sql.Types.INTEGER);
+            if (b.getManagerId() != null)
+                st.setInt(5, b.getManagerId());
+            else
+                st.setNull(5, java.sql.Types.INTEGER);
 
             st.setBoolean(6, b.isActive());
             return st.executeUpdate() > 0;
@@ -79,7 +166,6 @@ public class CinemaBranches extends DBContext {
     }
 
     public boolean update(CinemaBranch b) {
-        // Cập nhật updated_at tự động bằng trigger hoặc set tay ở đây
         String sql = "UPDATE cinema_branches SET branch_name=?, address=?, phone=?, email=?, manager_id=?, is_active=?, updated_at=SYSDATETIME() WHERE branch_id=?";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, b.getBranchName());
@@ -87,12 +173,76 @@ public class CinemaBranches extends DBContext {
             st.setString(3, b.getPhone());
             st.setString(4, b.getEmail());
 
-            if (b.getManagerId() != null) st.setInt(5, b.getManagerId());
-            else st.setNull(5, java.sql.Types.INTEGER);
+            if (b.getManagerId() != null)
+                st.setInt(5, b.getManagerId());
+            else
+                st.setNull(5, java.sql.Types.INTEGER);
 
             st.setBoolean(6, b.isActive());
             st.setInt(7, b.getBranchId());
 
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public CinemaBranch getBranchByManagerId(int managerId) {
+        String sql = "SELECT * FROM cinema_branches WHERE manager_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, managerId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next())
+                    return mapRow(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Check if branch name exists (for duplicate validation)
+    public boolean branchNameExists(String branchName, Integer excludeBranchId) {
+        String sql = "SELECT COUNT(*) FROM cinema_branches WHERE branch_name = ? AND branch_id != ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, branchName);
+            if (excludeBranchId != null) {
+                st.setInt(2, excludeBranchId);
+            } else {
+                st.setInt(2, -1); // No exclusion
+            }
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Get all active branches
+    public List<CinemaBranch> getActiveBranches() {
+        List<CinemaBranch> list = new ArrayList<>();
+        String sql = "SELECT * FROM cinema_branches WHERE is_active = 1 ORDER BY branch_name ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // Update branch status
+    public boolean updateBranchStatus(int branchId, boolean isActive) {
+        String sql = "UPDATE cinema_branches SET is_active = ?, updated_at = SYSDATETIME() WHERE branch_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setBoolean(1, isActive);
+            st.setInt(2, branchId);
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -109,5 +259,22 @@ public class CinemaBranches extends DBContext {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public CinemaBranch findByManagerId(int managerId) {
+        // Vẫn dùng LEFT JOIN để tận dụng hàm mapRow bên trên
+        String sql = "SELECT b.*, u.fullName as manager_name " +
+                "FROM cinema_branches b " +
+                "LEFT JOIN users u ON b.manager_id = u.user_id " +
+                "WHERE b.manager_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, managerId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null; // Trả về null nếu ông này không quản lý rạp nào
     }
 }

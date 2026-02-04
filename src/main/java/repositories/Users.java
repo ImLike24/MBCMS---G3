@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.List;
 
 public class Users extends DBContext {
 
@@ -180,7 +181,12 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql);
                 ResultSet rs = st.executeQuery()) {
             while (rs.next()) {
-                users.add(mapResultSetToUser(rs));
+                try {
+                    users.add(mapResultSetToUser(rs));
+                } catch (Exception e) {
+                    System.err.println("Error mapping user at row: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -195,7 +201,12 @@ public class Users extends DBContext {
             st.setInt(1, roleId);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in getUsersByRole: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -211,7 +222,12 @@ public class Users extends DBContext {
             st.setString(1, status);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in getUsersByStatus: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -230,7 +246,12 @@ public class Users extends DBContext {
             st.setString(3, searchPattern);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in searchUsers: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -282,5 +303,48 @@ public class Users extends DBContext {
             e.printStackTrace();
         }
         return false;
+    }
+
+    // Get available branch managers (not assigned to any branch)
+    public java.util.List<User> getAvailableBranchManagers() {
+        java.util.List<User> managers = new java.util.ArrayList<>();
+        String sql = "SELECT u.* FROM users u " +
+                "INNER JOIN roles r ON u.role_id = r.role_id " +
+                "WHERE r.role_name = 'BRANCH_MANAGER' " +
+                "AND u.user_id NOT IN (SELECT manager_id FROM cinema_branches WHERE manager_id IS NOT NULL) " +
+                "AND u.status = 'ACTIVE' " +
+                "ORDER BY u.fullName ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                managers.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return managers;
+    }
+
+    // Get all branch managers (including assigned ones)
+    public java.util.List<User> getAllBranchManagers() {
+        java.util.List<User> managers = new java.util.ArrayList<>();
+        String sql = "SELECT u.* FROM users u " +
+                "INNER JOIN roles r ON u.role_id = r.role_id " +
+                "WHERE r.role_name = 'BRANCH_MANAGER' " +
+                "AND u.status = 'ACTIVE' " +
+                "ORDER BY u.fullName ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                managers.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return managers;
+    }
+
+    public List<User> findUsersByRoleName(String branch_manager) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }
