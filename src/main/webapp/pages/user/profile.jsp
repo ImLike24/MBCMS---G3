@@ -75,10 +75,23 @@
 
     <!-- LEFT PANEL -->
     <div class="profile-left">
-        <img id="avatar"
-             class="avatar-img"
-             src="${empty u.avatarUrl ? 'assets/default-avatar.png' : u.avatarUrl}"
-             onclick="uploadAvatar()">
+        <div style="position: relative; display: inline-block;">
+            <img id="avatar"
+                 class="avatar-img"
+                 src="${empty u.avatarUrl ? 'assets/default-avatar.png' : u.avatarUrl}"
+                 alt="Ảnh đại diện">
+
+            <form id="avatarForm" action="${pageContext.request.contextPath}/profile/avatar"
+                  method="post" enctype="multipart/form-data" style="display: none;">
+                <input type="file" name="avatarFile" id="avatarInput" accept="image/*">
+            </form>
+
+            <label for="avatarInput" style="position: absolute; bottom: 10px; right: 10px;
+                   background: rgba(0,123,255,0.8); color: white; padding: 8px 12px;
+                   border-radius: 50%; cursor: pointer;">
+                <i class="fa fa-camera"></i>
+            </label>
+        </div>
 
         <h5 class="mt-3">${u.username}</h5>
 
@@ -208,23 +221,6 @@
     function showView() {
         $("#editMode").addClass("d-none");
         $("#viewMode").removeClass("d-none");
-    }
-
-    function uploadAvatar() {
-        cloudinary.openUploadWidget({
-            cloudName: "djuy8teqe",
-            uploadPreset: "avatar_upload",
-            sources: ["local", "url", "camera"],
-            cropping: true
-        }, function (error, result) {
-            if (!error && result && result.event === "success") {
-                $("#avatar").attr("src", result.info.secure_url);
-
-                $.post("${pageContext.request.contextPath}/update-avatar", {
-                    avatarUrl: result.info.secure_url
-                });
-            }
-        });
     }
 </script>
 

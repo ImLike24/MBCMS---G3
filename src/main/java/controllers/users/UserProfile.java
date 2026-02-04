@@ -26,6 +26,16 @@ public class UserProfile extends HttpServlet {
         request.setAttribute("u", user);
         request.getRequestDispatcher("/pages/user/profile.jsp")
                .forward(request, response);
+        
+        String success = request.getParameter("success");
+        
+        String error = request.getParameter("error");
+        if ("avatar_updated".equals(success)) {
+            request.setAttribute("message", "Cập nhật ảnh đại diện thành công!");
+        }
+        if (error != null) {
+            request.setAttribute("error", "Cập nhật ảnh đại diện thất bại!");
+        }
     }
     
     @Override
