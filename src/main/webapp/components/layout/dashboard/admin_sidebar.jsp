@@ -28,12 +28,6 @@
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link text-white">
-                    <i class="fa fa-tags me-2"></i>
-                    Manage Genres
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#" class="nav-link text-white">
                     <i class="fa fa-cutlery me-2"></i>
                     Manage Concessions
                 </a>
