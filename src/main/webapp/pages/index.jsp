@@ -14,10 +14,13 @@
 
 <body>
 
+<!-- Sidebar Section -->
+<jsp:include page="/components/layout/Sidebar.jsp"/>
+
 <!-- Header Section -->
 <jsp:include page="/components/layout/Header.jsp" />
 
-<div class="main clearfix position-relative">
+<div class="main clearfix position-relative" style="margin-top: 70px;">
     <div class="main_2 clearfix">
         <section id="center" class="center_home">
             <div id="carouselExampleCaptions" class="carousel slide" data-bs-ride="carousel">
@@ -28,7 +31,7 @@
                 </div>
                 <div class="carousel-inner">
                     <div class="carousel-item active">
-                        <img src="${pageContext.request.contextPath}/img/1.jpg" class="d-block w-100" alt="...">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="d-block w-100" alt="...">
                         <div class="carousel-caption d-md-block">
                             <h3 class="col_oran">Thriller Movie</h3>
                             <h1 class="text-white mt-3">The Semper <br> Season 3</h1>
@@ -40,7 +43,7 @@
                         </div>
                     </div>
                     <div class="carousel-item">
-                        <img src="${pageContext.request.contextPath}/img/2.jpg" class="d-block w-100" alt="...">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="d-block w-100" alt="...">
                         <div class="carousel-caption d-md-block">
                             <h3 class="col_oran">Action Movie</h3>
                             <h1 class="text-white mt-3">The Porta <br> One</h1>
@@ -52,7 +55,7 @@
                         </div>
                     </div>
                     <div class="carousel-item">
-                        <img src="${pageContext.request.contextPath}/img/3.jpg" class="d-block w-100" alt="...">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="d-block w-100" alt="...">
                         <div class="carousel-caption d-md-block">
                             <h3 class="col_oran">Adventure Movie</h3>
                             <h1 class="text-white mt-3">The Lorem <br> Movie</h1>
@@ -87,7 +90,7 @@
             <div class="col-md-4">
                 <div class="join_1l position-relative">
                     <div class="join_1li">
-                        <img src="${pageContext.request.contextPath}/img/4.jpg" class="w-100" alt="abc">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                     </div>
                     <div class="join_1li1 p-4 bg_backo position-absolute w-100 h-100 top-0">
                         <div class="join_1li1n row">
@@ -110,7 +113,7 @@
             <div class="col-md-4">
                 <div class="join_1l position-relative">
                     <div class="join_1li">
-                        <img src="${pageContext.request.contextPath}/img/4.jpg" class="w-100" alt="abc">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                     </div>
                     <div class="join_1li1 p-4 bg_backo position-absolute w-100 h-100 top-0">
                         <div class="join_1li1n row">
@@ -134,7 +137,7 @@
             <div class="col-md-4">
                 <div class="join_1l position-relative">
                     <div class="join_1li">
-                        <img src="${pageContext.request.contextPath}/img/4.jpg" class="w-100" alt="abc">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                     </div>
                     <div class="join_1li1 p-4 bg_backo position-absolute w-100 h-100 top-0">
                         <div class="join_1li1n row">
@@ -172,7 +175,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="trend_2i position-relative">
                     <div class="trend_2i1">
-                        <img src="${pageContext.request.contextPath}/img/5.jpg" class="w-100" alt="abc">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                     </div>
                     <div class="trend_2i2 bg_back position-absolute w-100 h-100 top-0 px-4">
                         <h6 class="font_14 text-light">Comedy / 180 Mins </h6>
@@ -184,7 +187,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="trend_2i position-relative">
                     <div class="trend_2i1">
-                        <img src="${pageContext.request.contextPath}/img/6.jpg" class="w-100" alt="abc">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                     </div>
                     <div class="trend_2i2 bg_back position-absolute w-100 h-100 top-0 px-4">
                         <h6 class="font_14 text-light">Animation / 160 Mins </h6>
@@ -196,7 +199,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="trend_2i position-relative">
                     <div class="trend_2i1">
-                        <img src="${pageContext.request.contextPath}/img/7.jpg" class="w-100" alt="abc">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                     </div>
                     <div class="trend_2i2 bg_back position-absolute w-100 h-100 top-0 px-4">
                         <h6 class="font_14 text-light">Thriller / 190 Mins </h6>
@@ -208,7 +211,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="trend_2i position-relative">
                     <div class="trend_2i1">
-                        <img src="${pageContext.request.contextPath}/img/8.png" class="w-100" alt="abc">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                     </div>
                     <div class="trend_2i2 bg_back position-absolute w-100 h-100 top-0 px-4">
                         <h6 class="font_14 text-light">Romance / 150 Mins </h6>
@@ -243,7 +246,7 @@
                     <div class="feat_2i1">
                         <div class="grid clearfix">
                             <figure class="effect-jazz mb-0">
-                                <a href="#"><img src="${pageContext.request.contextPath}/img/9.jpg" class="w-100" alt="abc"></a>
+                                <a href="#"><img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc"></a>
                             </figure>
                         </div>
                     </div>
@@ -262,7 +265,7 @@
                     <div class="feat_2i1">
                         <div class="grid clearfix">
                             <figure class="effect-jazz mb-0">
-                                <a href="#"><img src="${pageContext.request.contextPath}/img/10.jpg" class="w-100" alt="abc"></a>
+                                <a href="#"><img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc"></a>
                             </figure>
                         </div>
                     </div>
@@ -281,7 +284,7 @@
                     <div class="feat_2i1">
                         <div class="grid clearfix">
                             <figure class="effect-jazz mb-0">
-                                <a href="#"><img src="${pageContext.request.contextPath}/img/11.jpg" class="w-100" alt="abc"></a>
+                                <a href="#"><img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc"></a>
                             </figure>
                         </div>
                     </div>
@@ -347,7 +350,7 @@
                     <div class="gallery_2i1">
                         <div class="grid clearfix">
                             <figure class="effect-jazz mb-0">
-                                <a href="#"><img src="${pageContext.request.contextPath}/img/12.jpg" class="w-100" alt="abc"></a>
+                                <a href="#"><img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc"></a>
                             </figure>
                         </div>
                     </div>
@@ -361,7 +364,7 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i class="fa fa-close"></i></button>
                                 </div>
                                 <div class="modal-body">
-                                    <img src="${pageContext.request.contextPath}/img/12.jpg" class="w-100" alt="abc">
+                                    <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                                 </div>
                             </div>
                         </div>
@@ -373,7 +376,7 @@
                     <div class="gallery_2i1">
                         <div class="grid clearfix">
                             <figure class="effect-jazz mb-0">
-                                <a href="#"><img src="${pageContext.request.contextPath}/img/13.jpg" class="w-100" alt="abc"></a>
+                                <a href="#"><img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc"></a>
                             </figure>
                         </div>
                     </div>
@@ -387,7 +390,7 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i class="fa fa-close"></i></button>
                                 </div>
                                 <div class="modal-body">
-                                    <img src="${pageContext.request.contextPath}/img/13.jpg" class="w-100" alt="abc">
+                                    <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                                 </div>
                             </div>
                         </div>
@@ -399,7 +402,7 @@
                     <div class="gallery_2i1">
                         <div class="grid clearfix">
                             <figure class="effect-jazz mb-0">
-                                <a href="#"><img src="${pageContext.request.contextPath}/img/14.jpg" class="w-100" alt="abc"></a>
+                                <a href="#"><img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc"></a>
                             </figure>
                         </div>
                     </div>
@@ -413,7 +416,7 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i class="fa fa-close"></i></button>
                                 </div>
                                 <div class="modal-body">
-                                    <img src="${pageContext.request.contextPath}/img/14.jpg" class="w-100" alt="abc">
+                                    <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                                 </div>
                             </div>
                         </div>
@@ -425,7 +428,7 @@
                     <div class="gallery_2i1">
                         <div class="grid clearfix">
                             <figure class="effect-jazz mb-0">
-                                <a href="#"><img src="${pageContext.request.contextPath}/img/15.jpg" class="w-100" alt="abc"></a>
+                                <a href="#"><img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc"></a>
                             </figure>
                         </div>
                     </div>
@@ -439,7 +442,7 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i class="fa fa-close"></i></button>
                                 </div>
                                 <div class="modal-body">
-                                    <img src="${pageContext.request.contextPath}/img/15.jpg" class="w-100" alt="abc">
+                                    <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                                 </div>
                             </div>
                         </div>
@@ -451,7 +454,7 @@
                     <div class="gallery_2i1">
                         <div class="grid clearfix">
                             <figure class="effect-jazz mb-0">
-                                <a href="#"><img src="${pageContext.request.contextPath}/img/16.jpg" class="w-100" alt="abc"></a>
+                                <a href="#"><img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc"></a>
                             </figure>
                         </div>
                     </div>
@@ -617,7 +620,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="trend_2i position-relative">
                     <div class="trend_2i1">
-                        <img src="${pageContext.request.contextPath}/img/21.jpg" class="w-100" alt="abc">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                     </div>
                     <div class="trend_2i2 bg_back position-absolute w-100 h-100 top-0 px-4">
                         <h6 class="font_14 text-light">Comedy / 180 Mins </h6>
@@ -629,7 +632,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="trend_2i position-relative">
                     <div class="trend_2i1">
-                        <img src="${pageContext.request.contextPath}/img/22.jpg" class="w-100" alt="abc">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                     </div>
                     <div class="trend_2i2 bg_back position-absolute w-100 h-100 top-0 px-4">
                         <h6 class="font_14 text-light">Animation / 160 Mins </h6>
@@ -641,7 +644,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="trend_2i position-relative">
                     <div class="trend_2i1">
-                        <img src="${pageContext.request.contextPath}/img/23.jpg" class="w-100" alt="abc">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                     </div>
                     <div class="trend_2i2 bg_back position-absolute w-100 h-100 top-0 px-4">
                         <h6 class="font_14 text-light">Thriller / 190 Mins </h6>
@@ -653,7 +656,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="trend_2i position-relative">
                     <div class="trend_2i1">
-                        <img src="${pageContext.request.contextPath}/img/24.png" class="w-100" alt="abc">
+                        <img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="abc">
                     </div>
                     <div class="trend_2i2 bg_back position-absolute w-100 h-100 top-0 px-4">
                         <h6 class="font_14 text-light">Romance / 150 Mins </h6>
@@ -702,7 +705,7 @@
                         <div class="blog_h1m1">
                             <div class="grid clearfix">
                                 <figure class="effect-jazz mb-0">
-                                    <a href="#"><img src="${pageContext.request.contextPath}/img/25.jpg" class="w-100" alt="img25"></a>
+                                    <a href="#"><img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="img25"></a>
                                 </figure>
                             </div>
                         </div>
@@ -728,7 +731,7 @@
                         <div class="blog_h1m1">
                             <div class="grid clearfix">
                                 <figure class="effect-jazz mb-0">
-                                    <a href="#"><img src="${pageContext.request.contextPath}/img/26.jpg" class="w-100" alt="img25"></a>
+                                    <a href="#"><img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="img25"></a>
                                 </figure>
                             </div>
                         </div>
@@ -754,7 +757,7 @@
                         <div class="blog_h1m1">
                             <div class="grid clearfix">
                                 <figure class="effect-jazz mb-0">
-                                    <a href="#"><img src="${pageContext.request.contextPath}/img/27.jpg" class="w-100" alt="img25"></a>
+                                    <a href="#"><img src="${pageContext.request.contextPath}/images/abc.jpg" class="w-100" alt="img25"></a>
                                 </figure>
                             </div>
                         </div>
@@ -816,6 +819,13 @@
 </script>
 
 <script src="js/common.js"></script>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('open');
+}
+</script>
 
 </body>
 
