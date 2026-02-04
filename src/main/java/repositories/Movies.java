@@ -15,7 +15,7 @@ public class Movies extends DBContext {
     // Get all movies
     public List<Movie> getAllMovies() {
         List<Movie> movies = new ArrayList<>();
-        String sql = "SELECT * FROM movies ORDER BY release_date DESC";  // sắp xếp mới nhất trước
+        String sql = "SELECT * FROM movies ORDER BY movie_id ASC";
 
         try (PreparedStatement st = connection.prepareStatement(sql);
              ResultSet rs = st.executeQuery()) {

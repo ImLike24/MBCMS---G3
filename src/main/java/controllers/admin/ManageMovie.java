@@ -9,7 +9,7 @@ import repositories.Movies;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet("/admin/manage-movie/manage-movies")
+@WebServlet("/admin/manage-movie")
 public class ManageMovie extends HttpServlet {
 
     private Movies movieRepo = new Movies();

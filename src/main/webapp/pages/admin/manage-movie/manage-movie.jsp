@@ -46,11 +46,8 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
-                            <th>ID</th>
                             <th>Title</th>
-                            <th>Genre</th>
                             <th>Duration</th>
-                            <th>Rating</th>
                             <th>Status</th>
                             <th class="text-center" width="160">Actions</th>
                         </tr>
@@ -63,11 +60,8 @@
                             for (Movie m : movies) {
                     %>
                         <tr>
-                            <td><%= m.getMovieId() %></td>
                             <td class="fw-semibold"><%= m.getTitle() %></td>
-                            <td><%= m.getGenre() %></td>
                             <td><%= m.getDuration() %> min</td>
-                            <td><%= m.getRating() %></td>
                             <td>
                                 <span class="badge <%= m.isActive() ? "bg-success" : "bg-secondary" %>">
                                     <%= m.isActive() ? "ACTIVE" : "INACTIVE" %>
