@@ -1,122 +1,46 @@
 package controllers.admin;
 
-import config.DBContext;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import models.Movie;
 import repositories.Movies;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import models.Role;
-import models.User;
-import repositories.Roles;
-import repositories.Users;
 
-@WebServlet("/admin/manage-movies")
+import java.io.IOException;
+import java.util.List;
+
+@WebServlet("/admin/manage-movie/manage-movies")
 public class ManageMovie extends HttpServlet {
 
     private Movies movieRepo = new Movies();
 
-@Override
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // Check authentication and authorization
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        User currentUser = (User) session.getAttribute("user");
-
-        // Check if user is admin
-        DBContext dbContext = null;
-        try {
-            dbContext = new DBContext();
-            Roles rolesRepo = new Roles();
-            Role userRole = rolesRepo.getRoleById(currentUser.getRoleId());
-
-            if (userRole == null || !"ADMIN".equals(userRole.getRoleName())) {
-                response.sendRedirect(request.getContextPath() + "/home");
-                return;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/home");
-            return;
-        } finally {
-            if (dbContext != null) {
-                dbContext.closeConnection();
-            }
+        String idParam = request.getParameter("id");
+        if (idParam != null) {
+            int id = Integer.parseInt(idParam);
+            Movie movie = movieRepo.getMovieById(id);
+            request.setAttribute("movie", movie);
         }
 
-        // Get filter parameters
-        String roleFilter = request.getParameter("roleFilter");
-        String statusFilter = request.getParameter("statusFilter");
-        String searchKeyword = request.getParameter("search");
+        List<Movie> movies = movieRepo.getAllMovies();
+        request.setAttribute("movies", movies);
 
-        DBContext usersDbContext = null;
-        DBContext rolesDbContext = null;
-
-        try {
-            usersDbContext = new DBContext();
-            rolesDbContext = new DBContext();
-
-            Users usersRepo = new Users();
-            Roles rolesRepo = new Roles();
-
-            // Get users based on filters
-            List<User> users;
-            if (searchKeyword != null && !searchKeyword.trim().isEmpty()) {
-                users = usersRepo.searchUsers(searchKeyword.trim());
-            } else if (roleFilter != null && !roleFilter.isEmpty()) {
-                users = usersRepo.getUsersByRole(Integer.parseInt(roleFilter));
-            } else if (statusFilter != null && !statusFilter.isEmpty()) {
-                users = usersRepo.getUsersByStatus(statusFilter);
-            } else {
-                users = usersRepo.getAllUsers();
-            }
-
-            // Get all roles for filter dropdown
-            List<Role> allRoles = rolesRepo.getAllRoles();
-
-            // Create a map of roleId -> roleName for display
-            Map<Integer, String> roleMap = new HashMap<>();
-            for (Role role : allRoles) {
-                roleMap.put(role.getRoleId(), role.getRoleName());
-            }
-
-            // Set attributes for JSP
-            request.setAttribute("users", users);
-            request.setAttribute("allRoles", allRoles);
-            request.setAttribute("roleMap", roleMap);
-            request.setAttribute("roleFilter", roleFilter);
-            request.setAttribute("statusFilter", statusFilter);
-            request.setAttribute("searchKeyword", searchKeyword);
-
-            request.getRequestDispatcher("/pages/admin/manage-movie.jsp").forward(request, response);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            request.setAttribute("error", "Error loading users: " + e.getMessage());
-            request.getRequestDispatcher("/pages/admin/manage-movie.jsp").forward(request, response);
-        } finally {
-            if (usersDbContext != null) {
-                usersDbContext.closeConnection();
-            }
-            if (rolesDbContext != null) {
-                rolesDbContext.closeConnection();
-            }
-        }
+        request.getRequestDispatcher("/pages/admin/manage-movie/manage-movie.jsp")
+               .forward(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws IOException {
 
         String action = request.getParameter("action");
 
@@ -126,13 +50,24 @@ public class ManageMovie extends HttpServlet {
             m.setGenre(request.getParameter("genre"));
             m.setDuration(Integer.parseInt(request.getParameter("duration")));
             m.setRating(Double.parseDouble(request.getParameter("rating")));
+            m.setActive(true);
             movieRepo.insertMovie(m);
+
+        } else if ("update".equals(action)) {
+            Movie m = new Movie();
+            m.setMovieId(Integer.parseInt(request.getParameter("id")));
+            m.setTitle(request.getParameter("title"));
+            m.setGenre(request.getParameter("genre"));
+            m.setDuration(Integer.parseInt(request.getParameter("duration")));
+            m.setRating(Double.parseDouble(request.getParameter("rating")));
+            m.setActive(Boolean.parseBoolean(request.getParameter("active")));
+            movieRepo.updateMovie(m);
 
         } else if ("delete".equals(action)) {
             int id = Integer.parseInt(request.getParameter("id"));
             movieRepo.deleteMovie(id);
         }
 
-        response.sendRedirect("ManageMovie");
+        response.sendRedirect(request.getContextPath() + "/admin/manage-movie/manage-movies");
     }
 }
