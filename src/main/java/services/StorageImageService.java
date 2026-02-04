@@ -21,9 +21,7 @@ public class StorageImageService {
         this.cloudinary = CloudinaryConfig.getInstance();
     }
 
-    /**
-     * Upload image from file path
-     */
+    //tai anh len tu duong dan cua file noi bo
     public String uploadImage(String filePath) throws IOException {
         try {
             Map uploadResult = cloudinary.uploader().upload(filePath, ObjectUtils.emptyMap());
@@ -33,21 +31,19 @@ public class StorageImageService {
         }
     }
 
-    /**
-     * Upload image from Part (multipart file upload)
-     */
+    //upload image tu file part (form upload)
     public String uploadImage(Part filePart) throws IOException {
         if (filePart == null || filePart.getSize() == 0) {
             return null;
         }
 
-        // Validate file type
+        // kiem tra dinh dang file
         String contentType = filePart.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
             throw new IOException("Định dạng file không hợp lệ. Vui lòng tải lên một hình ảnh." );
         }
 
-        // Validate file size (max 5MB)
+        // kiem tra kich co file
         long fileSize = filePart.getSize();
         if (fileSize > 5 * 1024 * 1024) {
             throw new IOException("Kích thước file vượt quá giới hạn 5MB." );

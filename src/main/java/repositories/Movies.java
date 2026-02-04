@@ -331,4 +331,141 @@ public class Movies extends DBContext {
         
         return m;
     }
+
+    /**
+     * Insert a new movie
+     */
+    public boolean insertMovie(Movie movie) {
+        String sql = "INSERT INTO movies (title, description, genre, duration, release_date, end_date, " +
+                    "age_rating, director, cast, poster_url, is_active) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, movie.getTitle());
+            pstmt.setString(2, movie.getDescription());
+            pstmt.setString(3, movie.getGenre());
+            pstmt.setInt(4, movie.getDuration());
+            
+            if (movie.getReleaseDate() != null) {
+                pstmt.setDate(5, java.sql.Date.valueOf(movie.getReleaseDate()));
+            } else {
+                pstmt.setNull(5, java.sql.Types.DATE);
+            }
+            
+            if (movie.getEndDate() != null) {
+                pstmt.setDate(6, java.sql.Date.valueOf(movie.getEndDate()));
+            } else {
+                pstmt.setNull(6, java.sql.Types.DATE);
+            }
+            
+            pstmt.setString(7, movie.getAgeRating());
+            pstmt.setString(8, movie.getDirector());
+            pstmt.setString(9, movie.getCast());
+            pstmt.setString(10, movie.getPosterUrl());
+            pstmt.setBoolean(11, movie.isActive());
+            
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Update an existing movie
+     */
+    public boolean updateMovie(Movie movie) {
+        String sql = "UPDATE movies SET title = ?, description = ?, genre = ?, duration = ?, " +
+                    "release_date = ?, end_date = ?, age_rating = ?, director = ?, cast = ?, " +
+                    "poster_url = ?, is_active = ? WHERE movie_id = ?";
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, movie.getTitle());
+            pstmt.setString(2, movie.getDescription());
+            pstmt.setString(3, movie.getGenre());
+            pstmt.setInt(4, movie.getDuration());
+            
+            if (movie.getReleaseDate() != null) {
+                pstmt.setDate(5, java.sql.Date.valueOf(movie.getReleaseDate()));
+            } else {
+                pstmt.setNull(5, java.sql.Types.DATE);
+            }
+            
+            if (movie.getEndDate() != null) {
+                pstmt.setDate(6, java.sql.Date.valueOf(movie.getEndDate()));
+            } else {
+                pstmt.setNull(6, java.sql.Types.DATE);
+            }
+            
+            pstmt.setString(7, movie.getAgeRating());
+            pstmt.setString(8, movie.getDirector());
+            pstmt.setString(9, movie.getCast());
+            pstmt.setString(10, movie.getPosterUrl());
+            pstmt.setBoolean(11, movie.isActive());
+            pstmt.setInt(12, movie.getMovieId());
+            
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Delete a movie (soft delete by setting is_active = false)
+     */
+    public boolean deleteMovie(int movieId) {
+        String sql = "UPDATE movies SET is_active = 0 WHERE movie_id = ?";
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, movieId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Get all movies (including inactive for admin)
+     */
+    public List<Movie> getAllMovies() {
+        List<Movie> movies = new ArrayList<>();
+        String sql = "SELECT * FROM movies ORDER BY created_at DESC";
+        
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                movies.add(mapResultSetToMovie(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return movies;
+    }
+
+    /**
+     * Search movies by title, director, or cast
+     */
+    public List<Movie> searchMovies(String keyword) {
+        List<Movie> movies = new ArrayList<>();
+        String sql = "SELECT * FROM movies WHERE (title LIKE ? OR director LIKE ? OR cast LIKE ?) ORDER BY title";
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            String searchPattern = "%" + keyword + "%";
+            pstmt.setString(1, searchPattern);
+            pstmt.setString(2, searchPattern);
+            pstmt.setString(3, searchPattern);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    movies.add(mapResultSetToMovie(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return movies;
+    }
 }

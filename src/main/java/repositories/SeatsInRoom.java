@@ -1,13 +1,13 @@
-package repositories.customer;
+package repositories;
 
-import models.Seat;
-import config.DBContext;
-import models.CinemaBranch;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import config.DBContext;
+import models.Seat;
 
 public class SeatsInRoom extends DBContext {
 
