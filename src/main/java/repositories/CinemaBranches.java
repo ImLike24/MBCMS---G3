@@ -260,4 +260,21 @@ public class CinemaBranches extends DBContext {
         }
         return false;
     }
+
+    public CinemaBranch findByManagerId(int managerId) {
+        // Vẫn dùng LEFT JOIN để tận dụng hàm mapRow bên trên
+        String sql = "SELECT b.*, u.fullName as manager_name " +
+                "FROM cinema_branches b " +
+                "LEFT JOIN users u ON b.manager_id = u.user_id " +
+                "WHERE b.manager_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, managerId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null; // Trả về null nếu ông này không quản lý rạp nào
+    }
 }
