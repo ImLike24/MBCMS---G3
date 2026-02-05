@@ -8,11 +8,12 @@ import repositories.Movies;
 
 import java.io.IOException;
 import java.util.List;
+import services.MovieService;
 
 @WebServlet("/admin/manage-movie")
 public class ManageMovie extends HttpServlet {
 
-    private Movies movieRepo = new Movies();
+    private MovieService movie = new MovieService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -27,11 +28,11 @@ public class ManageMovie extends HttpServlet {
         String idParam = request.getParameter("id");
         if (idParam != null) {
             int id = Integer.parseInt(idParam);
-            Movie movie = movieRepo.getMovieById(id);
+            Movie movies = movie.getMovieById(id);
             request.setAttribute("movie", movie);
         }
 
-        List<Movie> movies = movieRepo.getAllMovies();
+        List<Movie> movies = movie.getAllMovies();
         request.setAttribute("movies", movies);
 
         request.getRequestDispatcher("/pages/admin/manage-movie/manage-movie.jsp")
@@ -51,7 +52,7 @@ public class ManageMovie extends HttpServlet {
             m.setDuration(Integer.parseInt(request.getParameter("duration")));
             m.setRating(Double.parseDouble(request.getParameter("rating")));
             m.setActive(true);
-//            movieRepo.insertMovie(m);
+//            movie.insertMovie(m);
 
         } else if ("update".equals(action)) {
             Movie m = new Movie();
@@ -61,11 +62,11 @@ public class ManageMovie extends HttpServlet {
             m.setDuration(Integer.parseInt(request.getParameter("duration")));
             m.setRating(Double.parseDouble(request.getParameter("rating")));
             m.setActive(Boolean.parseBoolean(request.getParameter("active")));
-//            movieRepo.updateMovie(m);
+//            movie.updateMovie(m);
 
         } else if ("delete".equals(action)) {
             int id = Integer.parseInt(request.getParameter("id"));
-//            movieRepo.deleteMovie(id);
+//            movie.deleteMovie(id);
         }
 
         response.sendRedirect(request.getContextPath() + "/admin/manage-movie/manage-movies");

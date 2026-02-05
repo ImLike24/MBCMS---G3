@@ -6,7 +6,6 @@ import config.CloudinaryConfig;
 import models.User;
 import repositories.Users;
 
-import java.io.IOException;
 import java.util.Map;
 
 public class ProfileService {
