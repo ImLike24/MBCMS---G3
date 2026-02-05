@@ -46,7 +46,7 @@ public class ProfileService {
                     "public_id", "user_avatar_" + userId,
                     "overwrite", true,
                     "resource_type", "image",
-                    "allowed_formats", new String[]{"jpg", "jpeg", "png", "gif", "webp"}
+                    "allowed_formats", new String[]{"jpg", "jpeg", "png"}
             );
 
             Map uploadResult = CloudinaryConfig.getCloudinary().uploader().upload(fileBytes, uploadParams);

@@ -83,7 +83,7 @@
 
             <form id="avatarForm" action="${pageContext.request.contextPath}/profile/avatar"
                   method="post" enctype="multipart/form-data" style="display: none;">
-                <input type="file" name="avatarFile" id="avatarInput" accept="image/*">
+                <input type="file" name="avatarFile" id="avatarInput" accept="image/*" onchange="document.getElementById('avatarForm').submit()">
             </form>
 
             <label for="avatarInput" style="position: absolute; bottom: 10px; right: 10px;

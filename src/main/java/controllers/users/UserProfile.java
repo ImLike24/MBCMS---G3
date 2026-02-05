@@ -16,19 +16,20 @@ public class UserProfile extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        //
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             response.sendRedirect("/login");
             return;
         }
-
+        //
         User user = (User) session.getAttribute("user");
         request.setAttribute("u", user);
         request.getRequestDispatcher("/pages/user/profile.jsp")
                .forward(request, response);
         
         String success = request.getParameter("success");
-        
+        //
         String error = request.getParameter("error");
         if ("avatar_updated".equals(success)) {
             request.setAttribute("message", "Cập nhật ảnh đại diện thành công!");
