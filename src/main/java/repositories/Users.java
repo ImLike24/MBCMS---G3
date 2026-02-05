@@ -157,22 +157,18 @@ public class Users extends DBContext {
         }
         return false;
     }
-    
-    public void updateAvatar(int userId, String avatarUrl) {
-        String sql = "UPDATE users SET avatar_url = ? WHERE user_id = ?";
 
-        try (Connection con = new DBContext().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, avatarUrl);
-            ps.setInt(2, userId);
-            ps.executeUpdate();
-
-        } catch (Exception e) {
+    public boolean updateAvatarUrl(int userId, String avatarUrl) {
+        String sql = "UPDATE users SET avatarURL = ?, updated_at = SYSDATETIME() WHERE user_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, avatarUrl);
+            st.setInt(2, userId);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
     }
-
     // Admin User Management Methods
 
     public java.util.List<User> getAllUsers() {
