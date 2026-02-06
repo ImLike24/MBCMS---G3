@@ -1,4 +1,7 @@
-package controllers.branchmanager;
+package controllers.manager;
+
+import java.io.IOException;
+import java.util.List;
 
 import config.DBContext;
 import jakarta.servlet.ServletException;
@@ -7,17 +10,14 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import models.CinemaBranch;
 import models.Role;
 import models.ScreeningRoom;
 import models.User;
-import models.CinemaBranch;
+import repositories.CinemaBranches;
 import repositories.Roles;
 import repositories.ScreeningRooms;
 import repositories.Seats;
-import repositories.CinemaBranches;
-
-import java.io.IOException;
-import java.util.List;
 
 @WebServlet("/branch-manager/manage-cinema-halls")
 public class ManageCinemaHallsServlet extends HttpServlet {

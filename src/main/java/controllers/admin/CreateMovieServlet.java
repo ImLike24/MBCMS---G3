@@ -5,6 +5,7 @@ import java.time.LocalDate;
 
 import config.DBContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +20,11 @@ import repositories.Roles;
 import services.StorageImageService;
 
 @WebServlet("/admin/create-movie")
+@MultipartConfig(
+    fileSizeThreshold = 1024 * 1024,      // 1MB
+    maxFileSize = 5 * 1024 * 1024,         // 5MB
+    maxRequestSize = 10 * 1024 * 1024      // 10MB
+)
 public class CreateMovieServlet extends HttpServlet {
 
     @Override
@@ -93,6 +99,8 @@ public class CreateMovieServlet extends HttpServlet {
             }
         }
 
+        request.setCharacterEncoding("UTF-8");
+        response.setCharacterEncoding("UTF-8");
         // Get form parameters (multipart)
         String title = request.getParameter("title");
         String description = request.getParameter("description");

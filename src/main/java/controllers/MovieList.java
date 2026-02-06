@@ -1,17 +1,17 @@
-package controllers.customer;
+package controllers;
 
 import java.io.IOException;
 import java.util.List;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import models.Movie;
 import repositories.Movies;
 
-@WebServlet("/customer/movies")
+@WebServlet("/movies")
 public class MovieList extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private Movies moviesRepo = new Movies();
@@ -21,6 +21,6 @@ public class MovieList extends HttpServlet {
             throws ServletException, IOException {
         List<Movie> movies = moviesRepo.getAllActiveMovies();
         request.setAttribute("movies", movies);
-        request.getRequestDispatcher("/pages/customer/movie_list.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/movie_list.jsp").forward(request, response);
     }
 }

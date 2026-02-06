@@ -1,20 +1,21 @@
 package controllers.guest;
 
-import models.Movie;
-import models.Review;
-import models.User;
-import repositories.Movies;
-import repositories.Reviews;
+import java.io.IOException;
+import java.util.List;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.io.IOException;
-import java.util.List;
+import models.Movie;
+import models.Review;
+import models.User;
+import repositories.Movies;
+import repositories.Reviews;
 
-@WebServlet(name = "MovieDetail", urlPatterns = { "/movie" })
+@WebServlet(name = "MovieDetail", urlPatterns = { "/pages/movie_detail" })
 public class MovieDetail extends HttpServlet {
 
     @Override

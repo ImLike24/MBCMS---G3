@@ -1,5 +1,8 @@
 package controllers.admin;
 
+import java.io.IOException;
+import java.time.LocalDate;
+
 import config.DBContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -8,14 +11,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
-import java.time.LocalDate;
 import models.Movie;
 import models.Role;
 import models.User;
 import repositories.Movies;
 import repositories.Roles;
-
-import java.io.IOException;
 import services.StorageImageService;
 
 @WebServlet("/admin/edit-movie")
@@ -124,6 +124,8 @@ public class EditMovieServlet extends HttpServlet {
             }
         }
 
+        request.setCharacterEncoding("UTF-8");
+        response.setCharacterEncoding("UTF-8");
         // Get form parameters (multipart)
         String movieIdStr = request.getParameter("movieId");
         String title = request.getParameter("title");

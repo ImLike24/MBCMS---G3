@@ -1,4 +1,4 @@
-package controllers.branchmanager;
+package controllers.manager;
 
 import config.DBContext;
 import jakarta.servlet.ServletException;
