@@ -441,25 +441,6 @@ public class Movies extends DBContext {
     }
 
     /**
-     * Get all movies (including inactive for admin)
-     */
-    public List<Movie> getAllMovies() {
-        List<Movie> movies = new ArrayList<>();
-        String sql = "SELECT * FROM movies ORDER BY created_at DESC";
-        
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            
-            while (rs.next()) {
-                movies.add(mapResultSetToMovie(rs));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return movies;
-    }
-
-    /**
      * Search movies by title, director, or cast
      */
     public List<Movie> searchMovies(String keyword) {
