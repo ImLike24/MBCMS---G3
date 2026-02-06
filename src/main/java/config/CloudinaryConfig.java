@@ -1,37 +1,50 @@
 package config;
 
+import com.cloudinary.Cloudinary;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
-
 public class CloudinaryConfig {
-
     private static Cloudinary cloudinary;
+    private static Properties props;
 
     static {
-        try {
-            Properties props = new Properties();
-            InputStream iS = CloudinaryConfig.class.getClassLoader().getResourceAsStream("config.properties");
+        props = new Properties();
+        try (InputStream input = CloudinaryConfig.class.getClassLoader()
+                .getResourceAsStream("config.properties")) {
+            if (input == null) {
+                throw new RuntimeException("Không tìm thấy config.properties");
+            }
+            props.load(input);
 
-            props.load(iS);
+            Map<String, Object> config = new HashMap<>();
+            config.put("cloud_name", getProperty("cloudinary.cloud_name"));
+            config.put("api_key", getProperty("cloudinary.api_key"));
+            config.put("api_secret", getProperty("cloudinary.api_secret"));
+            config.put("secure", true);
 
-            cloudinary = new Cloudinary(ObjectUtils.asMap(
-                    "cloud_name", props.getProperty("cloudinary.cloud_name"),
-                    "api_key", props.getProperty("cloudinary.api_key"),
-                    "api_secret", props.getProperty("cloudinary.api_secret"),
-                    "secure", true
-            ));
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Lỗi khởi động Cloudinary", e);
+            cloudinary = new Cloudinary(config);
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi load config Cloudinary", e);
         }
-
     }
 
-    public static Cloudinary getInstance(){
+    private static String getProperty(String key) {
+        String value = props.getProperty(key);
+        if (value == null || value.trim().isEmpty()) {
+            throw new RuntimeException("Thiếu property: " + key);
+        }
+        return value.trim();
+    }
+
+    public static Cloudinary getCloudinary() {
         return cloudinary;
     }
 
+    public static String getUploadFolder() {
+        return props.getProperty("cloudinary.upload_folder", "avatars");
+    }
 }

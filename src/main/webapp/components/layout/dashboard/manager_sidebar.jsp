@@ -32,13 +32,13 @@
         </li>
 
         <li class="nav-item">
-            <a href="#" class="nav-link text-white">
+            <a href="${pageContext.request.contextPath}/branch-manager/configure-seat-layout" class="nav-link text-white">
                 <i class="fa fa-th me-2" style="width: 20px; text-align: center;"></i>
                 Seat Layouts
             </a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link text-white">
+            <a href="${pageContext.request.contextPath}/branch-manager/manage-seat-type" class="nav-link text-white">
                 <i class="fa fa-wheelchair me-2" style="width: 20px; text-align: center;"></i>
                 Seat Types
             </a>
