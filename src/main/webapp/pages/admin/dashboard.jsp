@@ -9,23 +9,13 @@
             <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
             <link rel="stylesheet" href="${pageContext.request.contextPath}/css/font-awesome.min.css">
             <link rel="stylesheet" href="${pageContext.request.contextPath}/css/global.css">
+            <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin-layout.css">
             <style>
                 body {
                     padding-top: 56px;
                     /* Height of fixed navbar */
                     overflow-x: hidden;
                     background-color: #f8f9fa;
-                }
-
-                #sidebarMenu {
-                    height: calc(100vh - 56px);
-                    /* Full height minus header */
-                    position: fixed;
-                    top: 56px;
-                    left: 0;
-                    bottom: 0;
-                    z-index: 100;
-                    overflow-y: auto;
                 }
 
                 main {

@@ -255,31 +255,31 @@ public class Movies extends DBContext {
     /**
      * Get distinct genres from movies showing on date
      */
-    public List<String> getGenresShowingOnDate(LocalDate date) {
-        List<String> genres = new ArrayList<>();
-        String sql = "SELECT DISTINCT m.genre FROM movies m " +
-                    "INNER JOIN showtimes s ON m.movie_id = s.movie_id " +
-                    "WHERE m.is_active = 1 AND m.genre IS NOT NULL " +
-                    "AND s.show_date = ? " +
-                    "AND s.status IN ('SCHEDULED', 'ONGOING') " +
-                    "ORDER BY m.genre";
-        
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setDate(1, java.sql.Date.valueOf(date));
-            
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    String genre = rs.getString("genre");
-                    if (genre != null && !genre.trim().isEmpty()) {
-                        genres.add(genre);
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return genres;
-    }
+//    public List<String> getGenresShowingOnDate(LocalDate date) {
+//        List<String> genres = new ArrayList<>();
+//        String sql = "SELECT DISTINCT m.genre FROM movies m " +
+//                    "INNER JOIN showtimes s ON m.movie_id = s.movie_id " +
+//                    "WHERE m.is_active = 1 AND m.genre IS NOT NULL " +
+//                    "AND s.show_date = ? " +
+//                    "AND s.status IN ('SCHEDULED', 'ONGOING') " +
+//                    "ORDER BY m.genre";
+//
+//        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+//            pstmt.setDate(1, java.sql.Date.valueOf(date));
+//
+//            try (ResultSet rs = pstmt.executeQuery()) {
+//                while (rs.next()) {
+//                    String genre = rs.getString("genres");
+//                    if (genre != null && !genre.trim().isEmpty()) {
+//                        genres.add(genre);
+//                    }
+//                }
+//            }
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        }
+//        return genres;
+//    }
 
     /**
      * Get distinct age ratings from movies showing on date
