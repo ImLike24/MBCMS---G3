@@ -27,7 +27,7 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="${pageContext.request.contextPath}/admin/manage-movie" class="nav-link">
                 <i class="fa fa-film me-3"></i>Quản lý Phim
             </a>
         </li>
