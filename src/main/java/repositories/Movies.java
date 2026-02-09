@@ -604,4 +604,55 @@ public class Movies extends DBContext {
             }
         }
     }
+
+    public List<Movie> getNowShowing() {
+        String sql = """
+        SELECT TOP 12 *
+        FROM movies
+        WHERE is_active = 1
+          AND release_date <= CAST(GETDATE() AS DATE)
+          AND (end_date IS NULL OR end_date >= CAST(GETDATE() AS DATE))
+        ORDER BY release_date DESC
+        """;
+        return getMoviesBySql(sql);
+    }
+
+    public List<Movie> getComingSoon() {
+        String sql = """
+        SELECT TOP 12 *
+        FROM movies
+        WHERE is_active = 1
+          AND release_date > CAST(GETDATE() AS DATE)
+        ORDER BY release_date ASC
+        """;
+        return getMoviesBySql(sql);
+    }
+
+    public List<Movie> getTopRated(int limit) {
+        String sql = """
+        SELECT TOP (?) *
+        FROM movies
+        WHERE is_active = 1
+        ORDER BY rating DESC
+        """;
+        return getMoviesBySql(sql, limit);
+    }
+
+    private List<Movie> getMoviesBySql(String sql, Object... params) {
+        List<Movie> list = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            for (int i = 0; i < params.length; i++) {
+                ps.setObject(i + 1, params[i]);
+            }
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(mapResultSetToMovie(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }
