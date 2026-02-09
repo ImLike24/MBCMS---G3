@@ -3,6 +3,7 @@ package models;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -11,7 +12,7 @@ public class Movie {
     private Integer movieId;
     private String title;
     private String description;
-    private String genre;
+    private List<String> genres;
     private Integer duration;
     private LocalDate releaseDate;
     private LocalDate endDate;

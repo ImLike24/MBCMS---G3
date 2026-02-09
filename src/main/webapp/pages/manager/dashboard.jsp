@@ -8,7 +8,29 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/font-awesome.min.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/global.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager-layout.css">
+        <style>
+            body {
+                padding-top: 56px;
+                overflow-x: hidden;
+                background-color: #f8f9fa;
+            }
+
+            main {
+                margin-left: 280px;
+                padding: 20px;
+                transition: margin-left 0.3s;
+            }
+
+            /* Collapsed State */
+            .sidebar-collapsed #sidebarMenu {
+                margin-left: -280px;
+            }
+
+            .sidebar-collapsed main {
+                margin-left: 0;
+            }
+        </style>
     </head>
 
     <body>

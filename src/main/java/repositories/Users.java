@@ -343,4 +343,40 @@ public class Users extends DBContext {
     public List<User> findUsersByRoleName(String branch_manager) {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
+
+    /**
+     * Tìm user dựa trên email.
+     * Dùng cho chức năng Quên mật khẩu và Đăng nhập.
+     * @param email Email cần tìm
+     * @return User object nếu tìm thấy, null nếu không có.
+     */
+    public User getByEmail(String email) {
+        String sql = "SELECT * FROM users WHERE email = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, email);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToUser(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Cập nhật mật khẩu mới cho user dựa trên email.
+     */
+    public boolean updatePassword(String email, String newPassword) {
+        String sql = "UPDATE users SET password = ? WHERE email = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, newPassword); // Lưu ý: Nên mã hóa password (MD5/BCrypt) trước khi truyền vào đây
+            st.setString(2, email);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
