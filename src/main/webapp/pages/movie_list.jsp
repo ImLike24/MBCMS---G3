@@ -46,7 +46,7 @@ DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
                         <div class="mt-auto">
                             <a href="${pageContext.request.contextPath}/pages/movie_detail?movieId=${movie.movieId}" class="btn btn-primary">Xem Chi Tiết</a>
-                            <a href="${pageContext.request.contextPath}/customer/online-booking-showtimes?movieId=${movie.movieId}" class="btn btn-success ms-2">Đặt Vé</a>
+                            <a href="${pageContext.request.contextPath}/customer/booking-showtimes?movieId=${movie.movieId}" class="btn btn-success ms-2">Đặt Vé</a>
                         </div>
                     </div>
                 </div>
