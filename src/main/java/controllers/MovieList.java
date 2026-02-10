@@ -19,7 +19,7 @@ public class MovieList extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        List<Movie> movies = moviesRepo.getAllActiveMovies();
+        List<Movie> movies = moviesRepo.getMockUpMovies();
         request.setAttribute("movies", movies);
         request.getRequestDispatcher("/pages/movie_list.jsp").forward(request, response);
     }
