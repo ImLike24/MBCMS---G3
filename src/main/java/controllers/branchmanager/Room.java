@@ -18,13 +18,13 @@ import java.util.List;
 public class Room extends HttpServlet {
 
     private final RoomService roomService = new RoomService();
-    private final CinemaBranches branchDao = new CinemaBranches(); // Dùng lại file CinemaBranches.java bạn đã có
+    private final CinemaBranches branchDao = new CinemaBranches();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // 1. Lấy thông tin Branch của Manager đang đăng nhập
+        // Lấy thông tin Branch của Manager đang đăng nhập
         CinemaBranch currentBranch = getBranchOfCurrentUser(request);
         if (currentBranch == null) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied: You are not a Branch Manager.");
@@ -77,7 +77,7 @@ public class Room extends HttpServlet {
             e.printStackTrace();
             request.setAttribute("error", e.getMessage());
             request.setAttribute("room", extractFromRequest(request));
-            request.getRequestDispatcher("/pages/manager/room/form.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/manager/screening-room/form.jsp").forward(request, response);
         }
     }
 
@@ -95,13 +95,13 @@ public class Room extends HttpServlet {
             throws ServletException, IOException {
         List<ScreeningRoom> list = roomService.getRoomsByBranch(branchId);
         request.setAttribute("rooms", list);
-        request.getRequestDispatcher("/pages/manager/room/index.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/manager/screening-room/list.jsp").forward(request, response);
     }
 
     private void showForm(HttpServletRequest request, HttpServletResponse response, ScreeningRoom room)
             throws ServletException, IOException {
         if (room != null) request.setAttribute("room", room);
-        request.getRequestDispatcher("/pages/manager/room/form.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/manager/screening-room/form.jsp").forward(request, response);
     }
 
     private void deleteRoom(HttpServletRequest request, HttpServletResponse response) throws IOException {

@@ -1,11 +1,17 @@
 package services;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import config.CloudinaryConfig;
 import models.User;
 import repositories.Users;
 
-public class ProfileService {
+import java.util.Map;
 
+public class ProfileService {
     private final Users userRepo = new Users();
+    private final Cloudinary cloudinary = CloudinaryConfig.getCloudinary();
+    private final String uploadFolder = CloudinaryConfig.getUploadFolder();
 
     /**
      * Lấy thông tin profile của user dựa vào username (thường lấy từ session)
@@ -25,4 +31,33 @@ public class ProfileService {
             userRepo.updateLastLogin(user.getUserId());
         }
     }
+
+    /**
+     * Upload avatar lên Cloudinary và lưu URL vào DB
+     * @param fileBytes byte[] của file ảnh
+     * @param fileName tên file gốc
+     * @param userId ID người dùng
+     * @return URL secure mới nếu thành công, null nếu thất bại
+     */
+    public String uploadAvatar(byte[] fileBytes, String fileName, int userId) {
+        try {
+            Map<String, Object> uploadParams = ObjectUtils.asMap(
+                    "folder", CloudinaryConfig.getUploadFolder(),
+                    "public_id", "user_avatar_" + userId,
+                    "overwrite", true,
+                    "resource_type", "image",
+                    "allowed_formats", new String[]{"jpg", "jpeg", "png"}
+            );
+
+            Map uploadResult = CloudinaryConfig.getCloudinary().uploader().upload(fileBytes, uploadParams);
+            String avatarUrl = (String) uploadResult.get("secure_url");
+
+            boolean updated = userRepo.updateAvatarUrl(userId, avatarUrl);
+            return updated ? avatarUrl : null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 }

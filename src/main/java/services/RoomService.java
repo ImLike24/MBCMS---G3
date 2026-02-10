@@ -20,16 +20,14 @@ public class RoomService {
         if (room.getRoomName() == null || room.getRoomName().trim().isEmpty()) {
             throw new Exception("Tên phòng không được để trống");
         }
-        // Có thể thêm validate status phải thuộc (ACTIVE, CLOSED, MAINTENANCE) nếu cần
-        if (!roomDao.insertRoom(room)) {
-            throw new Exception("Failed to create room");
-        }
+        roomDao.insertRoom(room);
     }
 
     public void updateRoom(ScreeningRoom room) throws Exception {
         if (roomDao.getRoomById(room.getRoomId()) == null) {
             throw new Exception("Phòng chiếu không tồn tại");
         }
+<<<<<<< HEAD
         if (!roomDao.updateRoom(room)) {
             throw new Exception("Failed to update room");
         }
@@ -39,5 +37,12 @@ public class RoomService {
         if (!roomDao.deleteRoom(id)) {
             // Maybe throw exception, but original doesn't
         }
+=======
+        roomDao.updateRoom(room);
+    }
+
+    public void deleteRoom(int id) {
+        roomDao.deleteRoom(id);
+>>>>>>> e2689a2b20958094300a4d048b38a472aab3ad85
     }
 }

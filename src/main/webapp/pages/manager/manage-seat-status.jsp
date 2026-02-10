@@ -11,10 +11,17 @@
             <link rel="stylesheet" href="${pageContext.request.contextPath}/css/font-awesome.min.css">
             <link rel="stylesheet" href="${pageContext.request.contextPath}/css/global.css">
             <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+
                 body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background: #0c121d;
                     padding-top: 56px;
                     overflow-x: hidden;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     min-height: 100vh;
                 }
 
@@ -43,30 +50,43 @@
                 }
 
                 .page-header {
-                    background: white;
+                    background: #1a1a1a;
+                    border: 1px solid #262625;
                     padding: 25px 30px;
                     border-radius: 15px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                     margin-bottom: 30px;
                 }
 
                 .page-header h2 {
                     margin: 0;
-                    color: #2d3748;
-                    font-weight: 700;
+                    color: white;
+                    font-weight: 600;
                     font-size: 28px;
                 }
 
                 .page-header h2 i {
-                    color: #667eea;
+                    color: #d96c2c;
                     margin-right: 12px;
                 }
 
                 .alert {
                     border-radius: 12px;
-                    border: none;
-                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                    border: 1px solid #262625;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                     animation: slideDown 0.3s ease-out;
+                }
+
+                .alert-success {
+                    background: rgba(72, 187, 120, 0.2);
+                    color: #48bb78;
+                    border-color: #48bb78;
+                }
+
+                .alert-danger {
+                    background: rgba(245, 101, 101, 0.2);
+                    color: #f56565;
+                    border-color: #f56565;
                 }
 
                 @keyframes slideDown {
@@ -82,55 +102,71 @@
                 }
 
                 .config-card {
-                    background: white;
+                    background: #1a1a1a;
+                    border: 1px solid #262625;
                     border-radius: 15px;
                     padding: 25px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                     margin-bottom: 25px;
                 }
 
                 .config-card h5 {
-                    color: #2d3748;
-                    font-weight: 700;
+                    color: white;
+                    font-weight: 600;
                     margin-bottom: 20px;
                 }
 
                 .config-card h5 i {
-                    color: #667eea;
+                    color: #d96c2c;
                     margin-right: 10px;
                 }
 
                 .form-label {
                     font-weight: 600;
-                    color: #4a5568;
+                    color: #ccc;
                     margin-bottom: 8px;
+                }
+
+                .form-label i {
+                    color: #d96c2c;
                 }
 
                 .form-control,
                 .form-select {
                     border-radius: 10px;
-                    border: 2px solid #e2e8f0;
+                    border: 2px solid #262625;
+                    background: #0c121d;
+                    color: white;
                     padding: 10px 15px;
                     transition: all 0.3s;
                 }
 
                 .form-control:focus,
                 .form-select:focus {
-                    border-color: #667eea;
-                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                    outline: none;
+                    border-color: #d96c2c;
+                    box-shadow: 0 0 0 3px rgba(217, 108, 44, 0.2);
+                    background: #0c121d;
+                    color: white;
+                }
+
+                .form-select option {
+                    background: #1a1a1a;
+                    color: white;
                 }
 
                 /* Seat Grid */
                 .seat-grid-container {
-                    background: white;
+                    background: #1a1a1a;
+                    border: 1px solid #262625;
                     border-radius: 15px;
                     padding: 30px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                     overflow-x: auto;
                 }
 
                 .screen-indicator {
-                    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+                    background: #2d3748;
                     color: white;
                     text-align: center;
                     padding: 15px;
@@ -159,7 +195,7 @@
 
                 .row-label {
                     font-weight: 700;
-                    color: #667eea;
+                    color: #d96c2c;
                     width: 40px;
                     text-align: center;
                     font-size: 16px;
@@ -178,30 +214,30 @@
                     cursor: pointer;
                     transition: all 0.2s;
                     color: white;
-                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
                     border: 2px solid transparent;
                 }
 
                 .seat:hover {
                     transform: scale(1.15);
-                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
                 }
 
                 .seat.selected {
-                    border: 2px solid #2d3748;
-                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+                    border: 2px solid #d96c2c;
+                    box-shadow: 0 0 0 3px rgba(217, 108, 44, 0.3);
                 }
 
                 .seat-AVAILABLE {
-                    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+                    background: #48bb78;
                 }
 
                 .seat-BROKEN {
-                    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+                    background: #f56565;
                 }
 
                 .seat-MAINTENANCE {
-                    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+                    background: #ed8936;
                 }
 
                 .column-labels {
@@ -214,7 +250,7 @@
                     width: 41px;
                     text-align: center;
                     font-weight: 700;
-                    color: #667eea;
+                    color: #d96c2c;
                     font-size: 12px;
                 }
 
@@ -224,7 +260,7 @@
                     gap: 20px;
                     margin-top: 30px;
                     padding: 20px;
-                    background: #f7fafc;
+                    background: rgba(217, 108, 44, 0.1);
                     border-radius: 10px;
                 }
 
@@ -232,6 +268,7 @@
                     display: flex;
                     align-items: center;
                     gap: 8px;
+                    color: #ccc;
                 }
 
                 .legend-box {
@@ -241,19 +278,20 @@
                 }
 
                 .legend-box.available {
-                    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+                    background: #48bb78;
                 }
 
                 .legend-box.broken {
-                    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+                    background: #f56565;
                 }
 
                 .legend-box.maintenance {
-                    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+                    background: #ed8936;
                 }
 
                 .toolbar {
-                    background: #f7fafc;
+                    background: rgba(217, 108, 44, 0.1);
+                    border: 1px solid #262625;
                     padding: 20px;
                     border-radius: 10px;
                     margin-bottom: 20px;
@@ -261,6 +299,10 @@
                     gap: 10px;
                     flex-wrap: wrap;
                     align-items: center;
+                }
+
+                .toolbar strong {
+                    color: #ccc;
                 }
 
                 .btn-status {
@@ -276,27 +318,27 @@
                 }
 
                 .btn-status.active {
-                    border-color: #2d3748;
-                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+                    border-color: #d96c2c;
+                    box-shadow: 0 0 0 3px rgba(217, 108, 44, 0.2);
                 }
 
                 .btn-available {
-                    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+                    background: #48bb78;
                     color: white;
                 }
 
                 .btn-broken {
-                    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+                    background: #f56565;
                     color: white;
                 }
 
                 .btn-maintenance {
-                    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+                    background: #ed8936;
                     color: white;
                 }
 
                 .btn-save {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: #d96c2c;
                     color: white;
                     padding: 10px 30px;
                     border-radius: 8px;
@@ -306,33 +348,55 @@
                 }
 
                 .btn-save:hover {
+                    background: #fff;
+                    color: #000;
                     transform: translateY(-2px);
-                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                    box-shadow: 0 4px 15px rgba(217, 108, 44, 0.4);
+                }
+
+                .btn-secondary {
+                    background: #4a5568;
+                    color: white;
+                    border: none;
+                }
+
+                .btn-secondary:hover {
+                    background: #2d3748;
                 }
 
                 .empty-state {
                     padding: 60px 20px;
                     text-align: center;
-                    color: #a0aec0;
+                    color: #666;
                 }
 
                 .empty-state i {
                     font-size: 64px;
                     margin-bottom: 20px;
                     opacity: 0.5;
+                    color: #d96c2c;
+                }
+
+                .empty-state p {
+                    color: #ccc;
                 }
 
                 .info-box {
-                    background: #edf2f7;
-                    border-left: 4px solid #667eea;
+                    background: rgba(217, 108, 44, 0.1);
+                    border-left: 4px solid #d96c2c;
                     padding: 15px;
                     border-radius: 8px;
                     margin-bottom: 20px;
+                    color: #ccc;
                 }
 
                 .info-box i {
-                    color: #667eea;
+                    color: #d96c2c;
                     margin-right: 10px;
+                }
+
+                .info-box strong {
+                    color: #d96c2c;
                 }
 
                 .filter-section {

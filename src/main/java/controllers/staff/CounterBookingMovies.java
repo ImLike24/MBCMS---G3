@@ -74,7 +74,7 @@ public class CounterBookingMovies extends HttpServlet {
             int totalPages = (int) Math.ceil((double) totalMovies / PAGE_SIZE);
             
             // Get genres and age ratings for filter dropdowns
-            List<String> genres = moviesRepo.getGenresShowingOnDate(selectedDate);
+//            List<String> genres = moviesRepo.getGenresShowingOnDate(selectedDate);
             List<String> ageRatings = moviesRepo.getAgeRatingsShowingOnDate(selectedDate);
 
             // Set attributes for JSP
@@ -89,7 +89,7 @@ public class CounterBookingMovies extends HttpServlet {
             request.setAttribute("pageSize", PAGE_SIZE);
             
             // Filter attributes
-            request.setAttribute("genres", genres);
+//            request.setAttribute("genres", genres);
             request.setAttribute("ageRatings", ageRatings);
             request.setAttribute("selectedGenre", genre);
             request.setAttribute("selectedAgeRating", ageRating);
