@@ -27,22 +27,10 @@ public class RoomService {
         if (roomDao.getRoomById(room.getRoomId()) == null) {
             throw new Exception("Phòng chiếu không tồn tại");
         }
-<<<<<<< HEAD
-        if (!roomDao.updateRoom(room)) {
-            throw new Exception("Failed to update room");
-        }
-    }
-
-    public void deleteRoom(int id) {
-        if (!roomDao.deleteRoom(id)) {
-            // Maybe throw exception, but original doesn't
-        }
-=======
         roomDao.updateRoom(room);
     }
 
     public void deleteRoom(int id) {
         roomDao.deleteRoom(id);
->>>>>>> e2689a2b20958094300a4d048b38a472aab3ad85
     }
 }
