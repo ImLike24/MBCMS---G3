@@ -12,6 +12,22 @@ import config.DBContext;
 import models.Movie;
 
 public class Movies extends DBContext {
+    
+    public List<Movie> getMockUpMovies(){
+        List<Movie> movies = new ArrayList<>();
+        String sql = "SELECT * FROM movies WHERE is_active = 1 ORDER BY release_date DESC";
+        
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                movies.add(mapResultSetToMovie(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return movies;
+    }
 
     // Get all movies
     public List<Movie> getAllMovies() {

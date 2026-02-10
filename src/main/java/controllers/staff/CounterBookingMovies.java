@@ -1,5 +1,6 @@
 package controllers.staff;
 
+import models.User;
 import models.Movie;
 import repositories.Movies;
 import jakarta.servlet.ServletException;

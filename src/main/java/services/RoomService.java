@@ -9,7 +9,7 @@ public class RoomService {
     private final ScreeningRooms roomDao = new ScreeningRooms();
 
     public List<ScreeningRoom> getRoomsByBranch(int branchId) {
-        return roomDao.getAllRoomsByBranch(branchId);
+        return roomDao.findByBranchId(branchId);
     }
 
     public ScreeningRoom getRoomById(int id) {
