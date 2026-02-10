@@ -4,6 +4,7 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.time.format.DateTimeFormatter;
 
 @Data
 @NoArgsConstructor
@@ -24,4 +25,9 @@ public class Movie {
     private boolean isActive = true;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public String getReleaseDateFormatted() {
+    if (releaseDate == null) return "";
+    return releaseDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+}
 }
