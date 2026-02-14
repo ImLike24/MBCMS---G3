@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <title>Header</title>
     <link href="${pageContext.request.contextPath}/css/bootstrap.min.css" rel="stylesheet" >
     <link href="${pageContext.request.contextPath}/css/font-awesome.min.css" rel="stylesheet" >
     <link href="${pageContext.request.contextPath}/css/global.css" rel="stylesheet">
