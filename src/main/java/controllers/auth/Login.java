@@ -1,14 +1,15 @@
 package controllers.auth;
 
-import services.AuthService;
-import models.User;
+import java.io.IOException;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.io.IOException;
+import models.User;
+import services.AuthService;
 
 @WebServlet(name = "login", urlPatterns = { "/login" })
 public class Login extends HttpServlet {

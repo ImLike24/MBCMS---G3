@@ -31,6 +31,11 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <div class="container-fluid">
+        <button class="hamburger" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
 
         <a class="navbar-brand fw-bold" href="${pageContext.request.contextPath}/home">
             <i class="fa fa-modx text-warning"></i>

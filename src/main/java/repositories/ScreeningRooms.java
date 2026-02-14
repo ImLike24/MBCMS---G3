@@ -1,12 +1,13 @@
 package repositories;
 
-import config.DBContext;
-import models.ScreeningRoom;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import config.DBContext;
+import models.ScreeningRoom;
 
 public class ScreeningRooms extends DBContext {
 
