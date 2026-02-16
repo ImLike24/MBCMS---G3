@@ -62,13 +62,13 @@ public class Reviews extends DBContext {
             st.setInt(2, r.getMovieId());
             st.setDouble(3, r.getRating());
             st.setString(4, r.getComment());
-            st.setBoolean(5, r.isVerified()); // Usually true if booked, handled by logic. Default false maybe?
+            st.setBoolean(5, r.isVerified());
             st.setTimestamp(6, Timestamp.valueOf(LocalDateTime.now()));
 
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-        return false;
     }
 }

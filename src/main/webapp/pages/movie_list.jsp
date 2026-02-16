@@ -58,7 +58,7 @@
                         </p>
 
                         <div class="mt-auto">
-                            <a href="${pageContext.request.contextPath}/pages/movie_detail?movieId=${movie.movieId}"
+                            <a href="${pageContext.request.contextPath}/movie?movieId=${movie.movieId}"
                                class="btn btn-primary">
                                 Xem Chi Tiết
                             </a>
