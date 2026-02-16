@@ -15,7 +15,7 @@ import models.User;
 import repositories.Movies;
 import repositories.Reviews;
 
-@WebServlet(name = "MovieDetail", urlPatterns = { "/pages/movie_detail" })
+@WebServlet(name = "MovieDetail", urlPatterns = { "/movie" })
 public class MovieDetail extends HttpServlet {
 
     @Override
@@ -49,9 +49,11 @@ public class MovieDetail extends HttpServlet {
 
             request.getRequestDispatcher("/pages/movie_detail.jsp").forward(request, response);
 
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid Movie ID");
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "System error.");
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "System error: " + e.getMessage());
         } finally {
             if (movieDao != null)
                 movieDao.closeConnection();
@@ -89,6 +91,8 @@ public class MovieDetail extends HttpServlet {
                 review.setMovieId(movieId);
                 review.setRating(rating);
                 review.setComment(comment);
+                
+                review.setVerified(false);
 
                 reviewDao.addReview(review);
 
@@ -99,6 +103,8 @@ public class MovieDetail extends HttpServlet {
                         + "&message=failed");
             }
 
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid input parameters");
         } catch (Exception e) {
             e.printStackTrace();
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "System error");

@@ -26,8 +26,19 @@ public class Movie {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // For Showtimes view
+    private java.util.List<Showtime> showtimes = new java.util.ArrayList<>();
+
     public String getReleaseDateFormatted() {
-    if (releaseDate == null) return "";
-    return releaseDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-}
+        if (releaseDate == null)
+            return "";
+        return releaseDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    public String getGenre() {
+        if (genres == null || genres.isEmpty()) {
+            return "";
+        }
+        return String.join(", ", genres);
+    }
 }
