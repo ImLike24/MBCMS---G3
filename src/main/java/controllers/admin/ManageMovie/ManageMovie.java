@@ -1,4 +1,4 @@
-package controllers.admin;
+package controllers.admin.ManageMovie;
 
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebServlet;
