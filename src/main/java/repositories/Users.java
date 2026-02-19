@@ -120,10 +120,10 @@ public class Users extends DBContext {
 
     public boolean updateProfile(User u) {
         String sql = """
-            UPDATE users 
-            SET fullName = ?, email = ?, phone = ?, birthday = ?, password = ?, updated_at = SYSDATETIME()
-            WHERE user_id = ?
-        """;
+                    UPDATE users
+                    SET fullName = ?, email = ?, phone = ?, birthday = ?, password = ?, updated_at = SYSDATETIME()
+                    WHERE user_id = ?
+                """;
 
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, u.getFullName());
@@ -144,7 +144,7 @@ public class Users extends DBContext {
         }
         return false;
     }
-    
+
     public boolean checkPhoneExists(String phone) {
         String sql = "SELECT 1 FROM users WHERE phone = ?";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
@@ -341,12 +341,14 @@ public class Users extends DBContext {
     }
 
     public List<User> findUsersByRoleName(String branch_manager) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from
+                                                                       // nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
     /**
      * Tìm user dựa trên email.
      * Dùng cho chức năng Quên mật khẩu và Đăng nhập.
+     * 
      * @param email Email cần tìm
      * @return User object nếu tìm thấy, null nếu không có.
      */

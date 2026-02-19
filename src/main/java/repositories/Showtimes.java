@@ -344,7 +344,7 @@ public class Showtimes extends DBContext {
                         movie.setDuration(rs.getInt("duration"));
                         movie.setRating(rs.getDouble("rating"));
                         movie.setAgeRating(rs.getString("age_rating"));
-                        
+
                         // Use helper to fetch genres
                         movie.setGenres(getGenresByMovieId(movieId));
 
