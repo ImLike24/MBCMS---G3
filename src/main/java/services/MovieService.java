@@ -1,5 +1,6 @@
 package services;
 
+import java.sql.SQLException;
 import java.util.List;
 import models.Movie;
 import repositories.Movies;
@@ -13,12 +14,7 @@ public class MovieService {
     }
 
     public Movie getMovieById(int id) {
-        try {
-            return movieDao.getMovieById(id);
-        } catch (java.sql.SQLException e) {
-            e.printStackTrace();
-            return null;
-        }
+        return movieDao.getMovieById(id);
     }
 
     public void insertMovie(Movie m, List<Integer> genreIds) {
