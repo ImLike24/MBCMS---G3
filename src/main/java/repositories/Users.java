@@ -1,7 +1,6 @@
 package repositories;
 
 import config.DBContext;
-import java.sql.Connection;
 import models.User;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

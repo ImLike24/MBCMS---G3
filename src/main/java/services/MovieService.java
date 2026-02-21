@@ -1,6 +1,5 @@
 package services;
 
-import java.sql.SQLException;
 import java.util.List;
 import models.Movie;
 import repositories.Movies;

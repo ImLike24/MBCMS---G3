@@ -4,7 +4,6 @@ import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import models.Movie;
-import models.Genre;
 import services.MovieService;
 import services.GenreService;
 

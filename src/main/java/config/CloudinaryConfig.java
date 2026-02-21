@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import com.cloudinary.Cloudinary;
-
 public class CloudinaryConfig {
     private static Cloudinary cloudinary;
     private static Properties props;
