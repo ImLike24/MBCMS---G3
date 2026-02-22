@@ -1,5 +1,8 @@
 package repositories;
 
+import config.DBContext;
+import models.Movie;
+
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -619,5 +622,80 @@ public class Movies extends DBContext {
                 e.printStackTrace();
             }
         }
+    }
+
+    public List<Movie> getNowShowing() {
+        // Lấy 12 phim đang chiếu, sắp xếp theo ngày phát hành mới nhất
+        String sql = """
+            SELECT TOP 12 m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+            FROM movies m
+            LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+            LEFT JOIN genres g ON mg.genre_id = g.genre_id
+            WHERE m.is_active = 1
+              AND m.release_date <= CAST(GETDATE() AS DATE)
+              AND (m.end_date IS NULL OR m.end_date >= CAST(GETDATE() AS DATE))
+            GROUP BY 
+                m.movie_id, m.title, m.description, m.duration,
+                m.release_date, m.end_date, m.rating, m.age_rating,
+                m.director, m.cast, m.poster_url, m.is_active,
+                m.created_at, m.updated_at
+            ORDER BY m.release_date DESC
+        """;
+        return getMoviesBySql(sql);
+    }
+
+    public List<Movie> getComingSoon() {
+        // Lấy 12 phim sắp chiếu
+        String sql = """
+            SELECT TOP 12 m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+            FROM movies m
+            LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+            LEFT JOIN genres g ON mg.genre_id = g.genre_id
+            WHERE m.is_active = 1
+              AND m.release_date > CAST(GETDATE() AS DATE)
+            GROUP BY 
+                m.movie_id, m.title, m.description, m.duration,
+                m.release_date, m.end_date, m.rating, m.age_rating,
+                m.director, m.cast, m.poster_url, m.is_active,
+                m.created_at, m.updated_at
+            ORDER BY m.release_date ASC
+        """;
+        return getMoviesBySql(sql);
+    }
+
+    public List<Movie> getTopRated(int limit) {
+        // Lấy phim có rating cao nhất
+        String sql = """
+            SELECT TOP (?) m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+            FROM movies m
+            LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+            LEFT JOIN genres g ON mg.genre_id = g.genre_id
+            WHERE m.is_active = 1
+            GROUP BY 
+                m.movie_id, m.title, m.description, m.duration,
+                m.release_date, m.end_date, m.rating, m.age_rating,
+                m.director, m.cast, m.poster_url, m.is_active,
+                m.created_at, m.updated_at
+            ORDER BY m.rating DESC
+        """;
+        return getMoviesBySql(sql, limit);
+    }
+
+    private List<Movie> getMoviesBySql(String sql, Object... params) {
+        List<Movie> list = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            for (int i = 0; i < params.length; i++) {
+                ps.setObject(i + 1, params[i]);
+            }
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(mapResultSetToMovie(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 }

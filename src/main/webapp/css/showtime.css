@@ -1,0 +1,114 @@
+.date-bar {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 10px 0;
+    background: #fff;
+    border-bottom: 2px solid #eee;
+    margin-bottom: 20px;
+}
+
+.date-item {
+    display: inline-block;
+    padding: 10px 25px;
+    margin-right: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    min-width: 100px;
+    transition: all 0.3s ease;
+}
+
+.date-item:hover {
+    background-color: #f0f0f0;
+}
+
+.date-item.active {
+    background-color: #ff4444;
+    color: white;
+    border-color: #ff4444;
+}
+
+.date-item .day-name {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.date-item .date-val {
+    font-size: 0.9em;
+}
+
+.movie-group {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.movie-poster {
+    width: 120px;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-right: 20px;
+}
+
+.movie-info {
+    flex: 1;
+}
+
+.movie-title {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.showtime-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.showtime-btn {
+    display: inline-block;
+    padding: 8px 15px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    color: #333;
+    text-decoration: none;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.showtime-btn:hover {
+    background: #ff4444;
+    color: white;
+    border-color: #ff4444;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 20px;
+    font-size: 1.2em;
+    color: #666;
+}
+
+#resetBtn {
+    background-color: #d96c2c;
+    color: #fff;
+    border-color: #d96c2c;
+    transition: all 0.3s;
+}
+
+#resetBtn:hover {
+    background-color: #fff;
+    color: #000;
+    border-color: #d96c2c;
+}

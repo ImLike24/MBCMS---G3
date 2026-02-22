@@ -844,3 +844,93 @@ GO
 -- Nếu staff2 đã tồn tại nhưng đăng nhập không được, chạy lệnh sau để sửa mật khẩu (password = password):
 -- UPDATE users SET password = '$2a$10$BsDOyk3.dFIxPtGshxvTnubWVZ0gX6O9m3J/WZxPhIFG8v31THOke' WHERE username = 'staff2';
 
+create table genres
+(
+    genre_id    int identity
+        primary key,
+    genre_name  nvarchar(100) not null
+        unique,
+    description nvarchar(255),
+    is_active   bit       default 1,
+    created_at  datetime2 default sysdatetime(),
+    updated_at  datetime2 default sysdatetime()
+)
+go
+
+create index idx_genres_active
+    on genres (is_active)
+go
+
+
+-- Trigger: Auto update genres.updated_at
+CREATE TRIGGER trg_genres_updated ON genres
+AFTER UPDATE AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE g SET updated_at = SYSDATETIME()
+    FROM genres g
+    INNER JOIN inserted i ON g.genre_id = i.genre_id;
+END;
+go
+
+create table movie_genres
+(
+    movie_id int not null
+        constraint FK_movie_genres_movie
+            references movies(movie_id)
+            on delete cascade,
+
+    genre_id int not null
+        constraint FK_movie_genres_genre
+            references genres(genre_id)
+            on delete cascade,
+
+    created_at datetime2 default sysdatetime(),
+
+    constraint PK_movie_genres
+        primary key (movie_id, genre_id)
+)
+go
+
+create index idx_movie_genres_movie
+    on movie_genres (movie_id)
+go
+
+create index idx_movie_genres_genre
+    on movie_genres (genre_id)
+go
+
+drop index idx_movies_genre on movies
+go
+
+alter table movies
+drop column genre
+go
+
+-- =============================================
+-- Seat Type Surcharge Config (per branch)
+-- Run this on existing DB to add surcharge support
+-- =============================================
+CREATE TABLE seat_type_surcharges (
+    surcharge_id   INT IDENTITY(1,1) PRIMARY KEY,
+    branch_id      INT NOT NULL,
+    seat_type      VARCHAR(10) NOT NULL,
+    surcharge_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+    updated_at     DATETIME2 DEFAULT SYSDATETIME(),
+    CONSTRAINT FK_surcharge_branch    FOREIGN KEY (branch_id) REFERENCES cinema_branches(branch_id),
+    CONSTRAINT CK_surcharge_seat_type CHECK (seat_type IN ('NORMAL','VIP','COUPLE')),
+    CONSTRAINT CK_surcharge_rate      CHECK (surcharge_rate >= 0),
+    CONSTRAINT UQ_surcharge_branch_type UNIQUE (branch_id, seat_type)
+);
+GO
+
+-- Default rows (0% surcharge for all types per existing branch)
+INSERT INTO seat_type_surcharges (branch_id, seat_type, surcharge_rate)
+SELECT b.branch_id, t.seat_type, 0
+FROM cinema_branches b
+CROSS JOIN (VALUES ('NORMAL'),('VIP'),('COUPLE')) AS t(seat_type)
+WHERE NOT EXISTS (
+    SELECT 1 FROM seat_type_surcharges s
+    WHERE s.branch_id = b.branch_id AND s.seat_type = t.seat_type
+);
+GO

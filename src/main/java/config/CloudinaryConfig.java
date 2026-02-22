@@ -1,5 +1,6 @@
 package config;
 
+import com.cloudinary.Cloudinary;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
