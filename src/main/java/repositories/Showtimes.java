@@ -563,7 +563,7 @@ public class Showtimes extends DBContext {
      * Hard-delete a CANCELLED showtime.
      */
     public boolean deleteShowtime(int showtimeId) {
-        String sql = "DELETE FROM showtimes WHERE showtime_id = ? AND status = 'CANCELLED'";
+        String sql = "DELETE FROM showtimes WHERE showtime_id = ? AND status IN ('CANCELLED', 'COMPLETED')";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, showtimeId);
             return ps.executeUpdate() > 0;
@@ -599,18 +599,21 @@ public class Showtimes extends DBContext {
         stats.put("ONGOING", 0);
         stats.put("COMPLETED", 0);
         stats.put("CANCELLED", 0);
-        String sql = "SELECT status, COUNT(*) AS cnt FROM showtimes st "
+        String sql = "SELECT st.status, COUNT(*) AS cnt FROM showtimes st "
                 + "JOIN screening_rooms sr ON st.room_id = sr.room_id "
-                + "WHERE sr.branch_id = ? GROUP BY status";
+                + "WHERE sr.branch_id = ? GROUP BY st.status";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, branchId);
             try (ResultSet rs = ps.executeQuery()) {
                 int total = 0;
                 while (rs.next()) {
                     String status = rs.getString("status");
-                    int cnt = rs.getInt("cnt");
-                    stats.put(status, cnt);
-                    total += cnt;
+                    if (status != null) {
+                        status = status.trim().toUpperCase();
+                        int cnt = rs.getInt("cnt");
+                        stats.put(status, cnt);
+                        total += cnt;
+                    }
                 }
                 stats.put("total", total);
             }

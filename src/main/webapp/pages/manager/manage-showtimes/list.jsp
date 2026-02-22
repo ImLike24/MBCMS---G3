@@ -66,7 +66,7 @@
                     }
 
                     .table-custom th {
-                        background-color: #f1f1f1;
+                        background-color: #070707;
                         font-weight: 600;
                         font-size: 0.85rem;
                         text-transform: uppercase;
@@ -153,6 +153,28 @@
                             <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
                                 <i class="fa-solid fa-triangle-exclamation me-2"></i>Chỉ có thể chỉnh sửa suất chiếu ở
                                 trạng thái Đã lên lịch.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </c:if>
+                        <c:if test="${param.message == 'deleted'}">
+                            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm"
+                                role="alert">
+                                <i class="fa-solid fa-trash-can me-2"></i>Đã xóa suất chiếu thành công.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </c:if>
+                        <c:if test="${param.error == 'deletefailed'}">
+                            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+                                <i class="fa-solid fa-circle-xmark me-2"></i>Không thể xóa suất chiếu. Suất chiếu có thể
+                                đã phát sinh vé hoặc có lỗi hệ thống.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </c:if>
+                        <c:if test="${param.error == 'notdeletable'}">
+                            <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm"
+                                role="alert">
+                                <i class="fa-solid fa-triangle-exclamation me-2"></i>Chỉ có thể xóa suất chiếu đã Hoàn
+                                thành hoặc đã Hủy.
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                         </c:if>
@@ -300,7 +322,15 @@
                                                                 <i class="fa-solid fa-ban"></i>
                                                             </a>
                                                         </c:if>
-                                                        <c:if test="${st.status != 'SCHEDULED'}">
+                                                        <c:if
+                                                            test="${st.status == 'COMPLETED' or st.status == 'CANCELLED'}">
+                                                            <button type="button"
+                                                                class="btn btn-outline-secondary btn-sm"
+                                                                onclick="confirmDelete(${st.showtimeId})" title="Xóa">
+                                                                <i class="fa-solid fa-trash-can"></i>
+                                                            </button>
+                                                        </c:if>
+                                                        <c:if test="${st.status == 'ONGOING'}">
                                                             <span class="text-muted small">—</span>
                                                         </c:if>
                                                     </td>
@@ -324,6 +354,22 @@
                 </main>
 
                 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+
+                <!-- Deletion handling -->
+                <form id="deleteForm" method="post"
+                    action="${pageContext.request.contextPath}/branch-manager/manage-showtimes">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="showtimeId" id="deleteShowtimeId">
+                </form>
+
+                <script>
+                    function confirmDelete(id) {
+                        if (confirm('Bạn có chắc chắn muốn xóa suất chiếu này khỏi hệ thống? \nHành động này không thể hoàn tác.')) {
+                            document.getElementById('deleteShowtimeId').value = id;
+                            document.getElementById('deleteForm').submit();
+                        }
+                    }
+                </script>
             </body>
 
             </html>

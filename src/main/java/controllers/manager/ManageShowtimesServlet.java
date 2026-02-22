@@ -87,6 +87,8 @@ public class ManageShowtimesServlet extends HttpServlet {
             handleUpdate(request, response, branch.getBranchId());
         } else if ("cancel".equals(action)) {
             handleCancelWithRefund(request, response, branch.getBranchId());
+        } else if ("delete".equals(action)) {
+            handleDelete(request, response, branch.getBranchId());
         } else {
             response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
         }
@@ -98,7 +100,7 @@ public class ManageShowtimesServlet extends HttpServlet {
     private void listShowtimes(HttpServletRequest request, HttpServletResponse response, int branchId)
             throws ServletException, IOException {
 
-        // Auto-update statuses for this branch
+        // Auto-update statuses for this branch (fresh connection)
         showtimesDao.autoUpdateStatuses(branchId);
 
         // Read optional filters
@@ -402,6 +404,48 @@ public class ManageShowtimesServlet extends HttpServlet {
             e.printStackTrace();
             response.sendRedirect(request.getContextPath()
                     + "/branch-manager/manage-showtimes?error=invalid");
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST: Delete
+    // ─────────────────────────────────────────────────────────────────────────
+    private void handleDelete(HttpServletRequest request, HttpServletResponse response, int branchId)
+            throws IOException {
+        try {
+            int showtimeId = Integer.parseInt(request.getParameter("showtimeId"));
+
+            // Verify showtime belongs to this branch
+            Showtime existing = showtimesDao.getShowtimeById(showtimeId);
+            if (existing == null) {
+                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notfound");
+                return;
+            }
+
+            // check room belongs to branch
+            ScreeningRoom room = roomsDao.getRoomById(existing.getRoomId());
+            if (room == null || room.getBranchId() != branchId) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+
+            // Only COMPLETED or CANCELLED can be deleted
+            String status = existing.getStatus();
+            if (!"COMPLETED".equals(status) && !"CANCELLED".equals(status)) {
+                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notdeletable");
+                return;
+            }
+
+            boolean deleted = showtimesDao.deleteShowtime(showtimeId);
+            if (deleted) {
+                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?message=deleted");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=deletefailed");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=invalid");
         }
     }
 
