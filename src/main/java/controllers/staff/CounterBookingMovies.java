@@ -40,11 +40,25 @@ public class CounterBookingMovies extends HttpServlet {
         Movies moviesRepo = null;
         try {
             moviesRepo = new Movies();
-            // Get date parameter (default to today)
+            // Get date parameter
+            // If no date param provided, default to TODAY (not show all)
             String dateParam = request.getParameter("date");
-            LocalDate selectedDate = (dateParam != null && !dateParam.isEmpty())
-                    ? LocalDate.parse(dateParam)
-                    : LocalDate.now();
+            LocalDate selectedDate;
+            boolean showAllMovies = false;
+            
+            // Check if user explicitly requested "show all" via reset (special flag)
+            String resetParam = request.getParameter("reset");
+            if ("true".equals(resetParam)) {
+                // User clicked Reset - show all movies
+                showAllMovies = true;
+                selectedDate = null;
+            } else if (dateParam == null || dateParam.isEmpty()) {
+                // First visit or no date provided - default to TODAY
+                selectedDate = LocalDate.now();
+            } else {
+                // Date parameter provided - use it
+                selectedDate = LocalDate.parse(dateParam);
+            }
 
             // Get search parameter
             String search = request.getParameter("search");
@@ -67,22 +81,55 @@ public class CounterBookingMovies extends HttpServlet {
             }
 
             // Get movies with filter, search and pagination
-            List<Movie> movies = moviesRepo.getMoviesShowingOnDateWithFilter(
-                    selectedDate, search, genre, ageRating, page, PAGE_SIZE);
-
-            // Get total count for pagination
-            int totalMovies = moviesRepo.countMoviesShowingOnDateWithFilter(
-                    selectedDate, search, genre, ageRating);
+            List<Movie> movies;
+            int totalMovies;
+            List<String> ageRatings;
+            
+            if (showAllMovies) {
+                // Show all active movies (no date filter - e.g. after Reset)
+                // Use getAllActiveMovies() then filter/paginate in Java for reliability
+                List<Movie> allActive = moviesRepo.getAllActiveMovies();
+                if (search != null && !search.trim().isEmpty()) {
+                    String q = search.trim().toLowerCase();
+                    allActive = allActive.stream()
+                            .filter(m -> (m.getTitle() != null && m.getTitle().toLowerCase().contains(q))
+                                    || (m.getDirector() != null && m.getDirector().toLowerCase().contains(q))
+                                    || (m.getCast() != null && m.getCast().toLowerCase().contains(q)))
+                            .toList();
+                }
+                if (genre != null && !genre.trim().isEmpty()) {
+                    String g = genre.trim().toLowerCase();
+                    allActive = allActive.stream()
+                            .filter(m -> m.getGenres() != null && m.getGenres().stream()
+                                    .anyMatch(ge -> ge != null && ge.toLowerCase().contains(g)))
+                            .toList();
+                }
+                if (ageRating != null && !ageRating.trim().isEmpty()) {
+                    allActive = allActive.stream()
+                            .filter(m -> ageRating.trim().equalsIgnoreCase(m.getAgeRating()))
+                            .toList();
+                }
+                totalMovies = allActive.size();
+                int from = (page - 1) * PAGE_SIZE;
+                int to = Math.min(from + PAGE_SIZE, totalMovies);
+                movies = from < totalMovies ? allActive.subList(from, to) : List.of();
+                ageRatings = moviesRepo.getAgeRatingsFromActiveMovies();
+            } else {
+                // Show movies for specific date
+                movies = moviesRepo.getMoviesShowingOnDateWithFilter(
+                        selectedDate, search, genre, ageRating, page, PAGE_SIZE);
+                totalMovies = moviesRepo.countMoviesShowingOnDateWithFilter(
+                        selectedDate, search, genre, ageRating);
+                ageRatings = moviesRepo.getAgeRatingsShowingOnDate(selectedDate);
+            }
+            
             int totalPages = (int) Math.ceil((double) totalMovies / PAGE_SIZE);
-
-            // Get genres and age ratings for filter dropdowns
-            // List<String> genres = moviesRepo.getGenresShowingOnDate(selectedDate);
-            List<String> ageRatings = moviesRepo.getAgeRatingsShowingOnDate(selectedDate);
 
             // Set attributes for JSP
             request.setAttribute("movies", movies);
             request.setAttribute("selectedDate", selectedDate);
             request.setAttribute("today", LocalDate.now());
+            request.setAttribute("showAllMovies", showAllMovies);
 
             // Pagination attributes
             request.setAttribute("currentPage", page);
@@ -91,7 +138,6 @@ public class CounterBookingMovies extends HttpServlet {
             request.setAttribute("pageSize", PAGE_SIZE);
 
             // Filter attributes
-            // request.setAttribute("genres", genres);
             request.setAttribute("ageRatings", ageRatings);
             request.setAttribute("selectedGenre", genre);
             request.setAttribute("selectedAgeRating", ageRating);
