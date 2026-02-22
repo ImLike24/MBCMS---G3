@@ -58,7 +58,8 @@ public class CinemaBranches extends DBContext {
                 st.setObject(i + 1, params.get(i));
             }
             ResultSet rs = st.executeQuery();
-            if (rs.next()) return rs.getInt(1);
+            if (rs.next())
+                return rs.getInt(1);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -119,7 +120,8 @@ public class CinemaBranches extends DBContext {
             }
 
             ResultSet rs = st.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
+            while (rs.next())
+                list.add(mapRow(rs));
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -127,7 +129,8 @@ public class CinemaBranches extends DBContext {
     }
 
     public CinemaBranch findById(int id) {
-        // Cũng dùng LEFT JOIN ở đây để khi Edit form hiện lên có thể biết tên quản lý cũ
+        // Cũng dùng LEFT JOIN ở đây để khi Edit form hiện lên có thể biết tên quản lý
+        // cũ
         String sql = "SELECT b.*, u.fullName as manager_name " +
                 "FROM cinema_branches b " +
                 "LEFT JOIN users u ON b.manager_id = u.user_id " +
@@ -270,11 +273,28 @@ public class CinemaBranches extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, managerId);
             try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return mapRow(rs);
+                if (rs.next())
+                    return mapRow(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return null; // Trả về null nếu ông này không quản lý rạp nào
+    }
+
+    public List<CinemaBranch> findByCity(String city) {
+        List<CinemaBranch> list = new ArrayList<>();
+        // Simple LIKE search on address for now
+        String sql = "SELECT * FROM cinema_branches WHERE address LIKE ? AND is_active = 1";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, "%" + city + "%");
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next())
+                    list.add(mapRow(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 }

@@ -3,21 +3,10 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
     <title>Quản lý Chi nhánh</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <style>
-        body { background-color: #f3f4f6; padding-top: 56px; overflow-x: hidden; }
-        #sidebarMenu { position: fixed; top: 56px; left: 0; bottom: 0; z-index: 100; overflow-y: auto; }
-        main { margin-left: 280px; padding: 30px; transition: margin-left 0.3s; }
-        .sidebar-collapsed #sidebarMenu { margin-left: -280px; }
-        .sidebar-collapsed main { margin-left: 0; }
-
-        .table-action-btn { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; }
-        .status-badge { font-size: 0.85rem; padding: 6px 12px; border-radius: 20px; font-weight: 500; }
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin-layout.css">
 </head>
 <body>
 
@@ -31,110 +20,102 @@
     <div class="container-fluid">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h2 class="fw-bold text-dark">Danh sách Chi nhánh</h2>
+                <h3 class="fw-bold" style="color: #212529;">Quản lý Chi nhánh</h3>
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Bảng điều khiển</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Chi nhánh</li>
+                        <li class="breadcrumb-item"><a href="#" class="text-decoration-none text-secondary">Admin</a></li>
+                        <li class="breadcrumb-item active" style="color: #d96c2c;">Chi nhánh</li>
                     </ol>
                 </nav>
             </div>
-            <a href="branches?action=create" class="btn btn-primary shadow-sm">
-                <i class="fa fa-plus me-2"></i>Thêm Chi nhánh mới
+            <a href="branches?action=create" class="btn btn-orange shadow-sm px-4">
+                <i class="fa fa-plus me-2"></i>Thêm mới
             </a>
         </div>
 
         <c:if test="${not empty param.message}">
-            <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-                <i class="fa fa-check-circle me-2"></i> Thao tác thành công!
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="alert alert-success border-0 shadow-sm d-flex align-items-center" role="alert" style="border-left: 4px solid #d96c2c !important;">
+                <i class="fa fa-check-circle me-2 text-success"></i> Thao tác thành công!
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
             </div>
         </c:if>
 
-        <div class="card border-0 shadow-sm rounded-4">
+        <div class="card card-custom">
             <div class="card-body p-4">
+
                 <form action="branches" method="get" id="filterForm">
                     <div class="row mb-4 g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-5">
                             <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="fa fa-search text-muted"></i></span>
-                                <input type="text" class="form-control border-start-0 bg-light"
+                                <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-muted"></i></span>
+                                <input type="text" class="form-control border-start-0"
                                        name="search" value="${currentSearch}"
                                        placeholder="Tìm kiếm tên chi nhánh...">
                             </div>
                         </div>
-                        <div class="col-md-2 ms-auto">
+                        <div class="col-md-3 ms-auto">
                             <select class="form-select" name="status" onchange="document.getElementById('filterForm').submit()">
-                                <option value="">Trạng thái: Tất cả</option>
-                                <option value="true" ${param.status == 'true' ? 'selected' : ''}>Hoạt động</option>
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="true" ${param.status == 'true' ? 'selected' : ''}>Đang hoạt động</option>
                                 <option value="false" ${param.status == 'false' ? 'selected' : ''}>Ngừng hoạt động</option>
                             </select>
                         </div>
-                        <div class="col-md-1">
-                            <button type="submit" class="btn btn-secondary w-100">Tìm</button>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-dark w-100">Lọc dữ liệu</button>
                         </div>
                     </div>
                 </form>
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light text-secondary">
+                    <table class="table table-custom table-hover align-middle">
+                        <thead>
                         <tr>
-                            <th scope="col" width="5%">ID</th>
-                            <th scope="col" width="20%">Tên Chi nhánh</th>
-                            <th scope="col" width="30%">Thông tin liên hệ</th>
-                            <th scope="col" width="15%">Quản lý</th>
-                            <th scope="col" width="15%">Trạng thái</th>
-                            <th scope="col" width="15%" class="text-end">Hành động</th>
+                            <th class="ps-4">ID</th>
+                            <th>Tên Chi nhánh</th>
+                            <th>Liên hệ</th>
+                            <th>Quản lý</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end pe-4">Hành động</th>
                         </tr>
                         </thead>
                         <tbody>
                         <c:forEach var="b" items="${branches}">
                             <tr>
-                                <td class="fw-bold text-muted">#${b.branchId}</td>
+                                <td class="ps-4 fw-bold" style="color: #d96c2c;">#${b.branchId}</td>
                                 <td>
                                     <div class="fw-bold text-dark">${b.branchName}</div>
-                                    <small class="text-muted">Ngày tạo: ${b.createdAt.toLocalDate()}</small>
+                                    <small class="text-muted"><i class="fa fa-clock-o me-1"></i>${b.createdAt.toLocalDate()}</small>
                                 </td>
                                 <td>
-                                    <div class="d-flex align-items-center mb-1">
-                                        <i class="fa fa-map-marker text-danger me-2" style="width:15px"></i>
-                                        <span class="text-truncate" style="max-width: 200px;">${b.address}</span>
+                                    <div class="d-flex align-items-center mb-1 text-secondary">
+                                        <i class="fa fa-map-marker me-2 text-danger" style="width:15px"></i>${b.address}
                                     </div>
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-phone text-success me-2" style="width:15px"></i> ${b.phone}
+                                    <div class="d-flex align-items-center text-secondary">
+                                        <i class="fa fa-phone me-2 text-success" style="width:15px"></i>${b.phone}
                                     </div>
                                 </td>
                                 <td>
-                                    <c:if test="${not empty b.managerName}">
-                                        <div class="d-flex align-items-center">
-                                            <div class="bg-light rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 30px; height: 30px;">
-                                                <i class="fa fa-user-tie text-primary"></i>
+                                    <c:choose>
+                                        <c:when test="${not empty b.managerName}">
+                                            <div class="badge bg-light text-dark border">
+                                                <i class="fa fa-user me-1" style="color: #d96c2c;"></i> ${b.managerName}
                                             </div>
-                                            <div>
-                                                <div class="fw-bold text-dark">${b.managerName}</div>
-                                                <small class="text-muted" style="font-size: 0.75rem;">ID: ${b.managerId}</small>
-                                            </div>
-                                        </div>
-                                    </c:if>
-                                    <c:if test="${empty b.managerName}">
-                                            <span class="badge bg-secondary-subtle text-secondary rounded-pill fw-normal">
-                                                <i class="fa fa-exclamation-circle me-1"></i> Chưa phân công
-                                            </span>
-                                    </c:if>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="text-muted fst-italic">-- Chưa có --</span>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </td>
                                 <td>
-                                        <span class="status-badge ${b.active ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}">
-                                            <i class="fa ${b.active ? 'fa-check-circle' : 'fa-times-circle'} me-1"></i>
-                                                ${b.active ? 'Hoạt động' : 'Tạm dừng'}
-                                        </span>
+                                    <span class="badge ${b.active ? 'bg-success' : 'bg-secondary'} rounded-pill px-3">
+                                            ${b.active ? 'Active' : 'Inactive'}
+                                    </span>
                                 </td>
-                                <td class="text-end">
-                                    <a href="branches?action=edit&id=${b.branchId}" class="btn btn-light table-action-btn text-primary me-2" title="Sửa">
+                                <td class="text-end pe-4">
+                                    <a href="branches?action=edit&id=${b.branchId}" class="btn btn-outline-dark btn-sm me-1" title="Sửa">
                                         <i class="fa fa-pencil"></i>
                                     </a>
-                                    <button type="button" class="btn btn-light table-action-btn text-danger"
-                                            onclick="confirmDelete(${b.branchId})" title="Xóa">
+                                    <button onclick="confirmDelete(${b.branchId})" class="btn btn-outline-danger btn-sm" title="Xóa">
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </td>
@@ -143,29 +124,16 @@
                         </tbody>
                     </table>
                 </div>
+
                 <c:if test="${totalPages > 1}">
                     <nav class="d-flex justify-content-end mt-4">
                         <ul class="pagination">
                             <c:set var="queryParams" value="&search=${currentSearch}&status=${currentStatus}" />
-
-                            <li class="page-item ${currentPage == 1 ? 'disabled' : ''}">
-                                <a class="page-link" href="branches?page=${currentPage - 1}${queryParams}" aria-label="Trang trước">
-                                    <span aria-hidden="true">&laquo;</span>
-                                </a>
-                            </li>
-
                             <c:forEach begin="1" end="${totalPages}" var="i">
                                 <li class="page-item ${currentPage == i ? 'active' : ''}">
                                     <a class="page-link" href="branches?page=${i}${queryParams}">${i}</a>
                                 </li>
                             </c:forEach>
-
-                            <li class="page-item ${currentPage == totalPages ? 'disabled' : ''}">
-                                <a class="page-link" href="branches?page=${currentPage + 1}${queryParams}" aria-label="Trang sau">
-                                    <span aria-hidden="true">&raquo;</span>
-                                </a>
-                            </li>
-
                         </ul>
                     </nav>
                 </c:if>
@@ -173,17 +141,10 @@
         </div>
     </div>
 </main>
-
 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Toggle Sidebar Script
-    document.getElementById('sidebarToggle').addEventListener('click', function () {
-        document.body.classList.toggle('sidebar-collapsed');
-    });
-
-    // Delete Confirmation
     function confirmDelete(id) {
-        if(confirm('Bạn có chắc chắn muốn xóa chi nhánh #' + id + ' không? Hành động này không thể hoàn tác.')) {
+        if(confirm('Xác nhận xóa chi nhánh #' + id + '?')) {
             window.location.href = 'branches?action=delete&id=' + id;
         }
     }

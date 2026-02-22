@@ -1,6 +1,7 @@
 package controllers.admin;
 
 import models.CinemaBranch;
+import models.User;
 import services.BranchService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -75,15 +76,49 @@ public class Branch extends HttpServlet {
 
     private void listBranches(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        List<CinemaBranch> list = branchService.getAllBranches();
+
+        // Lấy tham số search và filter
+        String keyword = request.getParameter("keyword");
+        String statusParam = request.getParameter("status");
+        String pageParam = request.getParameter("page");
+
+        // Parse status
+        Boolean isActive = null;
+        if (statusParam != null && !statusParam.isEmpty()) {
+            isActive = "active".equals(statusParam) ? true : false;
+        }
+
+        // Parse page
+        int page = 1;
+        int pageSize = 10;
+        if (pageParam != null && !pageParam.isEmpty()) {
+            try {
+                page = Integer.parseInt(pageParam);
+            } catch (NumberFormatException e) {
+                page = 1;
+            }
+        }
+
+        // Gọi service với tham số
+        List<CinemaBranch> list = branchService.getAllBranches(keyword, isActive, page, pageSize);
+        int totalRecords = branchService.countBranches(keyword, isActive);
+        int totalPages = (int) Math.ceil((double) totalRecords / pageSize);
+
+        // Set attributes
         request.setAttribute("branches", list);
-        // Tạo file index.jsp trong folder webapp/pages/admin/branch/
-        request.getRequestDispatcher("/pages/admin/branch/index.jsp").forward(request, response);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("keyword", keyword);
+        request.setAttribute("status", statusParam);
+
+        request.getRequestDispatcher("/pages/admin/branch/list.jsp").forward(request, response);
     }
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // Tạo file form.jsp trong folder webapp/pages/admin/branch/
+        List<User> managers = branchService.getAllManagers();
+        request.setAttribute("managers", managers);
+
         request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
     }
 
@@ -91,7 +126,10 @@ public class Branch extends HttpServlet {
             throws ServletException, IOException {
         int id = Integer.parseInt(request.getParameter("id"));
         CinemaBranch existingBranch = branchService.getBranchById(id);
+        List<User> managers = branchService.getAllManagers();
+
         request.setAttribute("branch", existingBranch);
+        request.setAttribute("managers", managers);
         request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
     }
 

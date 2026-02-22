@@ -20,7 +20,6 @@ public class RoomService {
         if (room.getRoomName() == null || room.getRoomName().trim().isEmpty()) {
             throw new Exception("Tên phòng không được để trống");
         }
-        // Có thể thêm validate status phải thuộc (ACTIVE, CLOSED, MAINTENANCE) nếu cần
         roomDao.insertRoom(room);
     }
 

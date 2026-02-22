@@ -3,6 +3,8 @@ package models;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.time.format.DateTimeFormatter;
 
 @Data
 @NoArgsConstructor
@@ -11,7 +13,7 @@ public class Movie {
     private Integer movieId;
     private String title;
     private String description;
-    private String genre;
+    private List<String> genres;
     private Integer duration;
     private LocalDate releaseDate;
     private LocalDate endDate;
@@ -23,4 +25,20 @@ public class Movie {
     private boolean isActive = true;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // For Showtimes view
+    private java.util.List<Showtime> showtimes = new java.util.ArrayList<>();
+
+    public String getReleaseDateFormatted() {
+        if (releaseDate == null)
+            return "";
+        return releaseDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    public String getGenre() {
+        if (genres == null || genres.isEmpty()) {
+            return "";
+        }
+        return String.join(", ", genres);
+    }
 }
