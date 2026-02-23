@@ -7,6 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Select Seats - Counter Booking</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff.css">
 </head>
 <body>
@@ -225,6 +226,8 @@
             </div>
         </div>
     </div>
+
+    <%@ include file="confirm-modal.jsp" %>
 
     <script>
         // Seat data from server
@@ -490,13 +493,22 @@
         }
 
         // Clear all selected seats
-        function clearAllSeats() {
+        async function clearAllSeats() {
             if (selectedSeats.length === 0) return;
-            
-            if (confirm('Are you sure you want to clear all selected seats?')) {
+
+            const confirmed = await showConfirmModal({
+                title:       'Clear Selection',
+                message:     'Are you sure you want to remove all selected seats?',
+                confirmText: 'Clear All',
+                cancelText:  'Keep Selection'
+            });
+
+            if (confirmed) {
                 selectedSeats.forEach(seat => {
-                    const seatElement = document.querySelector(`[data-seat-id="${seat.seatId}"]`);
-                    seatElement.classList.remove('selected');
+                    const seatElement = seatElementsById[seat.seatId];
+                    if (seatElement) {
+                        seatElement.classList.remove('selected');
+                    }
                 });
                 selectedSeats = [];
                 updateBookingSummary();
