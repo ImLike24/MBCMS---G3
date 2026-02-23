@@ -347,6 +347,176 @@ public class Movies extends DBContext {
     // if (genre != null && !genre.trim().isEmpty()) {
     // genres.add(genre);
     // }
+
+    /**
+     * Get all active movies (no date/showtime filter) with search, filter and pagination.
+     * Used when "Reset" is clicked - show all films in the system.
+     */
+    public List<Movie> getActiveMoviesWithFilter(
+            String search, String genre, String ageRating, int page, int pageSize) {
+
+        List<Movie> movies = new ArrayList<>();
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("""
+                SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+                FROM movies m
+                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.genre_id
+                WHERE m.is_active = 1
+                """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.cast LIKE ?) ");
+            String p = "%" + search.trim() + "%";
+            params.add(p);
+            params.add(p);
+            params.add(p);
+        }
+
+        if (genre != null && !genre.trim().isEmpty()) {
+            sql.append("AND EXISTS (SELECT 1 FROM movie_genres mg2 JOIN genres g2 ON mg2.genre_id = g2.genre_id WHERE mg2.movie_id = m.movie_id AND g2.genre_name LIKE ?) ");
+            params.add("%" + genre.trim() + "%");
+        }
+
+        if (ageRating != null && !ageRating.trim().isEmpty()) {
+            sql.append("AND m.age_rating = ? ");
+            params.add(ageRating.trim());
+        }
+
+        sql.append("""
+                GROUP BY
+                    m.movie_id, m.title, m.description, m.duration,
+                    m.release_date, m.end_date, m.rating, m.age_rating,
+                    m.director, m.cast, m.poster_url, m.is_active,
+                    m.created_at, m.updated_at
+                ORDER BY m.title
+                OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+                """);
+
+        int offset = (page - 1) * pageSize;
+        params.add(offset);
+        params.add(pageSize);
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof Integer) {
+                    pstmt.setInt(i + 1, (Integer) param);
+                } else {
+                    pstmt.setString(i + 1, (String) param);
+                }
+            }
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    movies.add(mapResultSetToMovie(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return movies;
+    }
+
+    /**
+     * Count all active movies (no date/showtime filter) with search and filter.
+     */
+    public int countActiveMoviesWithFilter(
+            String search, String genre, String ageRating) {
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("""
+                SELECT COUNT(*)
+                FROM movies m
+                WHERE m.is_active = 1
+                """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.cast LIKE ?) ");
+            String p = "%" + search.trim() + "%";
+            params.add(p);
+            params.add(p);
+            params.add(p);
+        }
+
+        if (genre != null && !genre.trim().isEmpty()) {
+            sql.append("AND EXISTS (SELECT 1 FROM movie_genres mg JOIN genres g ON mg.genre_id = g.genre_id WHERE mg.movie_id = m.movie_id AND g.genre_name LIKE ?) ");
+            params.add("%" + genre.trim() + "%");
+        }
+
+        if (ageRating != null && !ageRating.trim().isEmpty()) {
+            sql.append("AND m.age_rating = ? ");
+            params.add(ageRating.trim());
+        }
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setString(i + 1, (String) params.get(i));
+            }
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Get distinct age ratings from all active movies (for filter dropdown when showing all).
+     */
+    public List<String> getAgeRatingsFromActiveMovies() {
+        List<String> ageRatings = new ArrayList<>();
+        String sql = "SELECT DISTINCT m.age_rating FROM movies m " +
+                "WHERE m.is_active = 1 AND m.age_rating IS NOT NULL " +
+                "ORDER BY m.age_rating";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    String ageRating = rs.getString("age_rating");
+                    if (ageRating != null && !ageRating.trim().isEmpty()) {
+                        ageRatings.add(ageRating);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ageRatings;
+    }
+
+    /**
+     * Get distinct genres from movies showing on date
+     */
+    // public List<String> getGenresShowingOnDate(LocalDate date) {
+    // List<String> genres = new ArrayList<>();
+    // String sql = "SELECT DISTINCT m.genre FROM movies m " +
+    // "INNER JOIN showtimes s ON m.movie_id = s.movie_id " +
+    // "WHERE m.is_active = 1 AND m.genre IS NOT NULL " +
+    // "AND s.show_date = ? " +
+    // "AND s.status IN ('SCHEDULED', 'ONGOING') " +
+    // "ORDER BY m.genre";
+    //
+    // try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+    // pstmt.setDate(1, java.sql.Date.valueOf(date));
+    //
+    // try (ResultSet rs = pstmt.executeQuery()) {
+    // while (rs.next()) {
+    // String genre = rs.getString("genres");
+    // if (genre != null && !genre.trim().isEmpty()) {
+    // genres.add(genre);
+    // }
     // }
     // }
     // } catch (SQLException e) {
@@ -370,6 +540,32 @@ public class Movies extends DBContext {
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setDate(1, java.sql.Date.valueOf(date));
 
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    String ageRating = rs.getString("age_rating");
+                    if (ageRating != null && !ageRating.trim().isEmpty()) {
+                        ageRatings.add(ageRating);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ageRatings;
+    }
+
+    /**
+     * Get all distinct age ratings from movies with showtimes (no date filter)
+     */
+    public List<String> getAllAgeRatingsWithShowtimes() {
+        List<String> ageRatings = new ArrayList<>();
+        String sql = "SELECT DISTINCT m.age_rating FROM movies m " +
+                "INNER JOIN showtimes s ON m.movie_id = s.movie_id " +
+                "WHERE m.is_active = 1 AND m.age_rating IS NOT NULL " +
+                "AND s.status IN ('SCHEDULED', 'ONGOING') " +
+                "ORDER BY m.age_rating";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     String ageRating = rs.getString("age_rating");

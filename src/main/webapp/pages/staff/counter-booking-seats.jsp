@@ -101,11 +101,11 @@
                     </span>
                     <span>
                         <i class="fas fa-clock"></i>
-                        <fmt:formatDate value="${java.sql.Time.valueOf(showtime.startTime)}" pattern="HH:mm" />
+                        ${formattedStartTime}
                     </span>
                     <span>
                         <i class="fas fa-calendar-day"></i>
-                        <fmt:formatDate value="${java.sql.Date.valueOf(showtime.showDate)}" pattern="dd/MM/yyyy" />
+                        ${formattedShowDate}
                     </span>
                     <span>
                         <i class="fas fa-map-marker-alt"></i>
