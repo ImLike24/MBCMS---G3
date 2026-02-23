@@ -664,6 +664,185 @@ BEGIN
 END;
 GO
 
+-- =============================================
+-- SAMPLE DATA: 22 Movies
+-- =============================================
+
+-- Insert 22 sample movies with diverse genres, ratings, and age ratings
+INSERT INTO movies (title, description, genre, duration, release_date, end_date, rating, age_rating, director, cast, poster_url, is_active) VALUES
+-- Action Movies
+(N'The Last Guardian', N'A former special forces operative must protect a young witness from ruthless assassins across dangerous terrain.', N'Action', 142, '2025-01-15', '2025-03-15', 4.5, 'R', N'Michael Bay', N'Chris Hemsworth, Zoe Saldana, Idris Elba', 'https://image.tmdb.org/t/p/w500/sample1.jpg', 1),
+(N'Speed Racer Returns', N'An underground street racer enters a high-stakes international racing competition to save his family business.', N'Action', 128, '2025-01-20', '2025-03-20', 4.2, 'PG-13', N'Justin Lin', N'Tom Hardy, Michelle Rodriguez, Sung Kang', 'https://image.tmdb.org/t/p/w500/sample2.jpg', 1),
+
+-- Comedy Movies
+(N'Wedding Disaster', N'A wedding planner must save a celebrity wedding when everything goes hilariously wrong in 48 hours.', N'Comedy', 105, '2025-01-10', '2025-03-10', 3.8, 'PG-13', N'Paul Feig', N'Melissa McCarthy, Ryan Reynolds, Awkwafina', 'https://image.tmdb.org/t/p/w500/sample3.jpg', 1),
+(N'The Roommate From Hell', N'Two polar opposite college roommates must learn to live together or face expulsion.', N'Comedy', 98, '2025-02-01', '2025-04-01', 3.5, 'PG-13', N'Judd Apatow', N'Jack Black, Emma Stone, Kevin Hart', 'https://image.tmdb.org/t/p/w500/sample4.jpg', 1),
+
+-- Horror Movies
+(N'The Haunting of Blackwood Manor', N'A family moves into an old mansion only to discover its dark and deadly secrets.', N'Horror', 115, '2025-01-25', '2025-03-25', 4.0, 'R', N'James Wan', N'Vera Farmiga, Patrick Wilson, Taissa Farmiga', 'https://image.tmdb.org/t/p/w500/sample5.jpg', 1),
+(N'Silent Scream', N'A deaf woman must survive a home invasion by using her other heightened senses.', N'Horror', 92, '2025-02-05', '2025-04-05', 4.3, 'R', N'Mike Flanagan', N'Emily Blunt, John Krasinski, Millicent Simmonds', 'https://image.tmdb.org/t/p/w500/sample6.jpg', 1),
+
+-- Drama Movies
+(N'The Forgotten Soldier', N'A war veteran struggles to reintegrate into society while battling PTSD and searching for meaning.', N'Drama', 135, '2025-01-12', '2025-03-12', 4.7, 'R', N'Clint Eastwood', N'Bradley Cooper, Sienna Miller, Kyle Gallner', 'https://image.tmdb.org/t/p/w500/sample7.jpg', 1),
+(N'Letters to My Daughter', N'A mother writes letters to her daughter over 20 years, chronicling life, love, and loss.', N'Drama', 122, '2025-02-10', '2025-04-10', 4.6, 'PG-13', N'Greta Gerwig', N'Saoirse Ronan, Meryl Streep, Timothée Chalamet', 'https://image.tmdb.org/t/p/w500/sample8.jpg', 1),
+
+-- Sci-Fi Movies
+(N'Beyond the Void', N'Astronauts on a deep space mission discover an ancient alien civilization that changes everything.', N'Sci-Fi', 148, '2025-01-18', '2025-03-18', 4.4, 'PG-13', N'Denis Villeneuve', N'Matthew McConaughey, Anne Hathaway, Jessica Chastain', 'https://image.tmdb.org/t/p/w500/sample9.jpg', 1),
+(N'Neural Link', N'In the near future, a hacker discovers a conspiracy within a virtual reality network.', N'Sci-Fi', 118, '2025-02-15', '2025-04-15', 4.1, 'PG-13', N'Wachowski Sisters', N'Keanu Reeves, Carrie-Anne Moss, Yahya Abdul-Mateen II', 'https://image.tmdb.org/t/p/w500/sample10.jpg', 1),
+
+-- Romance Movies
+(N'Love in Paris', N'Two strangers meet on a train to Paris and spend one magical night exploring the city together.', N'Romance', 108, '2025-01-22', '2025-03-22', 3.9, 'PG-13', N'Richard Linklater', N'Emma Watson, Eddie Redmayne, Marion Cotillard', 'https://image.tmdb.org/t/p/w500/sample11.jpg', 1),
+(N'Second Chances', N'A divorced couple reunites at their daughter wedding and rekindles their romance.', N'Romance', 112, '2025-02-08', '2025-04-08', 4.0, 'PG', N'Nancy Meyers', N'Meryl Streep, Alec Baldwin, Steve Martin', 'https://image.tmdb.org/t/p/w500/sample12.jpg', 1),
+
+-- Animation Movies
+(N'Dragon Kingdom', N'A young farm boy discovers he is the last dragon rider and must save the kingdom from darkness.', N'Animation', 102, '2025-01-28', '2025-03-28', 4.5, 'PG', N'Dean DeBlois', N'Jay Baruchel, America Ferrera, Cate Blanchett', 'https://image.tmdb.org/t/p/w500/sample13.jpg', 1),
+(N'Tiny Heroes', N'A group of miniature toys come to life and embark on an epic adventure to return home.', N'Animation', 95, '2025-02-12', '2025-04-12', 4.3, 'G', N'Pete Docter', N'Tom Hanks, Tim Allen, Joan Cusack', 'https://image.tmdb.org/t/p/w500/sample14.jpg', 1),
+
+-- Thriller Movies
+(N'The Perfect Alibi', N'A detective hunts a serial killer who always has an ironclad alibi for each murder.', N'Thriller', 125, '2025-01-30', '2025-03-30', 4.2, 'R', N'David Fincher', N'Jake Gyllenhaal, Mark Ruffalo, Robert Downey Jr.', 'https://image.tmdb.org/t/p/w500/sample15.jpg', 1),
+(N'Trust No One', N'A woman discovers her entire life is an elaborate lie created by those closest to her.', N'Thriller', 110, '2025-02-18', '2025-04-18', 4.1, 'R', N'Ben Affleck', N'Rosamund Pike, Ben Affleck, Neil Patrick Harris', 'https://image.tmdb.org/t/p/w500/sample16.jpg', 1),
+
+-- Fantasy Movies
+(N'The Enchanted Forest', N'A young witch must master her powers to save her magical realm from eternal darkness.', N'Fantasy', 138, '2025-01-16', '2025-03-16', 4.4, 'PG-13', N'Guillermo del Toro', N'Anya Taylor-Joy, Ralph Fiennes, Helena Bonham Carter', 'https://image.tmdb.org/t/p/w500/sample17.jpg', 1),
+(N'Legend of the Silver Sword', N'An unlikely hero discovers an ancient sword and must unite warring kingdoms against a dark lord.', N'Fantasy', 155, '2025-02-20', '2025-04-20', 4.6, 'PG-13', N'Peter Jackson', N'Elijah Wood, Viggo Mortensen, Ian McKellen', 'https://image.tmdb.org/t/p/w500/sample18.jpg', 1),
+
+-- Mystery Movies
+(N'The Missing Hour', N'A man wakes up with no memory of the last hour, which holds the key to solving a murder.', N'Mystery', 108, '2025-01-24', '2025-03-24', 3.9, 'PG-13', N'Christopher Nolan', N'Guy Pearce, Carrie-Anne Moss, Joe Pantoliano', 'https://image.tmdb.org/t/p/w500/sample19.jpg', 1),
+(N'Whispers in the Dark', N'A psychiatrist becomes entangled in a web of secrets when treating a mysterious patient.', N'Mystery', 118, '2025-02-14', '2025-04-14', 4.0, 'R', N'Martin Scorsese', N'Leonardo DiCaprio, Mark Ruffalo, Ben Kingsley', 'https://image.tmdb.org/t/p/w500/sample20.jpg', 1),
+
+-- Adventure Movies
+(N'Quest for the Lost Temple', N'An archaeologist races against mercenaries to find an ancient temple holding unimaginable power.', N'Adventure', 132, '2025-01-26', '2025-03-26', 4.3, 'PG-13', N'Steven Spielberg', N'Harrison Ford, Karen Allen, Shia LaBeouf', 'https://image.tmdb.org/t/p/w500/sample21.jpg', 1),
+(N'Ocean Deep', N'A marine biologist and her team explore the deepest parts of the ocean and discover new life forms.', N'Adventure', 126, '2025-02-22', '2025-04-22', 4.2, 'PG', N'James Cameron', N'Sigourney Weaver, Sam Worthington, Zoe Saldana', 'https://image.tmdb.org/t/p/w500/sample22.jpg', 1);
+
+GO
+
+-- =============================================
+-- SAMPLE DATA: Cinema branch, room, seats (cần cho showtimes)
+-- Counter Booking chỉ hiện phim có suất chiếu (showtimes) trong ngày chọn.
+-- =============================================
+-- Nếu đã có chi nhánh/phòng, bỏ qua 2 lệnh INSERT dưới và chạy riêng phần showtimes với room_id của bạn.
+INSERT INTO cinema_branches (branch_name, address, phone, email, is_active)
+VALUES (N'MBCMS Chi nhánh 1', N'123 Đường Mẫu, Quận 1', '0281234567', 'branch1@mbcms.com', 1);
+
+INSERT INTO screening_rooms (branch_id, room_name, total_seats, status)
+VALUES (1, N'Phòng 1', 50, 'ACTIVE');
+
+-- 50 ghế cho phòng 1 (5 hàng x 10 ghế) với đa dạng loại ghế
+-- Row 1-2: NORMAL seats (20 seats)
+-- Row 3: VIP seats (10 seats - best viewing angle)
+-- Row 4: Mix of VIP center + NORMAL sides (4 VIP + 6 NORMAL)
+-- Row 5: COUPLE at ends + NORMAL middle (4 COUPLE + 6 NORMAL)
+
+DECLARE @roomId INT = 1;
+DECLARE @rowNum INT = 1;
+DECLARE @seatNum INT;
+DECLARE @seatCode VARCHAR(10);
+DECLARE @seatType VARCHAR(10);
+
+-- Loop through 5 rows
+WHILE @rowNum <= 5
+BEGIN
+    -- Loop through 10 seats per row (A-J where A=1, B=2, ..., J=10)
+    SET @seatNum = 1;
+    WHILE @seatNum <= 10
+    BEGIN
+        -- Create seat code: Row + Letter (e.g., "1A", "1B", ..., "1J")
+        SET @seatCode = CAST(@rowNum AS VARCHAR) + CHAR(64 + @seatNum);
+        
+        -- Determine seat type based on row and position
+        IF @rowNum = 1 OR @rowNum = 2
+        BEGIN
+            -- Rows 1-2: All NORMAL
+            SET @seatType = 'NORMAL';
+        END
+        ELSE IF @rowNum = 3
+        BEGIN
+            -- Row 3: All VIP (premium middle row with best view)
+            SET @seatType = 'VIP';
+        END
+        ELSE IF @rowNum = 4
+        BEGIN
+            -- Row 4: VIP in center (seats D-G = 4-7), NORMAL at sides
+            IF @seatNum >= 4 AND @seatNum <= 7
+                SET @seatType = 'VIP';
+            ELSE
+                SET @seatType = 'NORMAL';
+        END
+        ELSE IF @rowNum = 5
+        BEGIN
+            -- Row 5: COUPLE at ends (A-B = 1-2 and I-J = 9-10), NORMAL in middle
+            IF @seatNum <= 2 OR @seatNum >= 9
+                SET @seatType = 'COUPLE';
+            ELSE
+                SET @seatType = 'NORMAL';
+        END
+        
+        -- Insert seat
+        INSERT INTO seats (room_id, seat_code, seat_type, row_number, seat_number, status)
+        VALUES (@roomId, @seatCode, @seatType, CAST(@rowNum AS VARCHAR), @seatNum, 'AVAILABLE');
+        
+        SET @seatNum = @seatNum + 1;
+    END
+    
+    SET @rowNum = @rowNum + 1;
+END;
+
+GO
+
+-- =============================================
+-- SAMPLE DATA: Showtimes (phim có suất chiếu mới hiện trên Counter Booking)
+-- =============================================
+-- Suất chiếu ngày 2026-02-01 và 2026-02-02 cho 22 phim (status SCHEDULED/ONGOING)
+INSERT INTO showtimes (movie_id, room_id, show_date, start_time, base_price, status) VALUES
+(1, 1, '2026-02-01', '09:00', 65000, 'SCHEDULED'),
+(2, 1, '2026-02-01', '11:30', 65000, 'SCHEDULED'),
+(3, 1, '2026-02-01', '14:00', 65000, 'SCHEDULED'),
+(4, 1, '2026-02-01', '16:00', 65000, 'SCHEDULED'),
+(5, 1, '2026-02-01', '18:00', 65000, 'SCHEDULED'),
+(6, 1, '2026-02-01', '20:00', 65000, 'SCHEDULED'),
+(7, 1, '2026-02-01', '21:30', 65000, 'SCHEDULED'),
+(8, 1, '2026-02-02', '09:00', 65000, 'SCHEDULED'),
+(9, 1, '2026-02-02', '11:30', 65000, 'SCHEDULED'),
+(10, 1, '2026-02-02', '14:00', 65000, 'SCHEDULED'),
+(11, 1, '2026-02-02', '16:30', 65000, 'SCHEDULED'),
+(12, 1, '2026-02-02', '18:30', 65000, 'SCHEDULED'),
+(13, 1, '2026-02-02', '20:30', 65000, 'SCHEDULED'),
+(14, 1, '2026-02-01', '10:00', 65000, 'SCHEDULED'),
+(15, 1, '2026-02-01', '12:30', 65000, 'SCHEDULED'),
+(16, 1, '2026-02-01', '15:00', 65000, 'SCHEDULED'),
+(17, 1, '2026-02-02', '10:00', 65000, 'SCHEDULED'),
+(18, 1, '2026-02-02', '12:00', 65000, 'SCHEDULED'),
+(19, 1, '2026-02-02', '15:00', 65000, 'SCHEDULED'),
+(20, 1, '2026-02-02', '17:00', 65000, 'SCHEDULED'),
+(21, 1, '2026-02-01', '13:00', 65000, 'SCHEDULED'),
+(22, 1, '2026-02-02', '19:00', 65000, 'SCHEDULED');
+
+GO
+
+-- =============================================
+-- SAMPLE DATA: Roles (cần có trước khi insert users)
+-- =============================================
+-- Chỉ insert role nếu chưa tồn tại (an toàn khi chạy lại script)
+INSERT INTO roles (role_name)
+SELECT x.role_name
+FROM (VALUES ('ADMIN'), ('CUSTOMER'), ('CINEMA_STAFF'), ('STAFF'), ('BRANCH_MANAGER')) AS x(role_name)
+WHERE NOT EXISTS (SELECT 1 FROM roles r WHERE r.role_name = x.role_name);
+
+GO
+
+-- =============================================
+-- SAMPLE DATA: 1 additional Staff account (CINEMA_STAFF)
+-- =============================================
+-- Login: username = staff2, password = password (hash do jBCrypt của project sinh ra)
+INSERT INTO users (role_id, username, email, password, fullName, phone, status, points)
+SELECT r.role_id, 'staff2', 'staff2@mbcms.com', '$2a$10$BsDOyk3.dFIxPtGshxvTnubWVZ0gX6O9m3J/WZxPhIFG8v31THOke', N'Nguyễn Văn Staff 2', '0901234567', 'ACTIVE', 0
+FROM roles r
+WHERE r.role_name = 'CINEMA_STAFF';
+
+GO
+
+-- Nếu staff2 đã tồn tại nhưng đăng nhập không được, chạy lệnh sau để sửa mật khẩu (password = password):
+-- UPDATE users SET password = '$2a$10$BsDOyk3.dFIxPtGshxvTnubWVZ0gX6O9m3J/WZxPhIFG8v31THOke' WHERE username = 'staff2';
 
 create table genres
 (
