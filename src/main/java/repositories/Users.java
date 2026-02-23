@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.List;
 
 public class Users extends DBContext {
 
@@ -116,6 +117,57 @@ public class Users extends DBContext {
         }
     }
 
+    public boolean updateProfile(User u) {
+        String sql = """
+                    UPDATE users
+                    SET fullName = ?, email = ?, phone = ?, birthday = ?, password = ?, updated_at = SYSDATETIME()
+                    WHERE user_id = ?
+                """;
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, u.getFullName());
+            st.setString(2, u.getEmail());
+            st.setString(3, u.getPhone());
+
+            if (u.getBirthday() != null)
+                st.setTimestamp(4, Timestamp.valueOf(u.getBirthday()));
+            else
+                st.setNull(4, java.sql.Types.TIMESTAMP);
+
+            st.setString(5, u.getPassword());
+            st.setInt(6, u.getUserId());
+
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean checkPhoneExists(String phone) {
+        String sql = "SELECT 1 FROM users WHERE phone = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, phone);
+            try (ResultSet rs = st.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateAvatarUrl(int userId, String avatarUrl) {
+        String sql = "UPDATE users SET avatarURL = ?, updated_at = SYSDATETIME() WHERE user_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, avatarUrl);
+            st.setInt(2, userId);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
     // Admin User Management Methods
 
     public java.util.List<User> getAllUsers() {
@@ -124,7 +176,12 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql);
                 ResultSet rs = st.executeQuery()) {
             while (rs.next()) {
-                users.add(mapResultSetToUser(rs));
+                try {
+                    users.add(mapResultSetToUser(rs));
+                } catch (Exception e) {
+                    System.err.println("Error mapping user at row: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -139,7 +196,12 @@ public class Users extends DBContext {
             st.setInt(1, roleId);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in getUsersByRole: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -155,7 +217,12 @@ public class Users extends DBContext {
             st.setString(1, status);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in getUsersByStatus: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -174,7 +241,12 @@ public class Users extends DBContext {
             st.setString(3, searchPattern);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
-                    users.add(mapResultSetToUser(rs));
+                    try {
+                        users.add(mapResultSetToUser(rs));
+                    } catch (Exception e) {
+                        System.err.println("Error mapping user in searchUsers: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -215,10 +287,6 @@ public class Users extends DBContext {
 
     public boolean checkEmailExists(String email) {
         return findByEmail(email) != null;
-    }
-
-    public boolean checkPhoneExists(String phone) {
-        return findByPhone(phone) != null;
     }
 
     public boolean deleteUser(int userId) {
@@ -269,5 +337,47 @@ public class Users extends DBContext {
             e.printStackTrace();
         }
         return managers;
+    }
+
+    public List<User> findUsersByRoleName(String branch_manager) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from
+                                                                       // nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    /**
+     * Tìm user dựa trên email.
+     * Dùng cho chức năng Quên mật khẩu và Đăng nhập.
+     * 
+     * @param email Email cần tìm
+     * @return User object nếu tìm thấy, null nếu không có.
+     */
+    public User getByEmail(String email) {
+        String sql = "SELECT * FROM users WHERE email = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, email);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToUser(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Cập nhật mật khẩu mới cho user dựa trên email.
+     */
+    public boolean updatePassword(String email, String newPassword) {
+        String sql = "UPDATE users SET password = ? WHERE email = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, newPassword); // Lưu ý: Nên mã hóa password (MD5/BCrypt) trước khi truyền vào đây
+            st.setString(2, email);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

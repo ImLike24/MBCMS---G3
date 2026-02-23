@@ -1,12 +1,13 @@
 package repositories;
 
-import config.DBContext;
-import models.ScreeningRoom;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import config.DBContext;
+import models.ScreeningRoom;
 
 public class ScreeningRooms extends DBContext {
 
@@ -147,5 +148,20 @@ public class ScreeningRooms extends DBContext {
             e.printStackTrace();
         }
         return 0;
+    }
+    
+    // Lấy tất cả phòng của 1 chi nhánh cụ thể
+    public List<ScreeningRoom> findByBranchId(int branchId) {
+        List<ScreeningRoom> list = new ArrayList<>();
+        String sql = "SELECT * FROM screening_rooms WHERE branch_id = ? ORDER BY room_name ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, branchId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) list.add(mapResultSetToScreeningRoom(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 }

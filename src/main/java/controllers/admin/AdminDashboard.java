@@ -7,13 +7,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import models.User;
+import services.AdminDashboardService;
 import services.AuthService;
+import models.User;
 
 @WebServlet(name = "AdminDashboard", urlPatterns = { "/admin/dashboard" })
 public class AdminDashboard extends HttpServlet {
 
     private AuthService authService = new AuthService();
+    private AdminDashboardService dashboardService = new AdminDashboardService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -40,6 +42,18 @@ public class AdminDashboard extends HttpServlet {
             return;
         }
 
-        request.getRequestDispatcher("/pages/admin/dashboard.jsp").forward(request, response);
+        try {
+            java.util.Map<String, Object> dashboardData = dashboardService.getDashboardData();
+            request.setAttribute("dashboard", dashboardData);
+            // Pass JSON strings for charts
+            request.setAttribute("revenueByBranchJson", dashboardService.toJson(dashboardData.get("revenueByBranch")));
+            request.setAttribute("topMoviesJson", dashboardService.toJson(dashboardData.get("topMovies")));
+            request.setAttribute("revenueTrendJson", dashboardService.toJson(dashboardData.get("revenueTrend")));
+
+            request.getRequestDispatcher("/pages/admin/dashboard.jsp").forward(request, response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error loading dashboard data");
+        }
     }
 }

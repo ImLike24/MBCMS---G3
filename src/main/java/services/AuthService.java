@@ -4,8 +4,10 @@ import repositories.Roles;
 import repositories.Users;
 import models.Role;
 import models.User;
+import utils.EmailSender;
 import utils.Password;
 import java.time.LocalDate;
+import java.util.Random;
 
 public class AuthService {
 
@@ -79,9 +81,96 @@ public class AuthService {
         return user;
     }
 
+    // Seed default users if not exists
+    public void seedDefaultUsersIfNotExists() throws Exception {
+        // Seed ADMIN
+        seedUserIfNotExists("admin", "ADMIN", "admin@mbcms.com", "Administrator", "0123456789", "admin123");
+
+        // Seed BRANCH_MANAGER
+        seedUserIfNotExists("manager", "BRANCH_MANAGER", "manager@mbcms.com", "Branch Manager", "0987654321", "manager123");
+
+        // Seed CINEMA_STAFF
+        seedUserIfNotExists("staff", "CINEMA_STAFF", "staff@mbcms.com", "Cinema Staff", "0912345678", "staff123");
+    }
+
+    private void seedUserIfNotExists(String username, String roleName, String email, String fullName, String phone, String rawPassword) throws Exception {
+        // Check if user exists
+        User existingUser = usersDao.findByUsername(username);
+        if (existingUser != null) {
+            return; // User already exists
+        }
+
+        // Get role ID
+        Integer roleId = rolesDao.getRoleIdByName(roleName);
+        if (roleId == null) {
+            throw new RuntimeException(roleName + " role not found. Please run database setup.");
+        }
+
+        // Create user
+        User user = new User();
+        user.setRoleId(roleId);
+        user.setUsername(username);
+        user.setEmail(email);
+        user.setPassword(Password.hashPassword(rawPassword));
+        user.setFullName(fullName);
+        user.setPhone(phone);
+        user.setStatus("ACTIVE");
+        user.setPoints(0);
+
+        // Insert user
+        boolean inserted = usersDao.insert(user);
+        if (!inserted) {
+            throw new RuntimeException("Failed to insert user: " + username);
+        }
+    }
+
     // Helper function: get role's name
     public String getRoleName(int roleId) {
         Role role = rolesDao.getRoleById(roleId);
         return (role != null) ? role.getRoleName().toUpperCase() : "GUEST";
     }
+
+    // Kiểm tra email và gửi OTP
+    public String initiateForgotPassword(String email) {
+        User user = usersDao.getByEmail(email);
+        if (user == null) {
+            return null;
+        }
+
+        String otp = generateOTP();
+        boolean isSent = sendOtpEmail(email, otp);
+
+        return isSent ? otp : null; // Trả về OTP để Controller lưu vào Session
+    }
+
+    // Sinh mã OTP
+    private String generateOTP() {
+        Random random = new Random();
+        int otp = 100000 + random.nextInt(900000);
+        return String.valueOf(otp);
+    }
+
+    // Tạo nội dung HTML và gọi Utils để gửi
+    private boolean sendOtpEmail(String email, String otp) {
+        String subject = "Mã xác thực đặt lại mật khẩu - MyCinema";
+        String content = "<div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;'>"
+                + "<h2 style='color: #006A71;'>Yêu cầu đặt lại mật khẩu</h2>"
+                + "<p>Xin chào,</p>"
+                + "<p>Bạn vừa yêu cầu đặt lại mật khẩu. Mã OTP của bạn là:</p>"
+                + "<h1 style='color: #FFACAC; letter-spacing: 5px;'>" + otp + "</h1>"
+                + "<p>Mã này sẽ hết hạn sau 5 phút.</p>"
+                + "<p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>"
+                + "</div>";
+
+        return EmailSender.send(email, subject, content);
+    }
+
+    // Đổi mật khẩu mới
+    public boolean resetPassword(String email, String newPassword) {
+        String hashedPassword = Password.hashPassword(newPassword);
+
+        return usersDao.updatePassword(email, hashedPassword);
+    }
+
+
 }

@@ -4,7 +4,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Header</title>
 </head>
 <body>
 
@@ -16,7 +15,11 @@
             </div>
             <div class="modal-body">
                 <div class="input-group">
-                    <input type="text" class="form-control" placeholder="Search...">
+                    <input type="text" id="searchBox"
+                           class="form-control form-control-lg"
+                           placeholder="Search movies..."
+                           style="border:2px solid #d96c2c;">
+                    <div id="searchSuggest" class="list-group position-absolute w-100"></div>
                     <button class="btn btn-warning" type="button">
                         <i class="fa fa-search"></i>
                     </button>
@@ -28,6 +31,11 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <div class="container-fluid">
+        <button class="hamburger" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
 
         <a class="navbar-brand fw-bold" href="${pageContext.request.contextPath}/home">
             <i class="fa fa-modx text-warning"></i>

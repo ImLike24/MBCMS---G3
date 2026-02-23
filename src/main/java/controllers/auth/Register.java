@@ -1,5 +1,6 @@
 package controllers.auth;
 
+import jakarta.servlet.http.HttpSession;
 import services.AuthService;
 import utils.Password;
 import jakarta.servlet.ServletException;
@@ -17,6 +18,14 @@ public class Register extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        // Kiểm tra nếu đã login
+        HttpSession session = request.getSession(false);
+        if (session != null && session.getAttribute("user") != null) {
+            response.sendRedirect(request.getContextPath() + "/home");
+            return;
+        }
+
         request.getRequestDispatcher("/pages/auth/register.jsp").forward(request, response);
     }
 

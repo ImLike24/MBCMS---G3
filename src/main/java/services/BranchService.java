@@ -1,14 +1,26 @@
 package services;
 
 import models.CinemaBranch;
+import models.User;
 import repositories.CinemaBranches;
+import repositories.Users;
+
 import java.util.List;
 
 public class BranchService {
     private final CinemaBranches branchDao = new CinemaBranches();
+    private final Users userDao = new Users();
 
     public List<CinemaBranch> getAllBranches() {
         return branchDao.findAll();
+    }
+
+    public List<CinemaBranch> getAllBranches(String keyword, Boolean isActive, int page, int pageSize) {
+        return branchDao.findAll(keyword, isActive, page, pageSize);
+    }
+
+    public int countBranches(String keyword, Boolean isActive) {
+        return branchDao.countAll(keyword, isActive);
     }
 
     public CinemaBranch getBranchById(int id) {
@@ -35,5 +47,9 @@ public class BranchService {
 
     public void deleteBranch(int id) {
         branchDao.delete(id);
+    }
+
+    public List<User> getAllManagers() {
+        return userDao.getUsersByRole(4);
     }
 }

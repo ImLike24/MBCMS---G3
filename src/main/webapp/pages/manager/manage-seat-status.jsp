@@ -1,20 +1,42 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
     <%@ taglib prefix="c" uri="jakarta.tags.core" %>
         <!DOCTYPE html>
-        <html lang="en">
+        <html lang="vi">
 
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Manage Seat Status - Branch Manager</title>
+            <title>Trạng thái Ghế - Branch Manager</title>
             <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
             <link rel="stylesheet" href="${pageContext.request.contextPath}/css/font-awesome.min.css">
-            <link rel="stylesheet" href="${pageContext.request.contextPath}/css/global.css">
             <style>
+                :root {
+                    --bg-dark: #0c121d;
+                    --bg-card: #141b27;
+                    --bg-card2: #1a2436;
+                    --border: #2a3547;
+                    --orange: #e8742a;
+                    --orange-dim: rgba(232, 116, 42, .15);
+                    --text: #e2e8f0;
+                    --text-muted: #8899b0;
+                    --green: #48bb78;
+                    --red: #f56565;
+                    --amber: #ed8936;
+                }
+
+                *,
+                *::before,
+                *::after {
+                    box-sizing: border-box;
+                    margin: 0;
+                    padding: 0;
+                }
+
                 body {
+                    font-family: 'Segoe UI', sans-serif;
+                    background: var(--bg-dark);
+                    color: var(--text);
                     padding-top: 56px;
-                    overflow-x: hidden;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     min-height: 100vh;
                 }
 
@@ -31,7 +53,7 @@
                 main {
                     margin-left: 280px;
                     padding: 30px;
-                    transition: margin-left 0.3s;
+                    transition: margin-left .3s;
                 }
 
                 .sidebar-collapsed #sidebarMenu {
@@ -42,37 +64,67 @@
                     margin-left: 0;
                 }
 
+                /* ── Page Header ─────────────────────────────────────────*/
                 .page-header {
-                    background: white;
-                    padding: 25px 30px;
-                    border-radius: 15px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-                    margin-bottom: 30px;
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    padding: 22px 28px;
+                    background: var(--bg-card);
+                    border: 1px solid var(--border);
+                    border-radius: 16px;
+                    margin-bottom: 28px;
+                }
+
+                .page-header .icon-wrap {
+                    width: 52px;
+                    height: 52px;
+                    background: var(--orange-dim);
+                    border-radius: 14px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 22px;
+                    color: var(--orange);
                 }
 
                 .page-header h2 {
-                    margin: 0;
-                    color: #2d3748;
+                    font-size: 22px;
                     font-weight: 700;
-                    font-size: 28px;
                 }
 
-                .page-header h2 i {
-                    color: #667eea;
-                    margin-right: 12px;
+                .page-header p {
+                    font-size: 13px;
+                    color: var(--text-muted);
+                    margin-top: 2px;
                 }
 
+                /* ── Alerts ──────────────────────────────────────────────*/
                 .alert {
                     border-radius: 12px;
                     border: none;
-                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-                    animation: slideDown 0.3s ease-out;
+                    padding: 14px 18px;
+                    font-size: 14px;
+                    margin-bottom: 20px;
+                    animation: slideDown .3s ease;
+                }
+
+                .alert-success {
+                    background: rgba(72, 187, 120, .15);
+                    color: var(--green);
+                    border-left: 4px solid var(--green);
+                }
+
+                .alert-danger {
+                    background: rgba(245, 101, 101, .15);
+                    color: var(--red);
+                    border-left: 4px solid var(--red);
                 }
 
                 @keyframes slideDown {
                     from {
                         opacity: 0;
-                        transform: translateY(-20px);
+                        transform: translateY(-10px);
                     }
 
                     to {
@@ -81,88 +133,286 @@
                     }
                 }
 
-                .config-card {
-                    background: white;
-                    border-radius: 15px;
-                    padding: 25px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-                    margin-bottom: 25px;
+                /* ── Card ────────────────────────────────────────────────*/
+                .card {
+                    background: var(--bg-card);
+                    border: 1px solid var(--border);
+                    border-radius: 16px;
+                    padding: 26px;
+                    margin-bottom: 24px;
                 }
 
-                .config-card h5 {
-                    color: #2d3748;
+                .card-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-size: 16px;
                     font-weight: 700;
                     margin-bottom: 20px;
                 }
 
-                .config-card h5 i {
-                    color: #667eea;
-                    margin-right: 10px;
+                .card-title i {
+                    color: var(--orange);
                 }
 
+                /* ── Info box ────────────────────────────────────────────*/
+                .info-box {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 12px;
+                    background: var(--orange-dim);
+                    border-left: 4px solid var(--orange);
+                    border-radius: 10px;
+                    padding: 14px 18px;
+                    font-size: 13px;
+                    color: var(--text-muted);
+                    margin-bottom: 22px;
+                }
+
+                .info-box i {
+                    color: var(--orange);
+                    margin-top: 2px;
+                }
+
+                /* ── Form controls ───────────────────────────────────────*/
                 .form-label {
+                    font-size: 13px;
                     font-weight: 600;
-                    color: #4a5568;
-                    margin-bottom: 8px;
+                    color: var(--text-muted);
+                    margin-bottom: 6px;
                 }
 
                 .form-control,
                 .form-select {
+                    background: var(--bg-dark);
+                    color: var(--text);
+                    border: 1.5px solid var(--border);
                     border-radius: 10px;
-                    border: 2px solid #e2e8f0;
-                    padding: 10px 15px;
-                    transition: all 0.3s;
+                    padding: 10px 14px;
+                    font-size: 14px;
+                    transition: border-color .2s, box-shadow .2s;
                 }
 
                 .form-control:focus,
                 .form-select:focus {
-                    border-color: #667eea;
-                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                    outline: none;
+                    border-color: var(--orange);
+                    box-shadow: 0 0 0 3px rgba(232, 116, 42, .2);
+                    background: var(--bg-dark);
+                    color: var(--text);
                 }
 
-                /* Seat Grid */
-                .seat-grid-container {
-                    background: white;
-                    border-radius: 15px;
-                    padding: 30px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                .form-select option {
+                    background: var(--bg-card);
+                }
+
+                /* ── Stats row ───────────────────────────────────────────*/
+                .stats-row {
+                    display: flex;
+                    gap: 12px;
+                    flex-wrap: wrap;
+                    margin-bottom: 20px;
+                }
+
+                .stat-badge {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 8px 16px;
+                    border-radius: 10px;
+                    font-size: 13px;
+                    font-weight: 700;
+                }
+
+                .stat-badge.available {
+                    background: rgba(72, 187, 120, .15);
+                    color: var(--green);
+                }
+
+                .stat-badge.broken {
+                    background: rgba(245, 101, 101, .15);
+                    color: var(--red);
+                }
+
+                .stat-badge.maintenance {
+                    background: rgba(237, 137, 54, .15);
+                    color: var(--amber);
+                }
+
+                .stat-dot {
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                }
+
+                /* ── Toolbar ─────────────────────────────────────────────*/
+                .toolbar {
+                    background: var(--bg-card2);
+                    border: 1px solid var(--border);
+                    border-radius: 12px;
+                    padding: 16px 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    flex-wrap: wrap;
+                    margin-bottom: 20px;
+                }
+
+                .toolbar-label {
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: var(--text-muted);
+                }
+
+                .mode-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 10px 18px;
+                    border-radius: 10px;
+                    border: 2px solid transparent;
+                    font-weight: 700;
+                    font-size: 14px;
+                    cursor: pointer;
+                    transition: all .2s;
+                }
+
+                .mode-btn:hover {
+                    transform: translateY(-1px);
+                }
+
+                .mode-btn.active {
+                    border-color: var(--orange);
+                    box-shadow: 0 0 0 3px rgba(232, 116, 42, .2);
+                }
+
+                .mode-btn.available {
+                    background: rgba(72, 187, 120, .15);
+                    color: var(--green);
+                }
+
+                .mode-btn.broken {
+                    background: rgba(245, 101, 101, .15);
+                    color: var(--red);
+                }
+
+                .mode-btn.maintenance {
+                    background: rgba(237, 137, 54, .15);
+                    color: var(--amber);
+                }
+
+                .mode-btn .dot {
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                }
+
+                .mode-btn.available .dot {
+                    background: var(--green);
+                }
+
+                .mode-btn.broken .dot {
+                    background: var(--red);
+                }
+
+                .mode-btn.maintenance .dot {
+                    background: var(--amber);
+                }
+
+                .btn-orange {
+                    background: var(--orange);
+                    color: white;
+                    border: none;
+                    border-radius: 10px;
+                    padding: 11px 26px;
+                    font-weight: 600;
+                    font-size: 14px;
+                    cursor: pointer;
+                    transition: all .25s;
+                }
+
+                .btn-orange:hover {
+                    background: #ff9550;
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 18px rgba(232, 116, 42, .4);
+                }
+
+                .btn-ghost {
+                    background: transparent;
+                    color: var(--text-muted);
+                    border: 1.5px solid var(--border);
+                    border-radius: 10px;
+                    padding: 10px 20px;
+                    font-weight: 600;
+                    font-size: 14px;
+                    cursor: pointer;
+                    transition: all .2s;
+                }
+
+                .btn-ghost:hover {
+                    border-color: var(--orange);
+                    color: var(--orange);
+                }
+
+                /* ── Seat grid ───────────────────────────────────────────*/
+                .seat-grid-outer {
+                    background: var(--bg-card2);
+                    border: 1px solid var(--border);
+                    border-radius: 14px;
+                    padding: 24px;
                     overflow-x: auto;
                 }
 
-                .screen-indicator {
-                    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-                    color: white;
+                .screen-bar {
+                    background: linear-gradient(90deg, transparent, #4a5568 20%, #4a5568 80%, transparent);
+                    height: 6px;
+                    border-radius: 3px;
+                    margin: 0 60px 6px;
+                }
+
+                .screen-label {
                     text-align: center;
-                    padding: 15px;
-                    border-radius: 10px 10px 0 0;
-                    margin-bottom: 30px;
-                    font-weight: 700;
-                    letter-spacing: 2px;
+                    font-size: 11px;
+                    color: var(--text-muted);
+                    letter-spacing: 3px;
+                    margin-bottom: 26px;
                 }
 
                 .seat-grid-wrapper {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    justify-content: center;
                 }
 
-                .seat-grid {
-                    display: inline-block;
+                .col-header-row {
+                    display: flex;
+                    margin-bottom: 6px;
+                }
+
+                .col-spacer {
+                    width: 38px;
+                }
+
+                .col-lbl {
+                    width: 41px;
+                    text-align: center;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: var(--orange);
                 }
 
                 .seat-row {
                     display: flex;
                     align-items: center;
-                    margin-bottom: 8px;
+                    margin-bottom: 5px;
                 }
 
-                .row-label {
-                    font-weight: 700;
-                    color: #667eea;
-                    width: 40px;
+                .row-lbl {
+                    width: 38px;
                     text-align: center;
-                    font-size: 16px;
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: var(--orange);
                 }
 
                 .seat {
@@ -173,58 +423,45 @@
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 11px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.2s;
+                    font-size: 10px;
+                    font-weight: 700;
                     color: white;
-                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                    cursor: pointer;
+                    transition: all .2s;
                     border: 2px solid transparent;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, .4);
                 }
 
                 .seat:hover {
-                    transform: scale(1.15);
-                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+                    transform: scale(1.12);
                 }
 
                 .seat.selected {
-                    border: 2px solid #2d3748;
-                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+                    border-color: white;
+                    box-shadow: 0 0 0 3px rgba(232, 116, 42, .5);
                 }
 
                 .seat-AVAILABLE {
-                    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+                    background: var(--green);
                 }
 
                 .seat-BROKEN {
-                    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+                    background: var(--red);
                 }
 
                 .seat-MAINTENANCE {
-                    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+                    background: var(--amber);
                 }
 
-                .column-labels {
-                    display: flex;
-                    margin-left: 40px;
-                    margin-bottom: 10px;
-                }
-
-                .column-label {
-                    width: 41px;
-                    text-align: center;
-                    font-weight: 700;
-                    color: #667eea;
-                    font-size: 12px;
-                }
-
+                /* ── Legend ──────────────────────────────────────────────*/
                 .legend {
                     display: flex;
-                    justify-content: center;
                     gap: 20px;
-                    margin-top: 30px;
-                    padding: 20px;
-                    background: #f7fafc;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    margin-top: 22px;
+                    padding: 16px;
+                    background: var(--orange-dim);
                     border-radius: 10px;
                 }
 
@@ -232,139 +469,50 @@
                     display: flex;
                     align-items: center;
                     gap: 8px;
+                    font-size: 13px;
+                    color: var(--text-muted);
                 }
 
-                .legend-box {
-                    width: 30px;
-                    height: 30px;
-                    border-radius: 6px;
+                .legend-dot {
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 4px;
                 }
 
-                .legend-box.available {
-                    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-                }
-
-                .legend-box.broken {
-                    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-                }
-
-                .legend-box.maintenance {
-                    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
-                }
-
-                .toolbar {
-                    background: #f7fafc;
-                    padding: 20px;
-                    border-radius: 10px;
-                    margin-bottom: 20px;
-                    display: flex;
-                    gap: 10px;
-                    flex-wrap: wrap;
-                    align-items: center;
-                }
-
-                .btn-status {
-                    padding: 10px 20px;
-                    border-radius: 8px;
-                    font-weight: 600;
-                    border: 2px solid transparent;
-                    transition: all 0.3s;
-                }
-
-                .btn-status:hover {
-                    transform: translateY(-2px);
-                }
-
-                .btn-status.active {
-                    border-color: #2d3748;
-                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-                }
-
-                .btn-available {
-                    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-                    color: white;
-                }
-
-                .btn-broken {
-                    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-                    color: white;
-                }
-
-                .btn-maintenance {
-                    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
-                    color: white;
-                }
-
-                .btn-save {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    padding: 10px 30px;
-                    border-radius: 8px;
-                    font-weight: 600;
-                    border: none;
-                    transition: all 0.3s;
-                }
-
-                .btn-save:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-                }
-
+                /* ── Empty state ─────────────────────────────────────────*/
                 .empty-state {
-                    padding: 60px 20px;
                     text-align: center;
-                    color: #a0aec0;
+                    padding: 60px 20px;
+                    color: var(--text-muted);
                 }
 
                 .empty-state i {
-                    font-size: 64px;
-                    margin-bottom: 20px;
-                    opacity: 0.5;
+                    font-size: 52px;
+                    color: var(--orange);
+                    opacity: .4;
+                    display: block;
+                    margin-bottom: 16px;
                 }
 
-                .info-box {
-                    background: #edf2f7;
-                    border-left: 4px solid #667eea;
-                    padding: 15px;
-                    border-radius: 8px;
-                    margin-bottom: 20px;
+                .empty-state p.title {
+                    font-size: 16px;
+                    color: var(--text);
                 }
 
-                .info-box i {
-                    color: #667eea;
-                    margin-right: 10px;
-                }
-
-                .filter-section {
-                    display: flex;
-                    gap: 10px;
-                    align-items: center;
-                    margin-top: 15px;
-                }
-
+                /* ── Responsive ──────────────────────────────────────────*/
                 @media (max-width: 768px) {
                     main {
                         margin-left: 0;
                         padding: 15px;
                     }
 
-                    .page-header h2 {
-                        font-size: 22px;
-                    }
-
-                    .seat {
-                        width: 30px;
-                        height: 30px;
-                        font-size: 10px;
-                    }
-
-                    .column-label {
-                        width: 36px;
-                    }
-
                     .toolbar {
                         flex-direction: column;
                         align-items: stretch;
+                    }
+
+                    .stats-row {
+                        flex-direction: column;
                     }
                 }
             </style>
@@ -372,77 +520,63 @@
 
         <body>
 
-            <!-- Header -->
             <jsp:include page="/components/layout/dashboard/dashboard_header.jsp" />
+            <jsp:include page="/components/layout/dashboard/manager_sidebar.jsp" />
 
-            <!-- Sidebar -->
-            <jsp:include page="/components/layout/dashboard/branch_manager_sidebar.jsp" />
-
-            <!-- Main Content -->
             <main>
                 <div class="container-fluid">
+
                     <!-- Page Header -->
                     <div class="page-header">
-                        <h2><i class="fa fa-wrench"></i>Manage Seat Status</h2>
+                        <div class="icon-wrap"><i class="fa fa-wrench"></i></div>
+                        <div>
+                            <h2>Trạng thái Ghế</h2>
+                            <p>Đánh dấu ghế bị hỏng hoặc đang bảo trì để ngăn đặt vé</p>
+                        </div>
                     </div>
 
-                    <!-- Success/Error Messages -->
-                    <c:if test="${param.success != null}">
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="fa fa-check-circle me-2"></i>${param.success}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <!-- Alerts -->
+                    <c:if test="${not empty param.success}">
+                        <div class="alert alert-success"><i class="fa fa-check-circle me-2"></i>${param.success}</div>
+                    </c:if>
+                    <c:if test="${not empty param.error}">
+                        <div class="alert alert-danger"><i class="fa fa-exclamation-circle me-2"></i>${param.error}
                         </div>
                     </c:if>
-
-                    <c:if test="${param.error != null}">
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="fa fa-exclamation-circle me-2"></i>${param.error}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
+                    <c:if test="${not empty error}">
+                        <div class="alert alert-danger"><i class="fa fa-exclamation-circle me-2"></i>${error}</div>
                     </c:if>
 
-                    <c:if test="${error != null}">
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="fa fa-exclamation-circle me-2"></i>${error}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    </c:if>
-
-                    <!-- Room Selection -->
-                    <div class="config-card">
-                        <h5><i class="fa fa-building"></i>Select Screening Room</h5>
+                    <!-- Room selector + filter -->
+                    <div class="card">
+                        <div class="card-title"><i class="fa fa-building"></i> Chọn phòng chiếu</div>
 
                         <div class="info-box">
                             <i class="fa fa-info-circle"></i>
-                            <strong>Instructions:</strong> Select a room, then click on seats to change their status.
-                            Mark seats as broken or under maintenance to prevent bookings.
+                            <span>Chọn chế độ (Available / Broken / Maintenance), sau đó <strong
+                                    style="color:var(--orange)">click vào ghế</strong> để thay đổi trạng thái. Nhấn
+                                <strong style="color:var(--orange)">Lưu thay đổi</strong> để áp dụng.</span>
                         </div>
 
-                        <form method="get" action="${pageContext.request.contextPath}/branch-manager/manage-seat-status"
-                            id="roomForm">
+                        <form method="get"
+                            action="${pageContext.request.contextPath}/branch-manager/manage-seat-status">
                             <div class="row g-3">
-                                <div class="col-md-8">
-                                    <label for="roomId" class="form-label">
-                                        <i class="fa fa-building me-1"></i>Screening Room
-                                    </label>
-                                    <select class="form-select" id="roomId" name="roomId" onchange="this.form.submit()"
-                                        required>
-                                        <option value="">-- Select a room --</option>
+                                <div class="col-md-6">
+                                    <label class="form-label">Phòng chiếu</label>
+                                    <select class="form-select" name="roomId" onchange="this.form.submit()">
+                                        <option value="">-- Chọn phòng --</option>
                                         <c:forEach var="room" items="${rooms}">
                                             <option value="${room.roomId}" ${selectedRoom !=null &&
                                                 selectedRoom.roomId==room.roomId ? 'selected' : '' }>
-                                                ${room.roomName} (${room.totalSeats} seats)
+                                                ${room.roomName} (${room.totalSeats} ghế)
                                             </option>
                                         </c:forEach>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="statusFilter" class="form-label">
-                                        <i class="fa fa-filter me-1"></i>Filter by Status
-                                    </label>
-                                    <select class="form-select" id="statusFilter" name="statusFilter"
-                                        onchange="this.form.submit()">
-                                        <option value="">All Statuses</option>
+                                    <label class="form-label">Lọc theo trạng thái</label>
+                                    <select class="form-select" name="statusFilter" onchange="this.form.submit()">
+                                        <option value="">Tất cả</option>
                                         <option value="AVAILABLE" ${statusFilter=='AVAILABLE' ? 'selected' : '' }>
                                             Available</option>
                                         <option value="BROKEN" ${statusFilter=='BROKEN' ? 'selected' : '' }>Broken
@@ -451,75 +585,110 @@
                                             Maintenance</option>
                                     </select>
                                 </div>
+                                <c:if test="${selectedRoom != null}">
+                                    <input type="hidden" name="roomId" value="${selectedRoom.roomId}">
+                                </c:if>
                             </div>
                         </form>
                     </div>
 
-                    <!-- Seat Status Management -->
+                    <!-- Seat editor (room selected + seats exist) -->
                     <c:if test="${selectedRoom != null && seats != null && !seats.isEmpty()}">
-                        <div class="seat-grid-container">
-                            <div class="screen-indicator">
-                                <i class="fa fa-desktop me-2"></i>SCREEN
-                            </div>
 
+                        <!-- Stats -->
+                        <div class="stats-row">
+                            <c:set var="cntA" value="0" />
+                            <c:set var="cntB" value="0" />
+                            <c:set var="cntM" value="0" />
+                            <c:forEach var="s" items="${seats}">
+                                <c:if test="${s.status == 'AVAILABLE'}">
+                                    <c:set var="cntA" value="${cntA + 1}" />
+                                </c:if>
+                                <c:if test="${s.status == 'BROKEN'}">
+                                    <c:set var="cntB" value="${cntB + 1}" />
+                                </c:if>
+                                <c:if test="${s.status == 'MAINTENANCE'}">
+                                    <c:set var="cntM" value="${cntM + 1}" />
+                                </c:if>
+                            </c:forEach>
+                            <div class="stat-badge available">
+                                <div class="stat-dot" style="background:var(--green)"></div>
+                                Available: ${cntA}
+                            </div>
+                            <div class="stat-badge broken">
+                                <div class="stat-dot" style="background:var(--red)"></div>
+                                Broken: ${cntB}
+                            </div>
+                            <div class="stat-badge maintenance">
+                                <div class="stat-dot" style="background:var(--amber)"></div>
+                                Maintenance: ${cntM}
+                            </div>
+                        </div>
+
+                        <div class="card">
                             <!-- Toolbar -->
                             <div class="toolbar">
-                                <div>
-                                    <strong><i class="fa fa-hand-pointer-o me-2"></i>Click Mode:</strong>
-                                </div>
-                                <button type="button" class="btn btn-status btn-available"
-                                    onclick="setClickMode('AVAILABLE')">
-                                    <i class="fa fa-check me-1"></i>Available
+                                <span class="toolbar-label"><i class="fa fa-hand-o-up me-1"></i>Chế độ click:</span>
+                                <button type="button" class="mode-btn available" onclick="setMode('AVAILABLE')">
+                                    <div class="dot"></div> Available
                                 </button>
-                                <button type="button" class="btn btn-status btn-broken"
-                                    onclick="setClickMode('BROKEN')">
-                                    <i class="fa fa-times me-1"></i>Broken
+                                <button type="button" class="mode-btn broken" onclick="setMode('BROKEN')">
+                                    <div class="dot"></div> Broken
                                 </button>
-                                <button type="button" class="btn btn-status btn-maintenance"
-                                    onclick="setClickMode('MAINTENANCE')">
-                                    <i class="fa fa-wrench me-1"></i>Maintenance
+                                <button type="button" class="mode-btn maintenance" onclick="setMode('MAINTENANCE')">
+                                    <div class="dot"></div> Maintenance
                                 </button>
-                                <div class="ms-auto">
-                                    <button type="button" class="btn btn-secondary me-2" onclick="clearSelection()">
-                                        <i class="fa fa-times me-1"></i>Clear Selection
+                                <div class="ms-auto" style="display:flex; gap:10px; flex-wrap:wrap;">
+                                    <button type="button" class="btn-ghost" onclick="clearSelection()">
+                                        <i class="fa fa-times me-1"></i>Bỏ chọn
                                     </button>
-                                    <button type="button" class="btn btn-save" onclick="saveChanges()">
-                                        <i class="fa fa-save me-1"></i>Save Changes
+                                    <button type="button" class="btn-orange" onclick="saveChanges()">
+                                        <i class="fa fa-save me-1"></i>Lưu thay đổi
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="seat-grid-wrapper">
-                                <jsp:useBean id="seatMap" class="java.util.HashMap" scope="page" />
-                                <jsp:useBean id="rowSet" class="java.util.TreeSet" scope="page" />
-                                <jsp:useBean id="colSet" class="java.util.TreeSet" scope="page" />
+                            <!-- Counter -->
+                            <div style="margin-bottom:14px; font-size:13px; color:var(--text-muted);">
+                                <i class="fa fa-info-circle me-1" style="color:var(--orange)"></i>
+                                Đã chọn: <strong id="selCount" style="color:var(--orange)">0</strong> ghế —
+                                Chế độ: <strong id="modeLabel" style="color:var(--orange)">AVAILABLE</strong>
+                            </div>
 
-                                <c:forEach var="seat" items="${seats}">
-                                    <c:set target="${seatMap}" property="${seat.rowNumber}-${seat.seatNumber}"
-                                        value="${seat}" />
-                                    <c:set var="addRow" value="${rowSet.add(seat.rowNumber)}" />
-                                    <c:set var="addCol" value="${colSet.add(seat.seatNumber)}" />
-                                </c:forEach>
-
-                                <!-- Column Labels -->
-                                <div class="column-labels">
-                                    <c:forEach var="col" items="${colSet}">
-                                        <div class="column-label">${col}</div>
+                            <!-- Grid -->
+                            <div class="seat-grid-outer">
+                                <div class="screen-bar"></div>
+                                <div class="screen-label">MÀN HÌNH</div>
+                                <div class="seat-grid-wrapper">
+                                    <jsp:useBean id="seatMap" class="java.util.HashMap" scope="page" />
+                                    <jsp:useBean id="rowSet" class="java.util.TreeSet" scope="page" />
+                                    <jsp:useBean id="colSet" class="java.util.TreeSet" scope="page" />
+                                    <c:forEach var="seat" items="${seats}">
+                                        <c:set target="${seatMap}" property="${seat.rowNumber}-${seat.seatNumber}"
+                                            value="${seat}" />
+                                        <c:set var="ra" value="${rowSet.add(seat.rowNumber)}" />
+                                        <c:set var="ca" value="${colSet.add(seat.seatNumber)}" />
                                     </c:forEach>
-                                </div>
 
-                                <!-- Seat Grid -->
-                                <div class="seat-grid">
+                                    <!-- Col labels -->
+                                    <div class="col-header-row">
+                                        <div class="col-spacer"></div>
+                                        <c:forEach var="col" items="${colSet}">
+                                            <div class="col-lbl">${col}</div>
+                                        </c:forEach>
+                                    </div>
+
+                                    <!-- Seats -->
                                     <c:forEach var="row" items="${rowSet}">
                                         <div class="seat-row">
-                                            <div class="row-label">${row}</div>
+                                            <div class="row-lbl">${row}</div>
                                             <c:forEach var="col" items="${colSet}">
-                                                <c:set var="seat" value="${seatMap[row.concat('-').concat(col)]}" />
-                                                <c:if test="${seat != null}">
-                                                    <div class="seat seat-${seat.status}" data-seat-id="${seat.seatId}"
-                                                        data-seat-status="${seat.status}" onclick="toggleSeat(this)"
-                                                        title="${seat.seatCode} - ${seat.status} (${seat.seatType})">
-                                                        ${seat.seatCode}
+                                                <c:set var="s" value="${seatMap[row.concat('-').concat(col)]}" />
+                                                <c:if test="${s != null}">
+                                                    <div class="seat seat-${s.status}" data-seat-id="${s.seatId}"
+                                                        data-seat-status="${s.status}" onclick="toggleSeat(this)"
+                                                        title="${s.seatCode} — ${s.status} (${s.seatType})">
+                                                        ${s.seatCode}
                                                     </div>
                                                 </c:if>
                                             </c:forEach>
@@ -530,56 +699,58 @@
                                 <!-- Legend -->
                                 <div class="legend">
                                     <div class="legend-item">
-                                        <div class="legend-box available"></div>
-                                        <span><strong>Available</strong> - Ready for booking</span>
+                                        <div class="legend-dot" style="background:var(--green)"></div>
+                                        Available — Sẵn sàng đặt vé
                                     </div>
                                     <div class="legend-item">
-                                        <div class="legend-box broken"></div>
-                                        <span><strong>Broken</strong> - Out of service</span>
+                                        <div class="legend-dot" style="background:var(--red)"></div>
+                                        Broken — Ghế hỏng
                                     </div>
                                     <div class="legend-item">
-                                        <div class="legend-box maintenance"></div>
-                                        <span><strong>Maintenance</strong> - Under repair</span>
+                                        <div class="legend-dot" style="background:var(--amber)"></div>
+                                        Maintenance — Đang bảo trì
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </c:if>
 
+                    <!-- Empty: filter returned nothing -->
                     <c:if test="${selectedRoom != null && (seats == null || seats.isEmpty())}">
-                        <div class="config-card">
+                        <div class="card">
                             <div class="empty-state">
-                                <i class="fa fa-th"></i>
+                                <i class="fa fa-filter"></i>
                                 <c:choose>
-                                    <c:when test="${statusFilter != null && !statusFilter.isEmpty()}">
-                                        <p class="mb-0">No seats with status "${statusFilter}" found in this room.</p>
-                                        <p class="text-muted">Try changing the filter or select a different room.</p>
+                                    <c:when test="${not empty statusFilter}">
+                                        <p class="title">Không tìm thấy ghế với trạng thái "${statusFilter}".</p>
+                                        <p style="font-size:13px;">Thay đổi bộ lọc hoặc chọn phòng khác.</p>
                                     </c:when>
                                     <c:otherwise>
-                                        <p class="mb-0">No seats configured for this room.</p>
-                                        <p class="text-muted">Please configure the seat layout first in "Configure Seat
-                                            Layout".</p>
+                                        <p class="title">Phòng này chưa có ghế.</p>
+                                        <p style="font-size:13px;">Hãy cấu hình sơ đồ ghế trong mục <strong>Cấu hình Sơ
+                                                đồ Ghế</strong> trước.</p>
                                     </c:otherwise>
                                 </c:choose>
                             </div>
                         </div>
                     </c:if>
 
+                    <!-- No rooms -->
                     <c:if test="${selectedRoom == null && (rooms == null || rooms.isEmpty())}">
-                        <div class="config-card">
+                        <div class="card">
                             <div class="empty-state">
                                 <i class="fa fa-building"></i>
-                                <p class="mb-0">No screening rooms available.</p>
-                                <p class="text-muted">Please create a screening room first in "Manage Cinema Halls".</p>
+                                <p class="title">Chưa có phòng chiếu nào.</p>
                             </div>
                         </div>
                     </c:if>
+
                 </div>
             </main>
 
-            <!-- Hidden form for bulk update -->
-            <form id="bulkUpdateForm" method="post"
-                action="${pageContext.request.contextPath}/branch-manager/manage-seat-status" style="display: none;">
+            <!-- Hidden bulk-update form -->
+            <form id="bulkForm" method="post"
+                action="${pageContext.request.contextPath}/branch-manager/manage-seat-status" style="display:none;">
                 <input type="hidden" name="action" value="updateBulk">
                 <input type="hidden" name="roomId" value="${selectedRoom != null ? selectedRoom.roomId : ''}">
                 <input type="hidden" name="status" id="bulkStatus">
@@ -591,99 +762,69 @@
                 let selectedSeats = new Set();
                 let clickMode = 'AVAILABLE';
 
-                // Sidebar toggle
-                document.addEventListener('DOMContentLoaded', function () {
-                    const toggleBtn = document.getElementById('sidebarToggle');
-                    const body = document.body;
-
-                    if (toggleBtn) {
-                        toggleBtn.addEventListener('click', function () {
-                            body.classList.toggle('sidebar-collapsed');
-                        });
-                    }
-
-                    // Auto-dismiss alerts after 5 seconds
-                    setTimeout(function () {
-                        const alerts = document.querySelectorAll('.alert');
-                        alerts.forEach(function (alert) {
-                            const bsAlert = new bootstrap.Alert(alert);
-                            bsAlert.close();
+                document.addEventListener('DOMContentLoaded', () => {
+                    const toggle = document.getElementById('sidebarToggle');
+                    if (toggle) toggle.addEventListener('click', () => document.body.classList.toggle('sidebar-collapsed'));
+                    setTimeout(() => {
+                        document.querySelectorAll('.alert').forEach(el => {
+                            try { new bootstrap.Alert(el).close(); } catch (e) { }
                         });
                     }, 5000);
-
-                    // Set initial click mode
-                    setClickMode('AVAILABLE');
+                    setMode('AVAILABLE');
                 });
 
-                function setClickMode(mode) {
+                function setMode(mode) {
                     clickMode = mode;
-
-                    // Update button states
-                    document.querySelectorAll('.btn-status').forEach(btn => {
-                        btn.classList.remove('active');
-                    });
-
-                    const activeBtn = document.querySelector('.btn-' + mode.toLowerCase());
-                    if (activeBtn) {
-                        activeBtn.classList.add('active');
-                    }
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    const map = { AVAILABLE: 'available', BROKEN: 'broken', MAINTENANCE: 'maintenance' };
+                    document.querySelector('.mode-btn.' + map[mode])?.classList.add('active');
+                    document.getElementById('modeLabel').textContent = mode;
                 }
 
-                function toggleSeat(seatElement) {
-                    const seatId = seatElement.getAttribute('data-seat-id');
-
-                    if (selectedSeats.has(seatId)) {
-                        selectedSeats.delete(seatId);
-                        seatElement.classList.remove('selected');
+                function toggleSeat(el) {
+                    const id = el.getAttribute('data-seat-id');
+                    if (selectedSeats.has(id)) {
+                        selectedSeats.delete(id);
+                        el.classList.remove('selected');
+                        const original = el.getAttribute('data-seat-status');
+                        el.classList.remove('seat-AVAILABLE', 'seat-BROKEN', 'seat-MAINTENANCE');
+                        el.classList.add('seat-' + original);
                     } else {
-                        selectedSeats.add(seatId);
-                        seatElement.classList.add('selected');
-
-                        // Update seat status visually
-                        seatElement.classList.remove('seat-AVAILABLE', 'seat-BROKEN', 'seat-MAINTENANCE');
-                        seatElement.classList.add('seat-' + clickMode);
-                        seatElement.setAttribute('data-seat-status', clickMode);
+                        selectedSeats.add(id);
+                        el.classList.add('selected');
+                        el.classList.remove('seat-AVAILABLE', 'seat-BROKEN', 'seat-MAINTENANCE');
+                        el.classList.add('seat-' + clickMode);
                     }
+                    document.getElementById('selCount').textContent = selectedSeats.size;
                 }
 
                 function clearSelection() {
-                    selectedSeats.clear();
-                    document.querySelectorAll('.seat.selected').forEach(seat => {
-                        seat.classList.remove('selected');
-                        // Restore original status
-                        const originalStatus = seat.getAttribute('data-seat-status');
-                        seat.classList.remove('seat-AVAILABLE', 'seat-BROKEN', 'seat-MAINTENANCE');
-                        seat.classList.add('seat-' + originalStatus);
+                    document.querySelectorAll('.seat.selected').forEach(el => {
+                        el.classList.remove('selected');
+                        const orig = el.getAttribute('data-seat-status');
+                        el.classList.remove('seat-AVAILABLE', 'seat-BROKEN', 'seat-MAINTENANCE');
+                        el.classList.add('seat-' + orig);
                     });
+                    selectedSeats.clear();
+                    document.getElementById('selCount').textContent = 0;
                 }
 
                 function saveChanges() {
-                    if (selectedSeats.size === 0) {
-                        alert('Please select at least one seat to update.');
-                        return;
-                    }
+                    if (!selectedSeats.size) { alert('Hãy chọn ít nhất một ghế.'); return; }
+                    const modeViMap = { AVAILABLE: 'Khả dụng', BROKEN: 'Hỏng', MAINTENANCE: 'Bảo trì' };
+                    if (!confirm(`Cập nhật ${selectedSeats.size} ghế → ${modeViMap[clickMode] || clickMode}?`)) return;
 
-                    if (!confirm('Update ' + selectedSeats.size + ' seat(s) to ' + clickMode + ' status?')) {
-                        return;
-                    }
-
-                    // Prepare form
                     const container = document.getElementById('seatIdsContainer');
                     container.innerHTML = '';
-
-                    selectedSeats.forEach(seatId => {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = 'seatIds[]';
-                        input.value = seatId;
-                        container.appendChild(input);
+                    selectedSeats.forEach(id => {
+                        const inp = document.createElement('input');
+                        inp.type = 'hidden'; inp.name = 'seatIds[]'; inp.value = id;
+                        container.appendChild(inp);
                     });
-
                     document.getElementById('bulkStatus').value = clickMode;
-                    document.getElementById('bulkUpdateForm').submit();
+                    document.getElementById('bulkForm').submit();
                 }
             </script>
-
         </body>
 
         </html>
