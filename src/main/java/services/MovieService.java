@@ -13,7 +13,12 @@ public class MovieService {
     }
 
     public Movie getMovieById(int id) {
-        return movieDao.getMovieById(id);
+        try {
+            return movieDao.getMovieById(id);
+        } catch (java.sql.SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public void insertMovie(Movie m, List<Integer> genreIds) {
