@@ -7,6 +7,7 @@
 </head>
 <body>
 
+<jsp:include page="/components/layout/Sidebar.jsp" />
 <div class="modal fade" id="exampleModal2" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-0">

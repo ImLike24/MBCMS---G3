@@ -19,7 +19,6 @@
 
     <body>
 
-        <jsp:include page="/components/layout/Sidebar.jsp" />
         <jsp:include page="/components/layout/Header.jsp" />
 
         <div class="main clearfix position-relative" style="margin-top: 100px; min-height: 600px;">
