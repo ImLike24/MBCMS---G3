@@ -25,60 +25,77 @@
 
 <script>
     (function () {
-        let _resolve = null;
-
-        const overlay  = document.getElementById('confirmModalOverlay');
-        const cancelBtn  = document.getElementById('confirmModalCancelBtn');
-        const confirmBtn = document.getElementById('confirmModalConfirmBtn');
-
-        function closeModal(result) {
-            overlay.classList.remove('active');
-            if (_resolve) {
-                _resolve(result);
-                _resolve = null;
-            }
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initConfirmModal);
+        } else {
+            initConfirmModal();
         }
+        
+        function initConfirmModal() {
+            let _resolve = null;
 
-        cancelBtn.addEventListener('click',  () => closeModal(false));
-        confirmBtn.addEventListener('click', () => closeModal(true));
-
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) closeModal(false);
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && overlay.classList.contains('active')) {
-                closeModal(false);
+            const overlay  = document.getElementById('confirmModalOverlay');
+            const cancelBtn  = document.getElementById('confirmModalCancelBtn');
+            const confirmBtn = document.getElementById('confirmModalConfirmBtn');
+            
+            // Check if elements exist
+            if (!overlay || !cancelBtn || !confirmBtn) {
+                console.error('Confirm modal elements not found!');
+                return;
             }
-        });
 
-        /**
-         * Show a custom confirmation modal.
-         * @param {object} options
-         * @param {string} [options.title='Confirm Action']
-         * @param {string} [options.message='Are you sure you want to proceed?']
-         * @param {string} [options.confirmText='Confirm']
-         * @param {string} [options.cancelText='Cancel']
-         * @param {string} [options.icon='fas fa-exclamation-triangle']
-         * @returns {Promise<boolean>}
-         */
-        window.showConfirmModal = function ({
-            title       = 'Confirm Action',
-            message     = 'Are you sure you want to proceed?',
-            confirmText = 'Confirm',
-            cancelText  = 'Cancel',
-            icon        = 'fas fa-exclamation-triangle'
-        } = {}) {
-            document.getElementById('confirmModalTitle').textContent       = title;
-            document.getElementById('confirmModalMessage').textContent     = message;
-            document.getElementById('confirmModalConfirmText').textContent = confirmText;
-            document.getElementById('confirmModalCancelText').textContent  = cancelText;
-            document.getElementById('confirmModalIcon').className          = icon;
+            function closeModal(result) {
+                overlay.classList.remove('active');
+                if (_resolve) {
+                    _resolve(result);
+                    _resolve = null;
+                }
+            }
 
-            return new Promise((resolve) => {
-                _resolve = resolve;
-                overlay.classList.add('active');
+            cancelBtn.addEventListener('click',  () => closeModal(false));
+            confirmBtn.addEventListener('click', () => closeModal(true));
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeModal(false);
             });
-        };
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                    closeModal(false);
+                }
+            });
+
+            /**
+             * Show a custom confirmation modal.
+             * @param {object} options
+             * @param {string} [options.title='Confirm Action']
+             * @param {string} [options.message='Are you sure you want to proceed?']
+             * @param {string} [options.confirmText='Confirm']
+             * @param {string} [options.cancelText='Cancel']
+             * @param {string} [options.icon='fas fa-exclamation-triangle']
+             * @returns {Promise<boolean>}
+             */
+            window.showConfirmModal = function ({
+                title       = 'Confirm Action',
+                message     = 'Are you sure you want to proceed?',
+                confirmText = 'Confirm',
+                cancelText  = 'Cancel',
+                icon        = 'fas fa-exclamation-triangle'
+            } = {}) {
+                document.getElementById('confirmModalTitle').textContent       = title;
+                document.getElementById('confirmModalMessage').textContent     = message;
+                document.getElementById('confirmModalConfirmText').textContent = confirmText;
+                document.getElementById('confirmModalCancelText').textContent  = cancelText;
+                document.getElementById('confirmModalIcon').className          = icon;
+
+                return new Promise((resolve) => {
+                    _resolve = resolve;
+                    overlay.classList.add('active');
+                });
+            };
+            
+            console.log('Confirm modal initialized successfully');
+        }
     })();
 </script>

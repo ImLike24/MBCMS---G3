@@ -665,15 +665,36 @@
 
         // Confirm payment — ask first, then process
         async function confirmPayment() {
-            const confirmed = await showConfirmModal({
-                title:       'Confirm Payment',
-                message:     'Are you sure you want to complete this payment?',
-                confirmText: 'Confirm Payment',
-                cancelText:  'Cancel',
-                icon:        'fas fa-credit-card'
-            });
+            console.log('confirmPayment called');
+            
+            // Check if showConfirmModal exists
+            if (typeof showConfirmModal !== 'function') {
+                console.error('showConfirmModal is not defined!');
+                alert('Modal function not loaded. Please refresh the page.');
+                return;
+            }
+            
+            let confirmed = false;
+            try {
+                confirmed = await showConfirmModal({
+                    title:       'Confirm Payment',
+                    message:     'Are you sure you want to complete this payment?',
+                    confirmText: 'Confirm Payment',
+                    cancelText:  'Cancel',
+                    icon:        'fas fa-credit-card'
+                });
+                
+                console.log('Modal result:', confirmed);
+            } catch (error) {
+                console.error('Error showing modal:', error);
+                // Fallback to native confirm
+                confirmed = confirm('Are you sure you want to complete this payment?');
+            }
 
-            if (!confirmed) return;
+            if (!confirmed) {
+                console.log('Payment cancelled by user');
+                return;
+            }
 
             const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
             const customerName  = document.getElementById('customerName').value.trim();
