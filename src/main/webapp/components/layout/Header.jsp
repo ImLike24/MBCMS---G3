@@ -4,10 +4,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Header</title>
 </head>
 <body>
-
+    <jsp:include page="/components/layout/Sidebar.jsp" />
 <div class="modal fade" id="exampleModal2" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-0">
@@ -16,7 +15,11 @@
             </div>
             <div class="modal-body">
                 <div class="input-group">
-                    <input type="text" class="form-control" placeholder="Search...">
+                    <input type="text" id="searchBox"
+                           class="form-control form-control-lg"
+                           placeholder="Search movies..."
+                           style="border:2px solid #d96c2c;">
+                    <div id="searchSuggest" class="list-group position-absolute w-100"></div>
                     <button class="btn btn-warning" type="button">
                         <i class="fa fa-search"></i>
                     </button>

@@ -5,9 +5,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import config.DBContext;
-import models.Movie;
-
 public class Movies extends DBContext {
     
     public List<Movie> getMockUpMovies() {
@@ -31,16 +28,23 @@ public class Movies extends DBContext {
         List<Movie> movies = new ArrayList<>();
 
         String sql = """
-                SELECT * FROM movies ORDER BY movie_id ASC
+                SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+                FROM movies m
+                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.genre_id
+                GROUP BY
+                    m.movie_id, m.title, m.description, m.duration,
+                    m.release_date, m.end_date, m.rating, m.age_rating,
+                    m.director, m.cast, m.poster_url, m.is_active,
+                    m.created_at, m.updated_at
+                ORDER BY m.movie_id ASC
                 """;
 
         try (PreparedStatement st = connection.prepareStatement(sql);
                 ResultSet rs = st.executeQuery()) {
 
             while (rs.next()) {
-                Movie m = mapResultSetToMovie(rs);
-                m.setGenres(getGenresByMovieId(m.getMovieId()));
-                movies.add(m);
+                movies.add(mapResultSetToMovie(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -54,16 +58,24 @@ public class Movies extends DBContext {
         List<Movie> movies = new ArrayList<>();
 
         String sql = """
-                SELECT * FROM movies WHERE is_active = 1 ORDER BY release_date DESC
+                SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+                FROM movies m
+                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.genre_id
+                WHERE m.is_active = 1
+                GROUP BY
+                    m.movie_id, m.title, m.description, m.duration,
+                    m.release_date, m.end_date, m.rating, m.age_rating,
+                    m.director, m.cast, m.poster_url, m.is_active,
+                    m.created_at, m.updated_at
+                ORDER BY m.release_date DESC
                 """;
 
         try (PreparedStatement st = connection.prepareStatement(sql);
                 ResultSet rs = st.executeQuery()) {
 
             while (rs.next()) {
-                Movie m = mapResultSetToMovie(rs);
-                m.setGenres(getGenresByMovieId(m.getMovieId()));
-                movies.add(m);
+                movies.add(mapResultSetToMovie(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -77,12 +89,19 @@ public class Movies extends DBContext {
         List<Movie> movies = new ArrayList<>();
 
         String sql = """
-                SELECT DISTINCT m.*
+                SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
                 FROM movies m
                 INNER JOIN showtimes s ON m.movie_id = s.movie_id
+                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.genre_id
                 WHERE m.is_active = 1
                   AND s.show_date = CAST(GETDATE() AS DATE)
                   AND s.status IN ('SCHEDULED', 'ONGOING')
+                GROUP BY
+                    m.movie_id, m.title, m.description, m.duration,
+                    m.release_date, m.end_date, m.rating, m.age_rating,
+                    m.director, m.cast, m.poster_url, m.is_active,
+                    m.created_at, m.updated_at
                 ORDER BY m.title
                 """;
 
@@ -90,9 +109,7 @@ public class Movies extends DBContext {
                 ResultSet rs = st.executeQuery()) {
 
             while (rs.next()) {
-                Movie m = mapResultSetToMovie(rs);
-                m.setGenres(getGenresByMovieId(m.getMovieId()));
-                movies.add(m);
+                movies.add(mapResultSetToMovie(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -107,12 +124,19 @@ public class Movies extends DBContext {
         List<Movie> movies = new ArrayList<>();
 
         String sql = """
-                SELECT DISTINCT m.*
+                SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
                 FROM movies m
                 INNER JOIN showtimes s ON m.movie_id = s.movie_id
+                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.genre_id
                 WHERE m.is_active = 1
                   AND s.show_date = ?
                   AND s.status IN ('SCHEDULED', 'ONGOING')
+                GROUP BY
+                    m.movie_id, m.title, m.description, m.duration,
+                    m.release_date, m.end_date, m.rating, m.age_rating,
+                    m.director, m.cast, m.poster_url, m.is_active,
+                    m.created_at, m.updated_at
                 ORDER BY m.title
                 """;
 
@@ -121,9 +145,7 @@ public class Movies extends DBContext {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    Movie m = mapResultSetToMovie(rs);
-                    m.setGenres(getGenresByMovieId(m.getMovieId()));
-                    movies.add(m);
+                    movies.add(mapResultSetToMovie(rs));
                 }
             }
         } catch (SQLException e) {
@@ -132,19 +154,30 @@ public class Movies extends DBContext {
         return movies;
     }
 
-    public Movie getMovieById(int id) throws SQLException {
-        String sql = "SELECT * FROM movies WHERE movie_id = ?";
+    public Movie getMovieById(int id) {
+        String sql = """
+                SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+                FROM movies m
+                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.genre_id
+                WHERE m.movie_id = ?
+                GROUP BY
+                    m.movie_id, m.title, m.description, m.duration,
+                    m.release_date, m.end_date, m.rating, m.age_rating,
+                    m.director, m.cast, m.poster_url, m.is_active,
+                    m.created_at, m.updated_at
+                """;
 
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, id);
 
             try (ResultSet rs = st.executeQuery()) {
                 if (rs.next()) {
-                    Movie m = mapResultSetToMovie(rs);
-                    m.setGenres(getGenresByMovieId(m.getMovieId()));
-                    return m;
+                    return mapResultSetToMovie(rs);
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return null;
     }
@@ -160,9 +193,11 @@ public class Movies extends DBContext {
         StringBuilder sql = new StringBuilder();
 
         sql.append("""
-                SELECT DISTINCT m.*
+                SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
                 FROM movies m
                 INNER JOIN showtimes s ON m.movie_id = s.movie_id
+                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.genre_id
                 WHERE m.is_active = 1
                   AND s.show_date = ?
                   AND s.status IN ('SCHEDULED', 'ONGOING')
@@ -172,7 +207,7 @@ public class Movies extends DBContext {
         params.add(java.sql.Date.valueOf(date));
 
         if (search != null && !search.trim().isEmpty()) {
-            sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.[cast] LIKE ?) ");
+            sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.cast LIKE ?) ");
             String p = "%" + search.trim() + "%";
             params.add(p);
             params.add(p);
@@ -180,8 +215,7 @@ public class Movies extends DBContext {
         }
 
         if (genre != null && !genre.trim().isEmpty()) {
-            sql.append(
-                    "AND EXISTS (SELECT 1 FROM movie_genres mg JOIN genres g ON mg.genre_id = g.genre_id WHERE mg.movie_id = m.movie_id AND g.genre_name LIKE ?) ");
+            sql.append("AND g.genre_name LIKE ? ");
             params.add("%" + genre.trim() + "%");
         }
 
@@ -191,6 +225,11 @@ public class Movies extends DBContext {
         }
 
         sql.append("""
+                GROUP BY
+                    m.movie_id, m.title, m.description, m.duration,
+                    m.release_date, m.end_date, m.rating, m.age_rating,
+                    m.director, m.cast, m.poster_url, m.is_active,
+                    m.created_at, m.updated_at
                 ORDER BY m.title
                 OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
                 """);
@@ -213,9 +252,7 @@ public class Movies extends DBContext {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    Movie m = mapResultSetToMovie(rs);
-                    m.setGenres(getGenresByMovieId(m.getMovieId()));
-                    movies.add(m);
+                    movies.add(mapResultSetToMovie(rs));
                 }
             }
         } catch (SQLException e) {
@@ -236,6 +273,8 @@ public class Movies extends DBContext {
                 SELECT COUNT(DISTINCT m.movie_id)
                 FROM movies m
                 INNER JOIN showtimes s ON m.movie_id = s.movie_id
+                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.genre_id
                 WHERE m.is_active = 1
                   AND s.show_date = ?
                   AND s.status IN ('SCHEDULED', 'ONGOING')
@@ -245,7 +284,7 @@ public class Movies extends DBContext {
         params.add(java.sql.Date.valueOf(date));
 
         if (search != null && !search.trim().isEmpty()) {
-            sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.[cast] LIKE ?) ");
+            sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.cast LIKE ?) ");
             String p = "%" + search.trim() + "%";
             params.add(p);
             params.add(p);
@@ -253,8 +292,7 @@ public class Movies extends DBContext {
         }
 
         if (genre != null && !genre.trim().isEmpty()) {
-            sql.append(
-                    "AND EXISTS (SELECT 1 FROM movie_genres mg JOIN genres g ON mg.genre_id = g.genre_id WHERE mg.movie_id = m.movie_id AND g.genre_name LIKE ?) ");
+            sql.append("AND g.genre_name LIKE ? ");
             params.add("%" + genre.trim() + "%");
         }
 
@@ -285,6 +323,208 @@ public class Movies extends DBContext {
         return 0;
     }
 
+    /**
+     * Get distinct genres from movies showing on date
+     */
+    // public List<String> getGenresShowingOnDate(LocalDate date) {
+    // List<String> genres = new ArrayList<>();
+    // String sql = "SELECT DISTINCT m.genre FROM movies m " +
+    // "INNER JOIN showtimes s ON m.movie_id = s.movie_id " +
+    // "WHERE m.is_active = 1 AND m.genre IS NOT NULL " +
+    // "AND s.show_date = ? " +
+    // "AND s.status IN ('SCHEDULED', 'ONGOING') " +
+    // "ORDER BY m.genre";
+    //
+    // try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+    // pstmt.setDate(1, java.sql.Date.valueOf(date));
+    //
+    // try (ResultSet rs = pstmt.executeQuery()) {
+    // while (rs.next()) {
+    // String genre = rs.getString("genres");
+    // if (genre != null && !genre.trim().isEmpty()) {
+    // genres.add(genre);
+    // }
+
+    /**
+     * Get all active movies (no date/showtime filter) with search, filter and pagination.
+     * Used when "Reset" is clicked - show all films in the system.
+     */
+    public List<Movie> getActiveMoviesWithFilter(
+            String search, String genre, String ageRating, int page, int pageSize) {
+
+        List<Movie> movies = new ArrayList<>();
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("""
+                SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+                FROM movies m
+                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.genre_id
+                WHERE m.is_active = 1
+                """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.cast LIKE ?) ");
+            String p = "%" + search.trim() + "%";
+            params.add(p);
+            params.add(p);
+            params.add(p);
+        }
+
+        if (genre != null && !genre.trim().isEmpty()) {
+            sql.append("AND EXISTS (SELECT 1 FROM movie_genres mg2 JOIN genres g2 ON mg2.genre_id = g2.genre_id WHERE mg2.movie_id = m.movie_id AND g2.genre_name LIKE ?) ");
+            params.add("%" + genre.trim() + "%");
+        }
+
+        if (ageRating != null && !ageRating.trim().isEmpty()) {
+            sql.append("AND m.age_rating = ? ");
+            params.add(ageRating.trim());
+        }
+
+        sql.append("""
+                GROUP BY
+                    m.movie_id, m.title, m.description, m.duration,
+                    m.release_date, m.end_date, m.rating, m.age_rating,
+                    m.director, m.cast, m.poster_url, m.is_active,
+                    m.created_at, m.updated_at
+                ORDER BY m.title
+                OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+                """);
+
+        int offset = (page - 1) * pageSize;
+        params.add(offset);
+        params.add(pageSize);
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof Integer) {
+                    pstmt.setInt(i + 1, (Integer) param);
+                } else {
+                    pstmt.setString(i + 1, (String) param);
+                }
+            }
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    movies.add(mapResultSetToMovie(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return movies;
+    }
+
+    /**
+     * Count all active movies (no date/showtime filter) with search and filter.
+     */
+    public int countActiveMoviesWithFilter(
+            String search, String genre, String ageRating) {
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("""
+                SELECT COUNT(*)
+                FROM movies m
+                WHERE m.is_active = 1
+                """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.cast LIKE ?) ");
+            String p = "%" + search.trim() + "%";
+            params.add(p);
+            params.add(p);
+            params.add(p);
+        }
+
+        if (genre != null && !genre.trim().isEmpty()) {
+            sql.append("AND EXISTS (SELECT 1 FROM movie_genres mg JOIN genres g ON mg.genre_id = g.genre_id WHERE mg.movie_id = m.movie_id AND g.genre_name LIKE ?) ");
+            params.add("%" + genre.trim() + "%");
+        }
+
+        if (ageRating != null && !ageRating.trim().isEmpty()) {
+            sql.append("AND m.age_rating = ? ");
+            params.add(ageRating.trim());
+        }
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setString(i + 1, (String) params.get(i));
+            }
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Get distinct age ratings from all active movies (for filter dropdown when showing all).
+     */
+    public List<String> getAgeRatingsFromActiveMovies() {
+        List<String> ageRatings = new ArrayList<>();
+        String sql = "SELECT DISTINCT m.age_rating FROM movies m " +
+                "WHERE m.is_active = 1 AND m.age_rating IS NOT NULL " +
+                "ORDER BY m.age_rating";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    String ageRating = rs.getString("age_rating");
+                    if (ageRating != null && !ageRating.trim().isEmpty()) {
+                        ageRatings.add(ageRating);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ageRatings;
+    }
+
+    /**
+     * Get distinct genres from movies showing on date
+     */
+    // public List<String> getGenresShowingOnDate(LocalDate date) {
+    // List<String> genres = new ArrayList<>();
+    // String sql = "SELECT DISTINCT m.genre FROM movies m " +
+    // "INNER JOIN showtimes s ON m.movie_id = s.movie_id " +
+    // "WHERE m.is_active = 1 AND m.genre IS NOT NULL " +
+    // "AND s.show_date = ? " +
+    // "AND s.status IN ('SCHEDULED', 'ONGOING') " +
+    // "ORDER BY m.genre";
+    //
+    // try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+    // pstmt.setDate(1, java.sql.Date.valueOf(date));
+    //
+    // try (ResultSet rs = pstmt.executeQuery()) {
+    // while (rs.next()) {
+    // String genre = rs.getString("genres");
+    // if (genre != null && !genre.trim().isEmpty()) {
+    // genres.add(genre);
+    // }
+    // }
+    // }
+    // } catch (SQLException e) {
+    // e.printStackTrace();
+    // }
+    // return genres;
+    // }
+
+    /**
+     * Get distinct age ratings from movies showing on date
+     */
     public List<String> getAgeRatingsShowingOnDate(LocalDate date) {
         List<String> ageRatings = new ArrayList<>();
         String sql = "SELECT DISTINCT m.age_rating FROM movies m " +
@@ -311,26 +551,30 @@ public class Movies extends DBContext {
         return ageRatings;
     }
 
-    private List<String> getGenresByMovieId(int movieId) {
-        List<String> genres = new ArrayList<>();
-        String sql = """
-                    SELECT g.genre_name
-                    FROM genres g
-                    JOIN movie_genres mg ON g.genre_id = mg.genre_id
-                    WHERE mg.movie_id = ?
-                    ORDER BY g.genre_name
-                """;
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, movieId);
-            try (ResultSet rs = st.executeQuery()) {
+    /**
+     * Get all distinct age ratings from movies with showtimes (no date filter)
+     */
+    public List<String> getAllAgeRatingsWithShowtimes() {
+        List<String> ageRatings = new ArrayList<>();
+        String sql = "SELECT DISTINCT m.age_rating FROM movies m " +
+                "INNER JOIN showtimes s ON m.movie_id = s.movie_id " +
+                "WHERE m.is_active = 1 AND m.age_rating IS NOT NULL " +
+                "AND s.status IN ('SCHEDULED', 'ONGOING') " +
+                "ORDER BY m.age_rating";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    genres.add(rs.getString("genre_name"));
+                    String ageRating = rs.getString("age_rating");
+                    if (ageRating != null && !ageRating.trim().isEmpty()) {
+                        ageRatings.add(ageRating);
+                    }
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return genres;
+        return ageRatings;
     }
 
     /**
@@ -343,7 +587,13 @@ public class Movies extends DBContext {
         m.setDescription(rs.getString("description"));
         m.setDuration(rs.getInt("duration"));
 
-        m.setGenres(new ArrayList<>()); // Initialize empty list, populated by caller
+        // NEW: map genres
+        String genreList = rs.getString("genre_list");
+        if (genreList != null && !genreList.isEmpty()) {
+            m.setGenres(List.of(genreList.split("\\s*,\\s*")));
+        } else {
+            m.setGenres(new ArrayList<>());
+        }
 
         if (rs.getDate("release_date") != null) {
             m.setReleaseDate(rs.getDate("release_date").toLocalDate());
@@ -508,5 +758,155 @@ public class Movies extends DBContext {
                 try { conn.setAutoCommit(true); } catch (SQLException ex) { ex.printStackTrace(); }
             }
         }
+    }
+
+    public void deleteMovieWithGenres(int movieId) {
+        String deleteMovieGenresSql = """
+                DELETE FROM movie_genres WHERE movie_id = ?
+                """;
+
+        String deleteMovieSql = """
+                DELETE FROM movies WHERE movie_id = ?
+                """;
+
+        Connection conn = null;
+
+        try {
+            conn = connection;
+            conn.setAutoCommit(false);
+
+            // 1. Delete from movie_genres
+            try (PreparedStatement ps = conn.prepareStatement(deleteMovieGenresSql)) {
+                ps.setInt(1, movieId);
+                ps.executeUpdate();
+            }
+
+            // 2. Delete from movies
+            try (PreparedStatement ps = conn.prepareStatement(deleteMovieSql)) {
+                ps.setInt(1, movieId);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            try {
+                if (conn != null)
+                    conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        } finally {
+            try {
+                if (conn != null)
+                    conn.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public List<Movie> getNowShowing() {
+        // Lấy 12 phim đang chiếu, sắp xếp theo ngày phát hành mới nhất
+        String sql = """
+                    SELECT TOP 12 m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+                    FROM movies m
+                    LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                    LEFT JOIN genres g ON mg.genre_id = g.genre_id
+                    WHERE m.is_active = 1
+                      AND m.release_date <= CAST(GETDATE() AS DATE)
+                      AND (m.end_date IS NULL OR m.end_date >= CAST(GETDATE() AS DATE))
+                    GROUP BY
+                        m.movie_id, m.title, m.description, m.duration,
+                        m.release_date, m.end_date, m.rating, m.age_rating,
+                        m.director, m.cast, m.poster_url, m.is_active,
+                        m.created_at, m.updated_at
+                    ORDER BY m.release_date DESC
+                """;
+        return getMoviesBySql(sql);
+    }
+
+    public List<Movie> getComingSoon() {
+        // Lấy 12 phim sắp chiếu
+        String sql = """
+                    SELECT TOP 12 m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+                    FROM movies m
+                    LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                    LEFT JOIN genres g ON mg.genre_id = g.genre_id
+                    WHERE m.is_active = 1
+                      AND m.release_date > CAST(GETDATE() AS DATE)
+                    GROUP BY
+                        m.movie_id, m.title, m.description, m.duration,
+                        m.release_date, m.end_date, m.rating, m.age_rating,
+                        m.director, m.cast, m.poster_url, m.is_active,
+                        m.created_at, m.updated_at
+                    ORDER BY m.release_date ASC
+                """;
+        return getMoviesBySql(sql);
+    }
+
+    public List<Movie> getTopRated(int limit) {
+        // Lấy phim có rating cao nhất
+        String sql = """
+                    SELECT TOP (?) m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+                    FROM movies m
+                    LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                    LEFT JOIN genres g ON mg.genre_id = g.genre_id
+                    WHERE m.is_active = 1
+                    GROUP BY
+                        m.movie_id, m.title, m.description, m.duration,
+                        m.release_date, m.end_date, m.rating, m.age_rating,
+                        m.director, m.cast, m.poster_url, m.is_active,
+                        m.created_at, m.updated_at
+                    ORDER BY m.rating DESC
+                """;
+        return getMoviesBySql(sql, limit);
+    }
+
+    private List<Movie> getMoviesBySql(String sql, Object... params) {
+        List<Movie> list = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            for (int i = 0; i < params.length; i++) {
+                ps.setObject(i + 1, params[i]);
+            }
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(mapResultSetToMovie(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * Count showtimes for a specific movie on a specific date
+     */
+    public int countShowtimesForMovieOnDate(int movieId, LocalDate date) {
+        String sql = """
+                SELECT COUNT(*) 
+                FROM showtimes 
+                WHERE movie_id = ? 
+                  AND show_date = ? 
+                  AND status IN ('SCHEDULED', 'ONGOING')
+                """;
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, movieId);
+            pstmt.setDate(2, java.sql.Date.valueOf(date));
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return 0;
     }
 }

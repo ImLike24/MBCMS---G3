@@ -15,7 +15,7 @@
                     <div class="movie-info">
                         <div class="movie-title">
                             <a href="${pageContext.request.contextPath}/movie?movieId=${movie.movieId}"
-                                class="text-decoration-none text-white">${movie.title}</a>
+                                class="text-decoration-none text-black">${movie.title}</a>
                         </div>
                         <p>
                             <span class="badge bg-warning text-dark">${not empty movie.ageRating ? movie.ageRating :

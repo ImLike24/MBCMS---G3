@@ -16,7 +16,8 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/manage-users" class="nav-link">
+            <a href="${pageContext.request.contextPath}/admin/manage-users"
+               class="nav-link ${param.page == 'user' ? 'active' : ''}">
                 <i class="fa fa-users me-3"></i>Quản lý người dùng
             </a>
         </li>

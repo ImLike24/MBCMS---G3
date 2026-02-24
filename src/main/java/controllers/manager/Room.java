@@ -1,4 +1,4 @@
-package controllers.branchmanager;
+package controllers.manager;
 
 import models.CinemaBranch;
 import models.ScreeningRoom;
@@ -14,7 +14,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet(name = "ManagerRoomController", urlPatterns = {"/manager/rooms"})
+@WebServlet(name = "ManagerRoomController", urlPatterns = { "/manager/rooms" })
 public class Room extends HttpServlet {
 
     private final RoomService roomService = new RoomService();
@@ -32,7 +32,8 @@ public class Room extends HttpServlet {
         }
 
         String action = request.getParameter("action");
-        if (action == null) action = "list";
+        if (action == null)
+            action = "list";
 
         switch (action) {
             case "create":
@@ -56,7 +57,8 @@ public class Room extends HttpServlet {
             throws ServletException, IOException {
 
         CinemaBranch currentBranch = getBranchOfCurrentUser(request);
-        if (currentBranch == null) return;
+        if (currentBranch == null)
+            return;
 
         request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
@@ -86,8 +88,10 @@ public class Room extends HttpServlet {
     private CinemaBranch getBranchOfCurrentUser(HttpServletRequest request) {
         HttpSession session = request.getSession();
         User user = (User) session.getAttribute("user");
-        if (user == null) return null;
-        // Hàm findByManagerId này bạn nhớ thêm vào CinemaBranches.java như ở bước trước nhé
+        if (user == null)
+            return null;
+        // Hàm findByManagerId này bạn nhớ thêm vào CinemaBranches.java như ở bước trước
+        // nhé
         return branchDao.findByManagerId(user.getUserId());
     }
 
@@ -100,7 +104,8 @@ public class Room extends HttpServlet {
 
     private void showForm(HttpServletRequest request, HttpServletResponse response, ScreeningRoom room)
             throws ServletException, IOException {
-        if (room != null) request.setAttribute("room", room);
+        if (room != null)
+            request.setAttribute("room", room);
         request.getRequestDispatcher("/pages/manager/screening-room/form.jsp").forward(request, response);
     }
 

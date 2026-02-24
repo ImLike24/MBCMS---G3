@@ -62,12 +62,12 @@ public class CreateUserServlet extends HttpServlet {
             List<Role> creatableRoles = rolesRepo.getCreatableRoles();
 
             request.setAttribute("creatableRoles", creatableRoles);
-            request.getRequestDispatcher("/pages/admin/create-user.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/admin/user/create-user.jsp").forward(request, response);
 
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("error", "Error loading roles: " + e.getMessage());
-            request.getRequestDispatcher("/pages/admin/create-user.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/admin/user/create-user.jsp").forward(request, response);
         } finally {
             if (rolesDbContext != null) {
                 rolesDbContext.closeConnection();

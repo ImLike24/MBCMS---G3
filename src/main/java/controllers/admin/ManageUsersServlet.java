@@ -98,12 +98,12 @@ public class ManageUsersServlet extends HttpServlet {
             request.setAttribute("statusFilter", statusFilter);
             request.setAttribute("searchKeyword", searchKeyword);
 
-            request.getRequestDispatcher("/pages/admin/manage-users.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/admin/user/manage-users.jsp").forward(request, response);
 
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("error", "Error loading users: " + e.getMessage());
-            request.getRequestDispatcher("/pages/admin/manage-users.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/admin/user/manage-users.jsp").forward(request, response);
         } finally {
             if (usersDbContext != null) {
                 usersDbContext.closeConnection();

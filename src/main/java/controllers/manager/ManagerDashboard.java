@@ -1,4 +1,4 @@
-package controllers.branchmanager;
+package controllers.manager;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
