@@ -521,6 +521,22 @@ body {
     margin-top: 10px;
 }
 
+.movie-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    background: rgba(128, 128, 128, 0.3);
+    color: #999;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 10px;
+    margin-left: 8px;
+}
+
+.movie-badge i {
+    margin-right: 5px;
+}
+
 .movie-actions {
     margin-top: 15px;
     display: flex;
@@ -1889,6 +1905,22 @@ body {
     font-size: 12px;
     font-weight: 500;
     margin-top: 10px;
+}
+
+.movie-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    background: rgba(128, 128, 128, 0.3);
+    color: #999;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 10px;
+    margin-left: 8px;
+}
+
+.movie-badge i {
+    margin-right: 5px;
 }
 
 .movie-actions {

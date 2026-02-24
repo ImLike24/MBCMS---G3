@@ -897,4 +897,32 @@ public class Movies extends DBContext {
         }
         return list;
     }
+
+    /**
+     * Count showtimes for a specific movie on a specific date
+     */
+    public int countShowtimesForMovieOnDate(int movieId, LocalDate date) {
+        String sql = """
+                SELECT COUNT(*) 
+                FROM showtimes 
+                WHERE movie_id = ? 
+                  AND show_date = ? 
+                  AND status IN ('SCHEDULED', 'ONGOING')
+                """;
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, movieId);
+            pstmt.setDate(2, java.sql.Date.valueOf(date));
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return 0;
+    }
 }

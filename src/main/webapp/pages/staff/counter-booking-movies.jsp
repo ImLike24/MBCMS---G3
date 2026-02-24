@@ -95,11 +95,18 @@
                     <label for="dateSelect"><i class="fas fa-calendar-day"></i> Date</label>
                     <input type="date" id="dateSelect" value="" 
                            min="${today}" onchange="changeDate(this.value)" name="date" autocomplete="off">
-                    <c:if test="${!showAllMovies && selectedDate != null}">
-                    <script>
-                        document.getElementById('dateSelect').value = '${selectedDate}';
-                    </script>
-                    </c:if>
+                    <c:choose>
+                        <c:when test="${showAllMovies}">
+                        <script>
+                            document.getElementById('dateSelect').value = '';
+                        </script>
+                        </c:when>
+                        <c:when test="${!showAllMovies && selectedDate != null}">
+                        <script>
+                            document.getElementById('dateSelect').value = '${selectedDate}';
+                        </script>
+                        </c:when>
+                    </c:choose>
                 </div>
                 
                 <div class="form-group" style="flex: 2;">
@@ -189,6 +196,12 @@
                                 </div>
                                 
                                 <span class="movie-genre">${movie.genre}</span>
+                                <c:if test="${showAllMovies && !movie.hasShowtimesToday}">
+                                    <span class="movie-badge">
+                                        <i class="fas fa-info-circle"></i>
+                                        No showtimes today
+                                    </span>
+                                </c:if>
                                 
                                 <div class="movie-actions">
                                     <c:choose>

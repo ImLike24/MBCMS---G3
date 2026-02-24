@@ -89,6 +89,14 @@ public class CounterBookingMovies extends HttpServlet {
                 // Show all active movies (no date filter - e.g. after Reset)
                 // Use getAllActiveMovies() then filter/paginate in Java for reliability
                 List<Movie> allActive = moviesRepo.getAllActiveMovies();
+                
+                // Check if each movie has showtimes today
+                LocalDate today = LocalDate.now();
+                for (Movie movie : allActive) {
+                    int showtimeCount = moviesRepo.countShowtimesForMovieOnDate(movie.getMovieId(), today);
+                    movie.setHasShowtimesToday(showtimeCount > 0);
+                }
+                
                 if (search != null && !search.trim().isEmpty()) {
                     String q = search.trim().toLowerCase();
                     allActive = allActive.stream()

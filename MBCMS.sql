@@ -934,3 +934,37 @@ WHERE NOT EXISTS (
     WHERE s.branch_id = b.branch_id AND s.seat_type = t.seat_type
 );
 GO
+
+-- =============================================
+-- ADD SHOWTIMES FOR TODAY (Dynamic Date)
+-- Add showtimes for 5 movies showing today using GETDATE()
+-- This will always insert showtimes for the current date
+-- =============================================
+DECLARE @today DATE = CAST(GETDATE() AS DATE);
+
+INSERT INTO showtimes (movie_id, room_id, show_date, start_time, base_price, status) VALUES
+-- The Last Guardian (Action)
+(1, 1, @today, '10:00', 65000, 'SCHEDULED'),
+(1, 1, @today, '14:30', 70000, 'SCHEDULED'),
+(1, 1, @today, '20:00', 75000, 'SCHEDULED'),
+
+-- The Haunting of Blackwood Manor (Horror)
+(5, 1, @today, '11:00', 65000, 'SCHEDULED'),
+(5, 1, @today, '18:30', 75000, 'SCHEDULED'),
+(5, 1, @today, '22:00', 75000, 'SCHEDULED'),
+
+-- Beyond the Void (Sci-Fi)
+(9, 1, @today, '09:00', 65000, 'SCHEDULED'),
+(9, 1, @today, '13:00', 70000, 'SCHEDULED'),
+(9, 1, @today, '17:00', 75000, 'SCHEDULED'),
+
+-- Dragon Kingdom (Animation)
+(13, 1, @today, '10:30', 65000, 'SCHEDULED'),
+(13, 1, @today, '15:00', 70000, 'SCHEDULED'),
+(13, 1, @today, '19:30', 75000, 'SCHEDULED'),
+
+-- Quest for the Lost Temple (Adventure)
+(21, 1, @today, '12:00', 70000, 'SCHEDULED'),
+(21, 1, @today, '16:30', 75000, 'SCHEDULED'),
+(21, 1, @today, '21:00', 80000, 'SCHEDULED');
+GO
