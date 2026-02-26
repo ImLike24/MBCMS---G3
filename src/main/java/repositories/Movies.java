@@ -684,84 +684,6 @@ public class Movies extends DBContext {
         }
     }
     
-    public void updateMovieWithGenres(Movie m, List<Integer> genreIds) throws SQLException {
-        String updateMovieSql = """
-            UPDATE movies SET
-                title = ?,
-                description = ?,
-                duration = ?,
-                release_date = ?,
-                end_date = ?,
-                rating = ?,
-                age_rating = ?,
-                director = ?,
-                cast = ?,
-                poster_url = ?,
-                is_active = ?,
-                updated_at = GETDATE()
-            WHERE movie_id = ?
-        """;
-
-        String deleteGenresSql = "DELETE FROM movie_genres WHERE movie_id = ?";
-        String insertGenreSql = "INSERT INTO movie_genres (movie_id, genre_id) VALUES (?, ?)";
-
-        Connection conn = null;
-        try {
-            conn = connection;
-            conn.setAutoCommit(false);
-
-            // 1. Update thông tin phim
-            try (PreparedStatement ps = conn.prepareStatement(updateMovieSql)) {
-                ps.setString(1, m.getTitle());
-                ps.setString(2, m.getDescription());
-                ps.setInt(3, m.getDuration() != null ? m.getDuration() : 0);
-                ps.setDate(4, m.getReleaseDate() != null ? Date.valueOf(m.getReleaseDate()) : null);
-                ps.setDate(5, m.getEndDate() != null ? Date.valueOf(m.getEndDate()) : null);
-                ps.setDouble(6, m.getRating() != null ? m.getRating() : 0.0);
-                ps.setString(7, m.getAgeRating());
-                ps.setString(8, m.getDirector());
-                ps.setString(9, m.getCast());
-                ps.setString(10, m.getPosterUrl());
-                ps.setBoolean(11, m.isActive());
-                ps.setInt(12, m.getMovieId());
-
-                int rows = ps.executeUpdate();
-                if (rows == 0) {
-                    throw new SQLException("Không tìm thấy phim với ID " + m.getMovieId());
-                }
-            }
-
-            // 2. Xóa hết thể loại cũ của phim
-            try (PreparedStatement psDelete = conn.prepareStatement(deleteGenresSql)) {
-                psDelete.setInt(1, m.getMovieId());
-                psDelete.executeUpdate();
-            }
-
-            // 3. Insert thể loại mới (nếu có)
-            if (genreIds != null && !genreIds.isEmpty()) {
-                try (PreparedStatement psInsert = conn.prepareStatement(insertGenreSql)) {
-                    for (Integer genreId : genreIds) {
-                        psInsert.setInt(1, m.getMovieId());
-                        psInsert.setInt(2, genreId);
-                        psInsert.addBatch();
-                    }
-                    psInsert.executeBatch();
-                }
-            }
-
-            conn.commit();
-        } catch (SQLException e) {
-            if (conn != null) {
-                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
-            }
-            throw e;
-        } finally {
-            if (conn != null) {
-                try { conn.setAutoCommit(true); } catch (SQLException ex) { ex.printStackTrace(); }
-            }
-        }
-    }
-
     public void deleteMovieWithGenres(int movieId) {
         String deleteMovieGenresSql = """
                 DELETE FROM movie_genres WHERE movie_id = ?
@@ -805,6 +727,84 @@ public class Movies extends DBContext {
                     conn.setAutoCommit(true);
             } catch (SQLException e) {
                 e.printStackTrace();
+            }
+        }
+    }
+    
+    public void updateMovieWithGenres(Movie m, List<Integer> genreIds) throws SQLException {
+        String updateMovieSql = """
+            UPDATE movies SET
+                title = ?,
+                description = ?,
+                duration = ?,
+                release_date = ?,
+                end_date = ?,
+                rating = ?,
+                age_rating = ?,
+                director = ?,
+                cast = ?,
+                poster_url = ?,
+                is_active = ?,
+                updated_at = GETDATE()
+            WHERE movie_id = ?
+        """;
+
+        String deleteGenresSql = "DELETE FROM movie_genres WHERE movie_id = ?";
+        String insertGenreSql = "INSERT INTO movie_genres (movie_id, genre_id) VALUES (?, ?)";
+
+        Connection conn = null;
+        try {
+            conn = connection;
+            conn.setAutoCommit(false);
+
+            // 1. Update phim
+            try (PreparedStatement ps = conn.prepareStatement(updateMovieSql)) {
+                ps.setString(1, m.getTitle());
+                ps.setString(2, m.getDescription());
+                ps.setInt(3, m.getDuration() != null ? m.getDuration() : 0);
+                ps.setDate(4, m.getReleaseDate() != null ? Date.valueOf(m.getReleaseDate()) : null);
+                ps.setDate(5, m.getEndDate() != null ? Date.valueOf(m.getEndDate()) : null);
+                ps.setDouble(6, m.getRating() != null ? m.getRating() : 0.0);
+                ps.setString(7, m.getAgeRating());
+                ps.setString(8, m.getDirector());
+                ps.setString(9, m.getCast());
+                ps.setString(10, m.getPosterUrl());
+                ps.setBoolean(11, m.isActive());
+                ps.setInt(12, m.getMovieId());
+
+                int rows = ps.executeUpdate();
+                if (rows == 0) {
+                    throw new SQLException("Không tìm thấy phim với ID " + m.getMovieId());
+                }
+            }
+
+            // 2. Xóa thể loại cũ
+            try (PreparedStatement psDelete = conn.prepareStatement(deleteGenresSql)) {
+                psDelete.setInt(1, m.getMovieId());
+                psDelete.executeUpdate();
+            }
+
+            // 3. Thêm thể loại mới (nếu có)
+            if (genreIds != null && !genreIds.isEmpty()) {
+                try (PreparedStatement psInsert = conn.prepareStatement(insertGenreSql)) {
+                    for (Integer genreId : genreIds) {
+                        psInsert.setInt(1, m.getMovieId());
+                        psInsert.setInt(2, genreId);
+                        psInsert.addBatch();
+                    }
+                    psInsert.executeBatch();
+                }
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
+            throw e;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); } catch (SQLException ex) { ex.printStackTrace(); }
             }
         }
     }

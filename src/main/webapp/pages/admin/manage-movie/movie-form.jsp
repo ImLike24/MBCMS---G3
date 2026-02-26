@@ -13,6 +13,9 @@
             margin-left: 350px;
             margin-right: 80px;
         }
+        .genre-checkbox {
+            min-width: 120px;
+        }
     </style>
 </head>
 <body>
@@ -111,21 +114,22 @@
             </div>
         </div>
 
-        <!-- Thể loại (checkbox multiple) -->
+        <!-- Thể loại (checkbox multiple) - ĐÃ CHỈNH SỬA ĐỂ NHẬN VÀ CẬP NHẬT TỪ DB -->
         <div class="col-12">
             <label class="form-label">Thể loại <span class="text-danger">*</span></label>
             <div class="row">
                 <c:forEach var="g" items="${allGenres}">
-                    <div class="col-auto mb-2">
+                    <div class="col-auto mb-2 genre-checkbox">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="genreIds"
                                    value="${g.genreId}" id="genre${g.genreId}"
-                                   <c:if test="${movieGenres.contains(g.genreName)}">checked</c:if>>
+                                   <c:if test="${movieGenres.contains(g.genreName) || (movie.genres != null && movie.genres.contains(g.genreName))}">checked</c:if>>
                             <label class="form-check-label" for="genre${g.genreId}">${g.genreName}</label>
                         </div>
                     </div>
                 </c:forEach>
             </div>
+            <div class="invalid-feedback">Vui lòng chọn ít nhất một thể loại</div>
         </div>
 
         <!-- Mô tả -->
@@ -134,6 +138,7 @@
             <textarea class="form-control" name="description" rows="5">${movie.description}</textarea>
         </div>
 
+        <!-- Nút submit dùng chung -->
         <div class="col-12 mt-4">
             <button type="submit" class="btn btn-orange px-5 me-2">
                 <i class="fas fa-save me-2"></i>
