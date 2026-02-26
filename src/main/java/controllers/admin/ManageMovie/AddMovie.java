@@ -58,8 +58,8 @@ public class AddMovie extends HttpServlet {
         if (movie.getDuration() <= 0) {
             errors.append("Thời lượng phải lớn hơn 0 phút. ");
         }
-        if (movie.getRating() < 0 || movie.getRating() > 10) {
-            errors.append("Đánh giá phải từ 0.0 đến 10.0. ");
+        if (movie.getRating() < 0 || movie.getRating() > 5) {
+            errors.append("Đánh giá phải từ 0.0 đến 5.0. ");
         }
         if (genreIds.isEmpty()) {
             errors.append("Vui lòng chọn ít nhất một thể loại. ");
@@ -85,8 +85,7 @@ public class AddMovie extends HttpServlet {
             request.setAttribute("movie", movie);
             request.setAttribute("allGenres", genreService.getAllActiveGenres());
             request.setAttribute("mode", "add");
-            request.getRequestDispatcher("/pages/admin/manage-movie/movie-form.jsp")
-                    .forward(request, response);
+            request.getRequestDispatcher("/pages/admin/manage-movie/movie-form.jsp").forward(request, response);
         }
     }
 

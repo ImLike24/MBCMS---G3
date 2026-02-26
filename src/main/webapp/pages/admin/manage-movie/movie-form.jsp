@@ -16,7 +16,6 @@
     </style>
 </head>
 <body>
-
 <jsp:include page="/components/layout/dashboard/dashboard_header.jsp" />
 <jsp:include page="/components/layout/dashboard/admin_sidebar.jsp">
     <jsp:param name="page" value="movie"/>
@@ -26,12 +25,17 @@
     <h3 class="mb-4">${mode == 'edit' ? 'Chỉnh sửa phim' : 'Thêm phim mới'}</h3>
 
     <c:if test="${not empty errorMessage}">
-        <div class="alert alert-danger">${errorMessage}</div>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            ${errorMessage}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     </c:if>
 
-    <form action="${pageContext.request.contextPath}/admin/movies/${mode == 'edit' ? 'edit' : 'add'}" 
+    <!-- Form dùng chung cho cả add và edit -->
+    <form action="${pageContext.request.contextPath}/admin/movies/${mode == 'edit' ? 'edit' : 'add'}"
           method="post" class="row g-3 needs-validation" novalidate>
 
+        <!-- Hidden field chỉ có khi edit (gửi ID phim cần update) -->
         <c:if test="${mode == 'edit'}">
             <input type="hidden" name="id" value="${movie.movieId}">
         </c:if>
@@ -52,13 +56,13 @@
         <!-- Đánh giá -->
         <div class="col-md-4">
             <label class="form-label">Đánh giá (0-5) <span class="text-danger">*</span></label>
-            <input type="number" step="0.1" class="form-control" name="rating" 
-                   value="${movie.rating != null ? movie.rating : '0.0'}" 
-                   min="0" max="10" 
+            <input type="number" step="0.1" class="form-control" name="rating"
+                   value="${movie.rating != null ? movie.rating : '0.0'}"
+                   min="0" max="5"
                    required
-                   oninput="if(Number(this.value) > 5) this.value = 5; 
+                   oninput="if(Number(this.value) > 5) this.value = 5;
                             if(Number(this.value) < 0) this.value = 0;"
-                   placeholder="Ví dụ: 4.5">
+                   placeholder="Ví dụ: 2.5">
             <div class="invalid-feedback">Đánh giá phải từ 0.0 đến 5.0</div>
         </div>
 
@@ -93,7 +97,7 @@
         <!-- Ngày phát hành -->
         <div class="col-md-4">
             <label class="form-label">Ngày phát hành</label>
-            <input type="date" class="form-control" name="releaseDate" 
+            <input type="date" class="form-control" name="releaseDate"
                    value="${movie.releaseDate != null ? movie.releaseDate : ''}">
         </div>
 
@@ -101,7 +105,7 @@
         <div class="col-md-4">
             <label class="form-label">Trạng thái</label>
             <div class="form-check form-switch mt-2">
-                <input class="form-check-input" type="checkbox" name="active" id="activeSwitch" 
+                <input class="form-check-input" type="checkbox" name="active" id="activeSwitch"
                        ${movie.active || mode == 'add' ? 'checked' : ''}>
                 <label class="form-check-label" for="activeSwitch">Hoạt động</label>
             </div>
@@ -114,7 +118,7 @@
                 <c:forEach var="g" items="${allGenres}">
                     <div class="col-auto mb-2">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="genreIds" 
+                            <input class="form-check-input" type="checkbox" name="genreIds"
                                    value="${g.genreId}" id="genre${g.genreId}"
                                    <c:if test="${movieGenres.contains(g.genreName)}">checked</c:if>>
                             <label class="form-check-label" for="genre${g.genreId}">${g.genreName}</label>
@@ -132,7 +136,8 @@
 
         <div class="col-12 mt-4">
             <button type="submit" class="btn btn-orange px-5 me-2">
-                <i class="fas fa-save me-2"></i>${mode == 'edit' ? 'Cập nhật' : 'Thêm mới'}
+                <i class="fas fa-save me-2"></i>
+                ${mode == 'edit' ? 'Cập nhật phim' : 'Thêm phim mới'}
             </button>
             <a href="${pageContext.request.contextPath}/admin/movies" class="btn btn-secondary px-4">
                 <i class="fas fa-arrow-left me-2"></i>Hủy

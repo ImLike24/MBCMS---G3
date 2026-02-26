@@ -85,7 +85,6 @@ public class EditMovie extends HttpServlet {
             movieService.updateMovie(movie, genreIds);
             response.sendRedirect(request.getContextPath() + "/admin/movies?message=Cập nhật phim thành công");
         } catch (Exception e) {
-            // Nếu có lỗi (ví dụ: database error), có thể forward lại form với thông báo lỗi
             request.setAttribute("errorMessage", "Cập nhật thất bại: " + e.getMessage());
             request.setAttribute("movie", movie);
             request.setAttribute("movieGenres", genreService.getGenresByMovieId(id));
