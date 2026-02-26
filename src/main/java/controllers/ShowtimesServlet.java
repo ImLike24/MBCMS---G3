@@ -38,8 +38,8 @@ public class ShowtimesServlet extends HttpServlet {
 
         try {
             if ("get_branches".equals(action)) {
-                String city = request.getParameter("city");
-                List<CinemaBranch> branches = cinemaBranches.findByCity(city);
+                // Public: trả về toàn bộ chi nhánh đang hoạt động để customer chọn
+                List<CinemaBranch> branches = cinemaBranches.getActiveBranches();
 
                 StringBuilder json = new StringBuilder("[");
                 for (int i = 0; i < branches.size(); i++) {

@@ -33,19 +33,10 @@
 
                 <!-- Filter Bar -->
                 <div class="row mb-4 p-4 bg-light rounded shadow-sm">
-                    <div class="col-md-5 mb-3 mb-md-0">
-                        <label for="citySelect" class="form-label fw-bold">Chọn Tỉnh/Thành phố</label>
-                        <select id="citySelect" class="form-select form-select-lg">
-                            <option value="" disabled selected>-- Chọn Tỉnh/Thành --</option>
-                            <option value="Hà Nội">Hà Nội</option>
-                            <option value="Đà Nẵng">Đà Nẵng</option>
-                            <option value="TP.HCM">TP.HCM</option>
-                        </select>
-                    </div>
-                    <div class="col-md-5 mb-3 mb-md-0">
-                        <label for="branchSelect" class="form-label fw-bold">Chọn Rạp</label>
+                    <div class="col-md-10 mb-3 mb-md-0">
+                        <label for="branchSelect" class="form-label fw-bold">Chọn Rạp / Chi nhánh</label>
                         <select id="branchSelect" class="form-select form-select-lg" disabled>
-                            <option value="" disabled selected>-- Vui lòng chọn Tỉnh/Thành trước --</option>
+                            <option value="" disabled selected>-- Đang tải danh sách chi nhánh --</option>
                         </select>
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
@@ -78,33 +69,8 @@
                 // Init Date Bar
                 generateDateBar();
 
-                // City Change Event
-                $('#citySelect').change(function () {
-                    var city = $(this).val();
-                    $('#branchSelect').prop('disabled', true).html('<option value="">Đang tải...</option>');
-
-                    $.ajax({
-                        url: '${pageContext.request.contextPath}/showtimes',
-                        type: 'GET',
-                        data: { action: 'get_branches', city: city },
-                        dataType: 'json',
-                        success: function (branches) {
-                            var options = '<option value="" disabled selected>-- Chọn Rạp --</option>';
-                            if (branches.length > 0) {
-                                $.each(branches, function (i, branch) {
-                                    options += '<option value="' + branch.branchId + '">' + branch.branchName + '</option>';
-                                });
-                                $('#branchSelect').prop('disabled', false).html(options);
-                            } else {
-                                $('#branchSelect').prop('disabled', true).html('<option value="">Không tìm thấy rạp nào</option>');
-                            }
-                        },
-                        error: function () {
-                            alert('Lỗi khi tải danh sách rạp');
-                            $('#branchSelect').html('<option value="" disabled selected>Lỗi tải dữ liệu</option>');
-                        }
-                    });
-                });
+                // Load branches (public) on page load
+                loadBranches();
 
                 // Branch Change Event
                 $('#branchSelect').change(function () {
@@ -114,8 +80,7 @@
 
                 // Reset Button
                 $('#resetBtn').click(function () {
-                    $('#citySelect').val('');
-                    $('#branchSelect').prop('disabled', true).html('<option value="" disabled selected>-- Vui lòng chọn Tỉnh/Thành trước --</option>');
+                    $('#branchSelect').val('');
                     $('#dateBarContainer').slideUp();
                     $('#showtimesGrid').html('<div class="text-center p-5 bg-light rounded"><i class="fa fa-film fa-3x text-muted mb-3"></i><h4>Vui lòng chọn khu vực và rạp để xem lịch chiếu</h4></div>');
                 });
@@ -151,6 +116,32 @@
                     html += '</div>';
                 }
                 $('#dateBar').html(html);
+            }
+
+            function loadBranches() {
+                $('#branchSelect').prop('disabled', true).html('<option value="">Đang tải...</option>');
+
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/showtimes',
+                    type: 'GET',
+                    data: { action: 'get_branches' },
+                    dataType: 'json',
+                    success: function (branches) {
+                        var options = '<option value="" disabled selected>-- Chọn Rạp / Chi nhánh --</option>';
+                        if (branches.length > 0) {
+                            $.each(branches, function (i, branch) {
+                                options += '<option value="' + branch.branchId + '">' + branch.branchName + '</option>';
+                            });
+                            $('#branchSelect').prop('disabled', false).html(options);
+                        } else {
+                            $('#branchSelect').prop('disabled', true).html('<option value="">Không tìm thấy chi nhánh nào</option>');
+                        }
+                    },
+                    error: function () {
+                        alert('Lỗi khi tải danh sách chi nhánh');
+                        $('#branchSelect').html('<option value="" disabled selected>Lỗi tải dữ liệu</option>');
+                    }
+                });
             }
 
             function loadSchedule() {
