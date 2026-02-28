@@ -453,14 +453,14 @@ public class ManageShowtimesServlet extends HttpServlet {
         try {
             int showtimeId = Integer.parseInt(request.getParameter("showtimeId"));
 
-            // Verify showtime belongs to this branch
+            // Verify showtime exists
             Showtime existing = showtimesDao.getShowtimeById(showtimeId);
             if (existing == null) {
                 response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notfound");
                 return;
             }
 
-            // check room belongs to branch
+            // Verify room belongs to this branch (security)
             ScreeningRoom room = roomsDao.getRoomById(existing.getRoomId());
             if (room == null || room.getBranchId() != branchId) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -474,7 +474,15 @@ public class ManageShowtimesServlet extends HttpServlet {
                 return;
             }
 
-            boolean deleted = showtimesDao.deleteShowtime(showtimeId);
+            boolean deleted;
+            if ("CANCELLED".equals(status)) {
+                // Force-delete: cascade-remove all associated tickets/bookings first
+                deleted = showtimesDao.forceDeleteCancelledShowtime(showtimeId);
+            } else {
+                // COMPLETED: simple delete (no pending tickets expected)
+                deleted = showtimesDao.deleteShowtime(showtimeId);
+            }
+
             if (deleted) {
                 response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?message=deleted");
             } else {

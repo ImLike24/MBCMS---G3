@@ -976,4 +976,115 @@ public class Showtimes extends DBContext {
         detail.put("totalRevenue", onlineRevenue.add(counterRevenue));
         return detail;
     }
+
+    /**
+     * Force-delete a CANCELLED showtime and all its associated data.
+     * Cascade order (to respect FK constraints):
+     * 1. NULL out invoice_items.online_ticket_id for tickets belonging to this
+     * showtime
+     * 2. NULL out invoice_items.counter_ticket_id for tickets belonging to this
+     * showtime
+     * 3. NULL out invoices.booking_id for bookings belonging to this showtime
+     * 4. DELETE online_tickets where showtime_id = ?
+     * 5. DELETE counter_tickets where showtime_id = ?
+     * 6. DELETE bookings where showtime_id = ?
+     * 7. DELETE showtimes where showtime_id = ? AND status = 'CANCELLED'
+     * Returns true on success, false on failure.
+     */
+    public boolean forceDeleteCancelledShowtime(int showtimeId) {
+        boolean autoCommit = true;
+        try {
+            autoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            // Step 1: Nullify invoice_items referencing online tickets of this showtime
+            String nullOnlineItems = """
+                    UPDATE invoice_items
+                    SET online_ticket_id = NULL
+                    WHERE online_ticket_id IN (
+                        SELECT ticket_id FROM online_tickets WHERE showtime_id = ?
+                    )
+                    """;
+            try (PreparedStatement ps = connection.prepareStatement(nullOnlineItems)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 2: Nullify invoice_items referencing counter tickets of this showtime
+            String nullCounterItems = """
+                    UPDATE invoice_items
+                    SET counter_ticket_id = NULL
+                    WHERE counter_ticket_id IN (
+                        SELECT ticket_id FROM counter_tickets WHERE showtime_id = ?
+                    )
+                    """;
+            try (PreparedStatement ps = connection.prepareStatement(nullCounterItems)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 3: Nullify invoices.booking_id for bookings of this showtime
+            String nullInvoiceBooking = """
+                    UPDATE invoices
+                    SET booking_id = NULL
+                    WHERE booking_id IN (
+                        SELECT booking_id FROM bookings WHERE showtime_id = ?
+                    )
+                    """;
+            try (PreparedStatement ps = connection.prepareStatement(nullInvoiceBooking)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 4: Delete online tickets
+            String delOnline = "DELETE FROM online_tickets WHERE showtime_id = ?";
+            try (PreparedStatement ps = connection.prepareStatement(delOnline)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 5: Delete counter tickets
+            String delCounter = "DELETE FROM counter_tickets WHERE showtime_id = ?";
+            try (PreparedStatement ps = connection.prepareStatement(delCounter)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 6: Delete bookings
+            String delBookings = "DELETE FROM bookings WHERE showtime_id = ?";
+            try (PreparedStatement ps = connection.prepareStatement(delBookings)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 7: Delete the showtime (only if CANCELLED)
+            String delShowtime = "DELETE FROM showtimes WHERE showtime_id = ? AND status = 'CANCELLED'";
+            try (PreparedStatement ps = connection.prepareStatement(delShowtime)) {
+                ps.setInt(1, showtimeId);
+                int rows = ps.executeUpdate();
+                if (rows == 0) {
+                    connection.rollback();
+                    return false;
+                }
+            }
+
+            connection.commit();
+            return true;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            try {
+                connection.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            return false;
+        } finally {
+            try {
+                connection.setAutoCommit(autoCommit);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

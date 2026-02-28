@@ -335,8 +335,9 @@
                                                             </c:if>
                                                             <button type="button"
                                                                 class="btn btn-outline-secondary btn-sm"
-                                                                data-id="${st.showtimeId}"
-                                                                onclick="confirmDelete(this.dataset.id)" title="Xóa">
+                                                                data-id="${st.showtimeId}" data-status="${st.status}"
+                                                                onclick="confirmDelete(this.dataset.id, this.dataset.status)"
+                                                                title="Xóa">
                                                                 <i class="fa-solid fa-trash-can"></i>
                                                             </button>
                                                         </c:if>
@@ -373,8 +374,16 @@
                 </form>
 
                 <script>
-                    function confirmDelete(id) {
-                        if (confirm('Bạn có chắc chắn muốn xóa suất chiếu này khỏi hệ thống? \nHành động này không thể hoàn tác.')) {
+                    function confirmDelete(id, status) {
+                        let msg;
+                        if (status === 'CANCELLED') {
+                            msg = 'Bạn có chắc chắn muốn XÓA VĨNH VIỄN suất chiếu đã hủy này?\n\n' +
+                                '⚠️  Toàn bộ vé (online & quầy) và đơn đặt liên quan sẽ bị XÓA khỏi hệ thống.\n' +
+                                'Hành động này KHÔNG THỂ HOÀN TÁC.';
+                        } else {
+                            msg = 'Bạn có chắc chắn muốn xóa suất chiếu này khỏi hệ thống?\nHành động này không thể hoàn tác.';
+                        }
+                        if (confirm(msg)) {
                             document.getElementById('deleteShowtimeId').value = id;
                             document.getElementById('deleteForm').submit();
                         }
