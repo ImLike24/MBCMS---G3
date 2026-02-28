@@ -50,6 +50,6 @@ public class BranchService {
     }
 
     public List<User> getAllManagers() {
-        return userDao.getUsersByRole(4);
+        return userDao.getAllBranchManagers();
     }
 }

@@ -128,14 +128,16 @@
                                     &nbsp;·&nbsp;
                                     <span class="badge bg-primary">${param.onlineRefunds} online → REFUND_PENDING</span>
                                     <c:if test="${param.counterRefunds > 0}">
-                                        &nbsp;<span class="badge bg-warning text-dark">${param.counterRefunds} quầy →
+                                        &nbsp;<span class="badge bg-warning text-dark">${param.counterRefunds} vé →
                                             hoàn tay</span>
                                     </c:if>
                                     <c:if test="${not empty param.refundAmt and param.refundAmt != '0'}">
                                         &nbsp;·&nbsp;Tổng hoàn dự kiến:
-                                        <fmt:parseNumber value="${param.refundAmt}" var="rAmt" integerOnly="false" />
+                                        <fmt:parseNumber value="${param.refundAmt}" var="rAmt" integerOnly="true"
+                                            parseLocale="en_US" />
                                         <strong>
-                                            <fmt:formatNumber value="${rAmt}" type="number" groupingUsed="true" /> ₫
+                                            <fmt:formatNumber value="${rAmt}" type="number" groupingUsed="true"
+                                                maxFractionDigits="0" minFractionDigits="0" /> ₫
                                         </strong>
                                     </c:if>
                                 </c:if>
@@ -324,9 +326,17 @@
                                                         </c:if>
                                                         <c:if
                                                             test="${st.status == 'COMPLETED' or st.status == 'CANCELLED'}">
+                                                            <c:if test="${st.status == 'CANCELLED'}">
+                                                                <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=view-cancelled&amp;id=${st.showtimeId}"
+                                                                    class="btn btn-outline-info btn-sm me-1"
+                                                                    title="Xem chi tiết vé đã hủy">
+                                                                    <i class="fa-solid fa-circle-info"></i>
+                                                                </a>
+                                                            </c:if>
                                                             <button type="button"
                                                                 class="btn btn-outline-secondary btn-sm"
-                                                                onclick="confirmDelete(${st.showtimeId})" title="Xóa">
+                                                                data-id="${st.showtimeId}"
+                                                                onclick="confirmDelete(this.dataset.id)" title="Xóa">
                                                                 <i class="fa-solid fa-trash-can"></i>
                                                             </button>
                                                         </c:if>

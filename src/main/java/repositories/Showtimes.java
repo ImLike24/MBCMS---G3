@@ -822,4 +822,130 @@ public class Showtimes extends DBContext {
         }
         return result;
     }
+
+    /**
+     * Get full detail of a CANCELLED showtime for review:
+     * - cancellationReason, cancelledAt (from bookings)
+     * - onlineTickets: bookingCode, customerName, customerEmail, seatCode,
+     * ticketType, seatType, price, paymentStatus
+     * - counterTickets: ticketCode, customerName, customerPhone, seatCode,
+     * ticketType, seatType, price, paymentMethod
+     * - counts and revenue totals
+     */
+    public Map<String, Object> getCancelledShowtimeDetail(int showtimeId) {
+        Map<String, Object> detail = new HashMap<>();
+        detail.put("cancellationReason", null);
+        detail.put("cancelledAt", null);
+
+        // --- Cancellation reason from bookings ---
+        String reasonSql = """
+                SELECT TOP 1 cancellation_reason, cancelled_at
+                FROM bookings
+                WHERE showtime_id = ? AND cancellation_reason IS NOT NULL
+                ORDER BY cancelled_at DESC
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(reasonSql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    detail.put("cancellationReason", rs.getString("cancellation_reason"));
+                    java.sql.Timestamp ts = rs.getTimestamp("cancelled_at");
+                    if (ts != null)
+                        detail.put("cancelledAt", ts.toLocalDateTime());
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // --- Online tickets ---
+        List<Map<String, Object>> onlineTickets = new ArrayList<>();
+        java.math.BigDecimal onlineRevenue = java.math.BigDecimal.ZERO;
+
+        String onlineSql = """
+                SELECT ot.e_ticket_code AS ticket_code,
+                       b.booking_code,
+                       COALESCE(u.fullName, 'N/A') AS customer_name,
+                       COALESCE(u.email, '')        AS customer_email,
+                       s.seat_code, ot.ticket_type, ot.seat_type, ot.price,
+                       b.payment_status
+                FROM online_tickets ot
+                JOIN bookings b ON ot.booking_id = b.booking_id
+                JOIN users u   ON b.user_id = u.user_id
+                JOIN seats s   ON ot.seat_id = s.seat_id
+                WHERE ot.showtime_id = ?
+                ORDER BY b.booking_code, s.seat_code
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(onlineSql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("ticketCode", rs.getString("ticket_code"));
+                    row.put("bookingCode", rs.getString("booking_code"));
+                    row.put("customerName", rs.getString("customer_name"));
+                    row.put("customerEmail", rs.getString("customer_email"));
+                    row.put("seatCode", rs.getString("seat_code"));
+                    row.put("ticketType", rs.getString("ticket_type"));
+                    row.put("seatType", rs.getString("seat_type"));
+                    row.put("price", rs.getBigDecimal("price"));
+                    row.put("paymentStatus", rs.getString("payment_status"));
+                    onlineTickets.add(row);
+                    java.math.BigDecimal p = rs.getBigDecimal("price");
+                    if (p != null)
+                        onlineRevenue = onlineRevenue.add(p);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // --- Counter tickets ---
+        List<Map<String, Object>> counterTickets = new ArrayList<>();
+        java.math.BigDecimal counterRevenue = java.math.BigDecimal.ZERO;
+
+        String counterSql = """
+                SELECT ct.ticket_code,
+                       COALESCE(ct.customer_name,  'Walk-in') AS customer_name,
+                       COALESCE(ct.customer_phone, '')         AS customer_phone,
+                       s.seat_code, ct.ticket_type, ct.seat_type, ct.price,
+                       ct.payment_method
+                FROM counter_tickets ct
+                JOIN seats s ON ct.seat_id = s.seat_id
+                WHERE ct.showtime_id = ?
+                ORDER BY s.seat_code
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(counterSql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("ticketCode", rs.getString("ticket_code"));
+                    row.put("customerName", rs.getString("customer_name"));
+                    row.put("customerPhone", rs.getString("customer_phone"));
+                    row.put("seatCode", rs.getString("seat_code"));
+                    row.put("ticketType", rs.getString("ticket_type"));
+                    row.put("seatType", rs.getString("seat_type"));
+                    row.put("price", rs.getBigDecimal("price"));
+                    row.put("paymentMethod", rs.getString("payment_method"));
+                    counterTickets.add(row);
+                    java.math.BigDecimal p = rs.getBigDecimal("price");
+                    if (p != null)
+                        counterRevenue = counterRevenue.add(p);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        detail.put("onlineTickets", onlineTickets);
+        detail.put("counterTickets", counterTickets);
+        detail.put("onlineCount", onlineTickets.size());
+        detail.put("counterCount", counterTickets.size());
+        detail.put("totalCount", onlineTickets.size() + counterTickets.size());
+        detail.put("onlineRevenue", onlineRevenue);
+        detail.put("counterRevenue", counterRevenue);
+        detail.put("totalRevenue", onlineRevenue.add(counterRevenue));
+        return detail;
+    }
 }

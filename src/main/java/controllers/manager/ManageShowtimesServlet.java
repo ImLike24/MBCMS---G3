@@ -58,6 +58,9 @@ public class ManageShowtimesServlet extends HttpServlet {
             case "cancel-preview":
                 showCancelPreview(request, response, branch.getBranchId());
                 break;
+            case "view-cancelled":
+                showCancelledDetail(request, response, branch.getBranchId());
+                break;
             default:
                 listShowtimes(request, response, branch.getBranchId());
                 break;
@@ -323,6 +326,41 @@ public class ManageShowtimesServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath()
                     + "/branch-manager/manage-showtimes?error=invalid");
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET: View Cancelled Showtime Detail
+    // ─────────────────────────────────────────────────────────────────────────
+    private void showCancelledDetail(HttpServletRequest request, HttpServletResponse response, int branchId)
+            throws ServletException, IOException {
+
+        String idStr = request.getParameter("id");
+        if (idStr == null) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
+            return;
+        }
+        int showtimeId;
+        try {
+            showtimeId = Integer.parseInt(idStr);
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
+            return;
+        }
+
+        Showtime showtime = showtimesDao.getShowtimeById(showtimeId);
+        if (showtime == null || !"CANCELLED".equals(showtime.getStatus())) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notfound");
+            return;
+        }
+
+        Movie movie = moviesDao.getMovieById(showtime.getMovieId());
+        java.util.Map<String, Object> detail = showtimesDao.getCancelledShowtimeDetail(showtimeId);
+
+        request.setAttribute("showtime", showtime);
+        request.setAttribute("movie", movie);
+        request.setAttribute("detail", detail);
+        request.getRequestDispatcher("/pages/manager/manage-showtimes/cancelled-detail.jsp")
+                .forward(request, response);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
