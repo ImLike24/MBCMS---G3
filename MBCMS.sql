@@ -933,6 +933,7 @@ WHERE NOT EXISTS (
     SELECT 1 FROM seat_type_surcharges s
     WHERE s.branch_id = b.branch_id AND s.seat_type = t.seat_type
 );
+<<<<<<< HEAD
 GO
 
 -- =============================================
@@ -967,4 +968,6 @@ INSERT INTO showtimes (movie_id, room_id, show_date, start_time, base_price, sta
 (21, 1, @today, '12:00', 70000, 'SCHEDULED'),
 (21, 1, @today, '16:30', 75000, 'SCHEDULED'),
 (21, 1, @today, '21:00', 80000, 'SCHEDULED');
+=======
+>>>>>>> 7152790134fb5f66fbb9dc5fd8f795d1196ccef9
 GO
