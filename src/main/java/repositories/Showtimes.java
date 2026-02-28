@@ -726,10 +726,14 @@ public class Showtimes extends DBContext {
             autoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
 
-            // 1. Cancel the showtime itself
-            String cancelShowtime = "UPDATE showtimes SET status = 'CANCELLED' WHERE showtime_id = ?";
+            // 1. Cancel the showtime itself and store the cancellation reason
+            String safeReason = (reason != null && !reason.isBlank()) ? reason
+                    : "Suất chiếu bị huỷ bởi Branch Manager";
+            String cancelShowtime = "UPDATE showtimes SET status = 'CANCELLED',"
+                    + " cancellation_reason = ?, cancelled_at = GETDATE() WHERE showtime_id = ?";
             try (PreparedStatement ps = connection.prepareStatement(cancelShowtime)) {
-                ps.setInt(1, showtimeId);
+                ps.setString(1, safeReason);
+                ps.setInt(2, showtimeId);
                 if (ps.executeUpdate() == 0) {
                     connection.rollback();
                     result.put("errorMsg", "Suất chiếu không tồn tại hoặc đã bị huỷ.");
@@ -765,8 +769,6 @@ public class Showtimes extends DBContext {
             }
 
             if (onlineRefunds > 0) {
-                String safeReason = (reason != null && !reason.isBlank()) ? reason
-                        : "Suất chiếu bị huỷ bởi Branch Manager";
                 String updateBookings = """
                         UPDATE bookings
                         SET status = 'CANCELLED',
@@ -837,25 +839,51 @@ public class Showtimes extends DBContext {
         detail.put("cancellationReason", null);
         detail.put("cancelledAt", null);
 
-        // --- Cancellation reason from bookings ---
+        // --- Cancellation reason from showtimes (primary source) then bookings
+        // (fallback) ---
         String reasonSql = """
-                SELECT TOP 1 cancellation_reason, cancelled_at
-                FROM bookings
-                WHERE showtime_id = ? AND cancellation_reason IS NOT NULL
-                ORDER BY cancelled_at DESC
+                SELECT cancellation_reason, cancelled_at
+                FROM showtimes
+                WHERE showtime_id = ?
                 """;
         try (PreparedStatement ps = connection.prepareStatement(reasonSql)) {
             ps.setInt(1, showtimeId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    detail.put("cancellationReason", rs.getString("cancellation_reason"));
-                    java.sql.Timestamp ts = rs.getTimestamp("cancelled_at");
-                    if (ts != null)
-                        detail.put("cancelledAt", ts.toLocalDateTime());
+                    String r = rs.getString("cancellation_reason");
+                    if (r != null && !r.isBlank()) {
+                        detail.put("cancellationReason", r);
+                        java.sql.Timestamp ts = rs.getTimestamp("cancelled_at");
+                        if (ts != null)
+                            detail.put("cancelledAt", ts.toLocalDateTime());
+                    }
                 }
             }
         } catch (SQLException e) {
+            // showtimes may not have these columns yet — fallback to bookings
             e.printStackTrace();
+        }
+        // Fallback: try bookings table if reason not found in showtimes
+        if (detail.get("cancellationReason") == null) {
+            String fallbackSql = """
+                    SELECT TOP 1 cancellation_reason, cancelled_at
+                    FROM bookings
+                    WHERE showtime_id = ? AND cancellation_reason IS NOT NULL
+                    ORDER BY cancelled_at DESC
+                    """;
+            try (PreparedStatement ps = connection.prepareStatement(fallbackSql)) {
+                ps.setInt(1, showtimeId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        detail.put("cancellationReason", rs.getString("cancellation_reason"));
+                        java.sql.Timestamp ts = rs.getTimestamp("cancelled_at");
+                        if (ts != null)
+                            detail.put("cancelledAt", ts.toLocalDateTime());
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
 
         // --- Online tickets ---

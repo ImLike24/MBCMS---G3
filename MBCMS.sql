@@ -743,3 +743,7 @@ CREATE TABLE seat_type_surcharges (
     CONSTRAINT UQ_surcharge_branch_type UNIQUE (branch_id, seat_type)
 );
 GO
+
+ALTER TABLE showtimes
+    ADD cancellation_reason NVARCHAR(500) NULL,
+        cancelled_at DATETIME2 NULL;
