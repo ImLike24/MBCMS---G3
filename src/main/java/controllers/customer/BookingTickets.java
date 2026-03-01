@@ -1,18 +1,19 @@
 package controllers.customer;
 
+import java.io.IOException;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.time.format.DateTimeFormatter;
-
+import models.SeatTypeSurcharge;
 import models.Showtime;
+import repositories.SeatTypeSurcharges;
 import repositories.Showtimes;
 
 @WebServlet(name = "TicketsOfChosenMovie", urlPatterns = {"/customer/booking-tickets"})
@@ -69,6 +70,14 @@ public class BookingTickets extends HttpServlet {
             request.setAttribute("roomName", showtimeDetails.get("roomName"));
             request.setAttribute("totalSeats", showtimeDetails.get("totalSeats"));
             request.setAttribute("branchName", showtimeDetails.get("branchName"));
+
+            // Lấy tỉ lệ phụ phí theo loại ghế (từ phân quyền manager)
+            Integer branchId = (Integer) showtimeDetails.get("branchId");
+            if (branchId != null) {
+                SeatTypeSurcharges surchargesRepo = new SeatTypeSurcharges();
+                List<SeatTypeSurcharge> surchargeList = surchargesRepo.getSurchargesByBranch(branchId);
+                request.setAttribute("surchargeList", surchargeList);
+            }
 
             if (showtime != null) {
                 if (showtime.getStartTime() != null) {

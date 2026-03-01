@@ -86,6 +86,7 @@
                 <h3><i class="fa fa-ticket"></i> Thông tin đặt vé</h3>
 
                 <div class="info-box mb-3">
+                    <p class="mb-2"><strong><i class = "fa fa-money"></i>Giá vé cơ bản:</strong><fmt:formatNumber value="${basePrice}" type="number" maxFractionDigits="0"/> ₫</p>
                     <p>
                         <i class="fa fa-info-circle"></i>
                         Chọn ghế ở bên trái để tiếp tục. (Thanh toán sẽ nối sau)
@@ -137,6 +138,9 @@
     ];
 
     const basePrice = ${basePrice};
+    const surchargeRates = {
+        <c:forEach var="s" items="${surchargeList}" varStatus="vs">'${s.seatType}': ${s.surchargeRate}<c:if test="${!vs.last}">,</c:if></c:forEach>
+    };
     let selectedSeats = [];
     const seatElementsById = {};
 
@@ -255,8 +259,8 @@
         let total = 0;
         selectedSeats.forEach(seat => {
             let price = basePrice || 0;
-            if (seat.seatType === 'VIP') price *= 1.5;
-            if (seat.seatType === 'COUPLE') price *= 2;
+            const rate = surchargeRates[seat.seatType];
+            if (rate != null && rate > 0) price *= (1 + rate/100);
             total += price;
         });
 
