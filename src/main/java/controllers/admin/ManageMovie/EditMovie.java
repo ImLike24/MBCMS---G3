@@ -87,8 +87,8 @@ public class EditMovie extends HttpServlet {
         if (movie.getDuration() <= 0) {
             errors.append("Thời lượng phải lớn hơn 0 phút. ");
         }
-        if (movie.getRating() < 0 || movie.getRating() > 10) {
-            errors.append("Đánh giá phải từ 0.0 đến 10.0. ");
+        if (movie.getRating() < 0 || movie.getRating() > 5) {
+            errors.append("Đánh giá phải từ 0.0 đến 5.0. ");
         }
 
         if (errors.length() > 0) {
@@ -103,7 +103,7 @@ public class EditMovie extends HttpServlet {
 
         try {
             movieService.updateMovie(movie, genreIds);
-            response.sendRedirect(request.getContextPath() + "/admin/movies?message=Cập nhật phim thành công");
+            response.sendRedirect(request.getContextPath() + "/admin/movies?message=success");
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("errorMessage", "Cập nhật thất bại: " + e.getMessage());

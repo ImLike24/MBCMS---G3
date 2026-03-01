@@ -7,6 +7,16 @@
     <title>Chi tiết Phim - ${movie.title}</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin-layout.css">
+    <style>
+        body {
+            margin-left: 350px;
+            margin-right: 80px;
+        }
+        .genre-checkbox {
+            min-width: 120px;
+        }
+    </style>
 </head>
 <body>
 

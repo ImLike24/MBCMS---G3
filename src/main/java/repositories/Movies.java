@@ -808,6 +808,16 @@ public class Movies extends DBContext {
             }
         }
     }
+    
+    public boolean deleteMovie(int movieId) {
+        try {
+            deleteMovieWithGenres(movieId);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
     public List<Movie> getNowShowing() {
         // Lấy 12 phim đang chiếu, sắp xếp theo ngày phát hành mới nhất

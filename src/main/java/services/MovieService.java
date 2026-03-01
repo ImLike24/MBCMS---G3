@@ -55,4 +55,18 @@ public class MovieService {
             return "Lỗi khi cập nhật phim: " + e.getMessage();
         }
     }
+    
+    public String deleteMovie(int movieId) {
+        if (movieId <= 0) {
+            return "ID phim không hợp lệ";
+        }
+
+        boolean success = movieDao.deleteMovie(movieId);
+
+        if (success) {
+            return null; // thành công
+        } else {
+            return "Không thể xóa phim. Có thể phim đang có lịch chiếu hoặc đã có vé bán.";
+        }
+    }
 }

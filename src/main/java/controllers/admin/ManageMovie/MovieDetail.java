@@ -11,7 +11,7 @@ import services.MovieService;
 
 import java.io.IOException;
 
-//@WebServlet("/admin/movies/detail")
+@WebServlet("/admin/movies/detail")
 public class MovieDetail extends HttpServlet {
 
     private final MovieService movieService = new MovieService();
@@ -30,7 +30,7 @@ public class MovieDetail extends HttpServlet {
 
         if (id == null) {
             request.setAttribute("errorMessage", "ID phim không hợp lệ");
-            request.getRequestDispatcher("/pages/admin/movies/manage-movies.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/admin/manage-movie/manage-movie.jsp").forward(request, response);
             return;
         }
 
@@ -41,7 +41,7 @@ public class MovieDetail extends HttpServlet {
             request.setAttribute("movie", movie);
         }
 
-        request.getRequestDispatcher("/pages/admin/movies/movie-detail.jsp")
+        request.getRequestDispatcher("/pages/admin/manage-movie/movie-detail.jsp")
                 .forward(request, response);
     }
 
