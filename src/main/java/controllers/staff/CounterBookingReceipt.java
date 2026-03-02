@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 @WebServlet(name = "counterBookingReceipt", urlPatterns = {"/staff/counter-booking-receipt"})
-public class CounterBookingReceipt extends HttpServlet {
+public class CounterBookingReceipt extends HttpServlet { 
 
     private static final Font FONT_TITLE = new Font(Font.FontFamily.HELVETICA, 24, Font.BOLD);
     private static final Font FONT_HEADER = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD);
