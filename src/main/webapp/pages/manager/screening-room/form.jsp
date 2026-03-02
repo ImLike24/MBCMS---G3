@@ -43,6 +43,11 @@
                         <div class="alert alert-danger mb-4">${error}</div>
                     </c:if>
 
+                    <div class="alert bg-light border border-secondary mb-4">
+                        <i class="fa fa-info-circle text-primary me-2"></i> Đang thao tác trên chi nhánh:
+                        <strong style="color: #d96c2c;">${currentBranchName}</strong>
+                    </div>
+
                     <div class="row g-4">
                         <div class="col-12">
                             <label class="form-label fw-bold">Tên Phòng <span class="text-danger">*</span></label>
