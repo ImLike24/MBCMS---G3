@@ -14,9 +14,7 @@ import java.util.Map;
 
 public class Showtimes extends DBContext {
 
-    /**
-     * Get showtimes for a specific movie on a specific date
-     */
+    
     public List<Showtime> getShowtimesForMovieOnDate(int movieId, LocalDate date) {
         List<Showtime> showtimes = new ArrayList<>();
         String sql = "SELECT * FROM showtimes " +
@@ -39,9 +37,7 @@ public class Showtimes extends DBContext {
         return showtimes;
     }
 
-    /**
-     * Get showtime by ID
-     */
+    
     public Showtime getShowtimeById(int showtimeId) {
         String sql = "SELECT * FROM showtimes WHERE showtime_id = ?";
 
@@ -322,12 +318,14 @@ public class Showtimes extends DBContext {
     public List<models.Movie> getMoviesWithShowtimes(int branchId, LocalDate date) {
         Map<Integer, models.Movie> movieMap = new java.util.LinkedHashMap<>();
 
-        String sql = "SELECT s.*, m.* " +
-                "FROM showtimes s " +
-                "JOIN movies m ON s.movie_id = m.movie_id " +
-                "JOIN screening_rooms r ON s.room_id = r.room_id " +
-                "WHERE r.branch_id = ? AND s.show_date = ? AND s.status IN ('SCHEDULED', 'ONGOING') " +
-                "ORDER BY m.title, s.start_time";
+        String sql =""" 
+                    SELECT s.*, m.* 
+                    FROM showtimes s 
+                    JOIN movies m ON s.movie_id = m.movie_id
+                    JOIN screening_rooms r ON s.room_id = r.room_id
+                    WHERE r.branch_id = ? AND s.show_date = ? AND s.status IN ('SCHEDULED', 'ONGOING') 
+                    ORDER BY s.start_time
+                    """;
 
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, branchId);
@@ -344,8 +342,6 @@ public class Showtimes extends DBContext {
                         movie.setDuration(rs.getInt("duration"));
                         movie.setRating(rs.getDouble("rating"));
                         movie.setAgeRating(rs.getString("age_rating"));
-
-                        // Use helper to fetch genres
                         movie.setGenres(getGenresByMovieId(movieId));
 
                         movieMap.put(movieId, movie);
