@@ -1,7 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -13,17 +11,15 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin-layout.css">
     <style>
         .table-custom {
-            table-layout: fixed; /* giữ kích thước cột cố định */
+            table-layout: fixed;
         }
         .table-custom th, .table-custom td {
             vertical-align: middle;
             padding: 12px 10px;
         }
-        /* Căn giữa mặc định cho hầu hết cột */
         .table-custom th, .table-custom td {
             text-align: center;
         }
-        /* Chỉ cột Tên thể loại giữ lệch trái để dễ đọc tên */
         .table-custom th:first-child,
         .table-custom td:first-child {
             text-align: left;
@@ -33,9 +29,9 @@
             color: #212529;
         }
         .description-col {
-            max-width: 400px;              
+            max-width: 400px;
             line-height: 1.5;
-            text-align: left !important; 
+            text-align: left !important;
         }
         .status-col {
             width: 140px;
@@ -71,7 +67,6 @@
     </style>
 </head>
 <body>
-
 <jsp:include page="/components/layout/dashboard/dashboard_header.jsp" />
 <jsp:include page="/components/layout/dashboard/admin_sidebar.jsp">
     <jsp:param name="page" value="genre"/>
@@ -89,11 +84,36 @@
                     </ol>
                 </nav>
             </div>
-            <a href="${pageContext.request.contextPath}/admin/genres/add" 
+            <a href="${pageContext.request.contextPath}/admin/genres/add"
                class="btn btn-orange shadow-sm px-4">
                 <i class="fa fa-plus me-2"></i>Thêm Thể loại mới
             </a>
         </div>
+
+        <!-- Thông báo thành công / lỗi -->
+        <c:if test="${not empty param.success}">
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <c:choose>
+                    <c:when test="${param.success == 'add'}">Thêm thể loại mới thành công!</c:when>
+                    <c:when test="${param.success == 'update'}">Cập nhật thể loại thành công!</c:when>
+                    <c:when test="${param.success == 'delete'}">Xóa thể loại thành công (đã vô hiệu hóa)!</c:when>
+                    <c:otherwise>Thao tác thành công!</c:otherwise>
+                </c:choose>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </c:if>
+
+        <c:if test="${not empty param.error}">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <c:choose>
+                    <c:when test="${param.error == 'notfound'}">Không tìm thấy thể loại!</c:when>
+                    <c:when test="${param.error == 'invalid'}">ID không hợp lệ!</c:when>
+                    <c:when test="${param.error == 'delete'}">Không thể xóa thể loại này!</c:when>
+                    <c:otherwise>Có lỗi xảy ra, vui lòng thử lại!</c:otherwise>
+                </c:choose>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </c:if>
 
         <div class="card card-custom shadow-sm border-0">
             <div class="card-body p-0">
@@ -165,7 +185,7 @@
                                         <i class="fas fa-tags fa-4x mb-3 opacity-50"></i>
                                         <h5>Chưa có thể loại nào trong hệ thống</h5>
                                         <p>Hãy thêm thể loại mới để phân loại phim.</p>
-                                        <a href="${pageContext.request.contextPath}/admin/genres/add" 
+                                        <a href="${pageContext.request.contextPath}/admin/genres/add"
                                            class="btn btn-orange mt-3">
                                             <i class="fa fa-plus me-2"></i>Thêm Thể loại ngay
                                         </a>

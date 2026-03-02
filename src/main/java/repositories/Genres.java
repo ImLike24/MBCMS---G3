@@ -129,15 +129,40 @@ public class Genres extends DBContext {
     }
 
     public boolean deleteGenre(int id) {
-        // Soft delete (khuyến nghị)
-        String sql = "UPDATE genres SET is_active = 0, updated_at = SYSDATETIME() WHERE genre_id = ?";
-        // Hoặc hard delete: "DELETE FROM genres WHERE genre_id = ?"
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, id);
-            return st.executeUpdate() > 0;
+        String deleteLinksSql = "DELETE FROM movie_genres WHERE genre_id = ?";
+        String deleteGenreSql  = "DELETE FROM genres WHERE genre_id = ?";
+
+        try {
+            connection.setAutoCommit(false);  
+
+            // Bước 1: Xóa tất cả liên kết trong movie_genres
+            try (PreparedStatement psLinks = connection.prepareStatement(deleteLinksSql)) {
+                psLinks.setInt(1, id);
+                psLinks.executeUpdate();  // Không cần kiểm tra số dòng, cứ xóa hết liên kết nếu có
+            }
+
+            // Bước 2: Xóa bản ghi trong genres
+            try (PreparedStatement psGenre = connection.prepareStatement(deleteGenreSql)) {
+                psGenre.setInt(1, id);
+                int rowsAffected = psGenre.executeUpdate();
+
+                connection.commit();  // Commit nếu thành công
+                return rowsAffected > 0;  // Trả về true nếu có bản ghi bị xóa
+            }
         } catch (SQLException e) {
             e.printStackTrace();
+            try {
+                connection.rollback();  // Rollback nếu có lỗi
+            } catch (SQLException rollbackEx) {
+                rollbackEx.printStackTrace();
+            }
             return false;
+        } finally {
+            try {
+                connection.setAutoCommit(true);  // Khôi phục auto-commit
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 

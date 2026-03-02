@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.List;
 
 @WebServlet("/admin/manage-genres")
-public class ManageGenres extends HttpServlet {
+public class ListGenres extends HttpServlet {
 
     private final GenreService genreService = new GenreService();
 
@@ -172,7 +172,6 @@ public class ManageGenres extends HttpServlet {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // Có thể xử lý AJAX delete ở đây nếu cần
         doPost(req, resp);
     }
 }

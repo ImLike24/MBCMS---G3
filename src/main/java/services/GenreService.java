@@ -16,7 +16,6 @@ public class GenreService {
         return genreDao.getGenresByMovieId(movieId);
     }
     
-    // Trong GenreService.java
     public List<Genre> getAllGenres() {          // không chỉ active
         return genreDao.getAllGenres();
     }
