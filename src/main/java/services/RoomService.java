@@ -33,4 +33,12 @@ public class RoomService {
     public void deleteRoom(int id) {
         roomDao.deleteRoom(id);
     }
+
+    public List<ScreeningRoom> getRoomsByBranchWithPagination(int branchId, int page, int pageSize) {
+        return roomDao.getRoomsByBranchWithPagination(branchId, page, pageSize);
+    }
+
+    public int countRoomsByBranch(int branchId) {
+        return roomDao.countRoomsByBranch(branchId);
+    }
 }

@@ -164,4 +164,43 @@ public class ScreeningRooms extends DBContext {
         }
         return list;
     }
+
+    // Lấy danh sách phòng có phân trang
+    public List<ScreeningRoom> getRoomsByBranchWithPagination(int branchId, int page, int pageSize) {
+        List<ScreeningRoom> rooms = new ArrayList<>();
+        int offset = (page - 1) * pageSize;
+
+        String sql = "SELECT * FROM screening_rooms WHERE branch_id = ? ORDER BY room_name ASC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, branchId);
+            st.setInt(2, offset);
+            st.setInt(3, pageSize);
+
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    rooms.add(mapResultSetToScreeningRoom(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return rooms;
+    }
+
+    // Đếm tổng số phòng của 1 rạp để tính số trang
+    public int countRoomsByBranch(int branchId) {
+        String sql = "SELECT COUNT(*) FROM screening_rooms WHERE branch_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, branchId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
 }

@@ -106,6 +106,21 @@
                         <c:if test="${empty rooms}">
                             <tr><td colspan="6" class="text-center py-5 text-muted">Chưa có dữ liệu phòng chiếu.</td></tr>
                         </c:if>
+                        <c:if test="${totalPages > 1}">
+                            <div class="card-footer bg-white border-0 py-3">
+                                <nav class="d-flex justify-content-end mb-0">
+                                    <ul class="pagination mb-0">
+                                        <c:set var="queryParams" value="&branchId=${selectedBranchId}" />
+
+                                        <c:forEach begin="1" end="${totalPages}" var="i">
+                                            <li class="page-item ${currentPage == i ? 'active' : ''}">
+                                                <a class="page-link" href="rooms?page=${i}${queryParams}">${i}</a>
+                                            </li>
+                                        </c:forEach>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </c:if>
                         </tbody>
                     </table>
                 </div>

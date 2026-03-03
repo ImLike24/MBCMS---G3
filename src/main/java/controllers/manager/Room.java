@@ -117,8 +117,28 @@ public class Room extends HttpServlet {
 
     private void listRooms(HttpServletRequest request, HttpServletResponse response, int branchId)
             throws ServletException, IOException {
-        List<ScreeningRoom> list = roomService.getRoomsByBranch(branchId);
+
+        int page = 1;
+        int pageSize = 10;
+
+        String pageParam = request.getParameter("page");
+        if (pageParam != null && !pageParam.isEmpty()) {
+            try {
+                page = Integer.parseInt(pageParam);
+            } catch (NumberFormatException e) {
+                page = 1;
+            }
+        }
+
+        int totalRooms = roomService.countRoomsByBranch(branchId);
+        int totalPages = (int) Math.ceil((double) totalRooms / pageSize);
+
+        List<ScreeningRoom> list = roomService.getRoomsByBranchWithPagination(branchId, page, pageSize);
+
         request.setAttribute("rooms", list);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("totalPages", totalPages);
+
         request.getRequestDispatcher("/pages/manager/screening-room/list.jsp").forward(request, response);
     }
 
