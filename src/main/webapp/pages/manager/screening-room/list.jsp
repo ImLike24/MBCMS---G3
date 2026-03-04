@@ -17,19 +17,35 @@
 
 <main>
     <div class="container-fluid">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-end mb-4">
             <div>
-                <h3 class="fw-bold text-dark">Phòng chiếu phim</h3>
+                <h3 class="fw-bold text-dark mb-1">Phòng chiếu phim</h3>
                 <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
+                    <ol class="breadcrumb mb-0">
                         <li class="breadcrumb-item"><a href="#" class="text-decoration-none text-secondary">Manager</a></li>
                         <li class="breadcrumb-item active" style="color: #d96c2c;">Phòng chiếu</li>
                     </ol>
                 </nav>
             </div>
-            <a href="rooms?action=create" class="btn btn-orange shadow-sm px-4">
-                <i class="fa fa-plus me-2"></i>Thêm Phòng
-            </a>
+
+            <div class="d-flex gap-3 align-items-center">
+                <form action="rooms" method="get" id="branchSelectForm" class="mb-0">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-dark text-white border-dark"><i class="fa fa-building"></i></span>
+                        <select class="form-select border-dark" name="branchId" onchange="document.getElementById('branchSelectForm').submit()" style="min-width: 200px; font-weight: 500;">
+                            <c:forEach var="b" items="${managedBranches}">
+                                <option value="${b.branchId}" ${b.branchId == selectedBranchId ? 'selected' : ''}>
+                                        ${b.branchName}
+                                </option>
+                            </c:forEach>
+                        </select>
+                    </div>
+                </form>
+
+                <a href="rooms?action=create" class="btn btn-orange shadow-sm px-4 h-100 d-flex align-items-center">
+                    <i class="fa fa-plus me-2"></i>Thêm Phòng
+                </a>
+            </div>
         </div>
 
         <c:if test="${not empty param.message}">
@@ -89,6 +105,21 @@
                         </c:forEach>
                         <c:if test="${empty rooms}">
                             <tr><td colspan="6" class="text-center py-5 text-muted">Chưa có dữ liệu phòng chiếu.</td></tr>
+                        </c:if>
+                        <c:if test="${totalPages > 1}">
+                            <div class="card-footer bg-white border-0 py-3">
+                                <nav class="d-flex justify-content-end mb-0">
+                                    <ul class="pagination mb-0">
+                                        <c:set var="queryParams" value="&branchId=${selectedBranchId}" />
+
+                                        <c:forEach begin="1" end="${totalPages}" var="i">
+                                            <li class="page-item ${currentPage == i ? 'active' : ''}">
+                                                <a class="page-link" href="rooms?page=${i}${queryParams}">${i}</a>
+                                            </li>
+                                        </c:forEach>
+                                    </ul>
+                                </nav>
+                            </div>
                         </c:if>
                         </tbody>
                     </table>

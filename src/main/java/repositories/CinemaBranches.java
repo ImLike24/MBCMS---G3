@@ -297,4 +297,24 @@ public class CinemaBranches extends DBContext {
         }
         return list;
     }
+
+    // Lấy danh sách các chi nhánh do 1 manager quản lý
+    public List<CinemaBranch> findListByManagerId(int managerId) {
+        List<CinemaBranch> list = new ArrayList<>();
+        String sql = "SELECT b.*, u.fullName as manager_name " +
+                "FROM cinema_branches b " +
+                "LEFT JOIN users u ON b.manager_id = u.user_id " +
+                "WHERE b.manager_id = ? AND b.is_active = 1";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, managerId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }

@@ -8,18 +8,21 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(name = "TicketsOfChosenMovie", urlPatterns = {"/customer/booking-tickets"})
+import models.Showtime;
+import repositories.SeatTypeSurcharges;
+import repositories.Showtimes;
+
+@WebServlet(name = "TicketsOfChosenMovie", urlPatterns = { "/customer/booking-tickets" })
 public class BookingTickets extends HttpServlet {
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
         // Đảm bảo user đã đăng nhập trước khi đặt vé
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
@@ -30,7 +33,6 @@ public class BookingTickets extends HttpServlet {
         // Lấy showtimeId từ query string
         String showtimeIdParam = request.getParameter("showtimeId");
         if (showtimeIdParam == null || showtimeIdParam.isEmpty()) {
-            // Không có showtimeId -> quay lại danh sách phim
             response.sendRedirect(request.getContextPath() + "/movies");
             return;
         }
@@ -39,65 +41,72 @@ public class BookingTickets extends HttpServlet {
         try {
             showtimeId = Integer.parseInt(showtimeIdParam);
         } catch (NumberFormatException e) {
-            // Giá trị không hợp lệ -> quay lại danh sách phim
             response.sendRedirect(request.getContextPath() + "/movies");
             return;
         }
 
-        // ======== DỮ LIỆU THỬ NGHIỆM (KHÔNG CẦN DB) ========
-        // Với các showtimeId test (1..5) từ trang booking-showtimes.jsp,
-        // ta tạo sẵn thông tin phim, suất chiếu và sơ đồ ghế.
+        Showtimes showtimesRepo = null;
+        try {
+            showtimesRepo = new Showtimes();
 
-        // Thông tin phim demo
-        String movieTitle = "Phim Thử Nghiệm";
+            Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
+            if (showtimeDetails == null || showtimeDetails.isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/movies");
+                return;
+            }
 
-        // Ngày chiếu demo: hôm nay
-        LocalDate showDate = LocalDate.now();
+            List<Map<String, Object>> seatsWithStatus = showtimesRepo.getSeatsWithBookingStatus(showtimeId);
+            int availableSeats = showtimesRepo.countAvailableSeats(showtimeId);
 
-        // Giờ chiếu demo tùy theo showtimeId
-        LocalTime startTime;
-        switch (showtimeId) {
-            case 1 -> startTime = LocalTime.of(9, 10);
-            case 2 -> startTime = LocalTime.of(11, 0);
-            case 3 -> startTime = LocalTime.of(13, 0);
-            case 4 -> startTime = LocalTime.of(15, 30);
-            case 5 -> startTime = LocalTime.of(19, 45);
-            default -> startTime = LocalTime.of(20, 0);
+            request.setAttribute("showtimeDetails", showtimeDetails);
+            request.setAttribute("seatsWithStatus", seatsWithStatus);
+            request.setAttribute("availableSeats", availableSeats);
+            request.setAttribute("showtimeId", showtimeId);
+
+            Showtime showtime = (Showtime) showtimeDetails.get("showtime");
+            request.setAttribute("showtime", showtime);
+            request.setAttribute("movieTitle", showtimeDetails.get("movieTitle"));
+            request.setAttribute("moviePosterUrl", showtimeDetails.get("moviePosterUrl"));
+            request.setAttribute("roomName", showtimeDetails.get("roomName"));
+            request.setAttribute("totalSeats", showtimeDetails.get("totalSeats"));
+            request.setAttribute("branchName", showtimeDetails.get("branchName"));
+
+            // Lấy tỉ lệ phụ phí từng loại ghế cho chi nhánh
+            Integer branchId = (Integer) showtimeDetails.get("branchId");
+            if (branchId != null) {
+                SeatTypeSurcharges surchargesRepo = new SeatTypeSurcharges();
+                var surchargeList = surchargesRepo.getSurchargesByBranch(branchId);
+                request.setAttribute("surchargeList", surchargeList);
+                surchargesRepo.closeConnection();
+            }
+
+            if (showtime != null) {
+                if (showtime.getStartTime() != null) {
+                    request.setAttribute("formattedStartTime",
+                            showtime.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
+                }
+                if (showtime.getShowDate() != null) {
+                    request.setAttribute("formattedShowDate",
+                            showtime.getShowDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                }
+                double basePrice = showtime.getBasePrice() != null ? showtime.getBasePrice().doubleValue() : 0.0;
+                request.setAttribute("basePrice", basePrice);
+            } else {
+                request.setAttribute("basePrice", 0.0);
+            }
+
+            request.getRequestDispatcher("/pages/customer/booking-tickets.jsp")
+                    .forward(request, response);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            request.setAttribute("error", "Có lỗi xảy ra khi tải sơ đồ ghế.");
+            request.getRequestDispatcher("/pages/customer/booking-tickets.jsp")
+                    .forward(request, response);
+        } finally {
+            if (showtimesRepo != null) {
+                showtimesRepo.closeConnection();
+            }
         }
-
-        // Phòng chiếu demo
-        String roomName = "Screening Room A";
-
-        // Tạo sơ đồ ghế demo: 5 hàng (A-E), mỗi hàng 10 ghế (1-10)
-        List<String> seatRows = new ArrayList<>();
-        seatRows.add("A");
-        seatRows.add("B");
-        seatRows.add("C");
-        seatRows.add("D");
-        seatRows.add("E");
-
-        int seatsPerRow = 10;
-
-        // Đánh dấu một vài ghế đã được đặt (demo)
-        // key: mã ghế (ví dụ: "B5"), value: true = đã đặt
-        Map<String, Boolean> reservedSeats = new HashMap<>();
-        reservedSeats.put("B5", true);
-        reservedSeats.put("C7", true);
-        reservedSeats.put("D2", true);
-
-        // Đặt các biến vào request để JSP render
-        request.setAttribute("movieTitle", movieTitle);
-        request.setAttribute("showDate", showDate);
-        request.setAttribute("startTime", startTime);
-        request.setAttribute("roomName", roomName);
-        request.setAttribute("seatRows", seatRows);
-        request.setAttribute("seatsPerRow", seatsPerRow);
-        request.setAttribute("reservedSeats", reservedSeats);
-        request.setAttribute("showtimeId", showtimeId);
-
-        // Chuyển tới trang chọn ghế
-        request.getRequestDispatcher("/pages/customer/booking-tickets.jsp")
-                .forward(request, response);
     }
-
 }

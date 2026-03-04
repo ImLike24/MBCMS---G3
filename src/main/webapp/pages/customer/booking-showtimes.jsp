@@ -104,7 +104,11 @@
             <c:when test="${not empty showtimes}">
                 <div class="showtimes-grid">
                     <c:forEach var="showtime" items="${showtimes}">
-                        <div class="showtime-card">
+                        <c:set var="availableSeats" value="${availableSeatsMap[showtime.showtimeId]}" />
+                        <c:set var="totalSeats" value="${totalSeatsMap[showtime.showtimeId]}" />
+                        <c:set var="hasSeats" value="${availableSeats > 0}" />
+
+                        <div class="showtime-card ${!hasSeats ? 'no-seats' : ''}">
                             <div class="showtime-time">
                                 <i class="fa fa-clock-o"></i>
                                 <span>
@@ -112,20 +116,30 @@
                                 </span>
                             </div>
 
-                            <div class="seat-availability">
+                            <div class="seat-availability ${!hasSeats ? 'no-seats' : ''}">
                                 <div class="seat-availability-label">
                                     <i class="fa fa-chair"></i>
                                     <span>Suất chiếu khả dụng</span>
                                 </div>
-                                <div class="seat-count">
-                                    Vé còn lại: ?
+                                <div class="seat-count ${!hasSeats ? 'no-seats' : ''}">
+                                    Vé còn lại: ${availableSeats} / ${totalSeats}
                                 </div>
                             </div>
 
-                            <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=${showtime.showtimeId}"
-                               class="btn-select-showtime">
-                                Chọn suất này
-                            </a>
+                            <c:choose>
+                                <c:when test="${hasSeats}">
+                                    <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=${showtime.showtimeId}"
+                                       class="btn-select-showtime"
+                                       data-start-datetime="${selectedDate}T${showtime.startTime}">
+                                        Chọn suất này
+                                    </a>
+                                </c:when>
+                                <c:otherwise>
+                                    <button class="btn-select-showtime" disabled>
+                                        Hết ghế
+                                    </button>
+                                </c:otherwise>
+                            </c:choose>
                         </div>
                     </c:forEach>
                 </div>
@@ -236,6 +250,25 @@
 </div>
 
 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Chặn chọn suất chiếu đã qua thời gian chiếu (client-side) ở trang booking-showtimes
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-select-showtime');
+        if (!btn) return;
+
+        const dtStr = btn.getAttribute('data-start-datetime');
+        if (!dtStr) return;
+
+        const startTime = new Date(dtStr);
+        if (isNaN(startTime.getTime())) return;
+
+        const now = new Date();
+        if (startTime <= now) {
+            e.preventDefault();
+            alert('Đã qua thời gian chiếu phim');
+        }
+    });
+</script>
 </body>
 </html>
 

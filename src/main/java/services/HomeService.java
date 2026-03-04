@@ -23,7 +23,7 @@ public class HomeService {
         return movieDao.getTopRated(8);
     }
 
-    public List<Genre> getActiveGenres() {
-        return genreDao.getAllActiveGenres();
-    }
+//    public List<Genre> getActiveGenres() {
+//        return genreDao.getAllActiveGenres();
+//    }
 }

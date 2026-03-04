@@ -1,15 +1,14 @@
 package repositories;
 
 import config.DBContext;
-import models.Movie;
-
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import models.Movie;
 
 public class Movies extends DBContext {
-
+    
     public List<Movie> getMockUpMovies() {
         List<Movie> movies = new ArrayList<>();
         String sql = "SELECT * FROM movies WHERE is_active = 1 ORDER BY release_date DESC";
@@ -621,37 +620,29 @@ public class Movies extends DBContext {
 
         return m;
     }
-
-    public void insertMovieWithGenres(Movie m, List<Integer> genreIds) {
+    
+    public void insertMovieWithGenres(Movie m, List<Integer> genreIds) throws SQLException {
         String insertMovieSql = """
-                INSERT INTO movies
-                (title, description, duration, release_date, end_date, rating, age_rating,
-                 director, cast, poster_url, is_active)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
+            INSERT INTO movies 
+            (title, description, duration, release_date, end_date, rating, age_rating, 
+             director, cast, poster_url, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())
+        """;
 
-        String insertMovieGenreSql = """
-                INSERT INTO movie_genres (movie_id, genre_id)
-                VALUES (?, ?)
-                """;
+        String insertGenreSql = "INSERT INTO movie_genres (movie_id, genre_id) VALUES (?, ?)";
 
         Connection conn = null;
-
         try {
             conn = connection;
             conn.setAutoCommit(false);
 
-            // 1. Insert movie
-            int movieId;
-            try (PreparedStatement ps = conn.prepareStatement(
-                    insertMovieSql, Statement.RETURN_GENERATED_KEYS)) {
-
+            try (PreparedStatement ps = conn.prepareStatement(insertMovieSql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setString(1, m.getTitle());
                 ps.setString(2, m.getDescription());
-                ps.setInt(3, m.getDuration());
+                ps.setInt(3, m.getDuration() != null ? m.getDuration() : 0);
                 ps.setDate(4, m.getReleaseDate() != null ? Date.valueOf(m.getReleaseDate()) : null);
                 ps.setDate(5, m.getEndDate() != null ? Date.valueOf(m.getEndDate()) : null);
-                ps.setDouble(6, m.getRating());
+                ps.setDouble(6, m.getRating() != null ? m.getRating() : 0.0);
                 ps.setString(7, m.getAgeRating());
                 ps.setString(8, m.getDirector());
                 ps.setString(9, m.getCast());
@@ -662,120 +653,37 @@ public class Movies extends DBContext {
 
                 try (ResultSet rs = ps.getGeneratedKeys()) {
                     if (rs.next()) {
-                        movieId = rs.getInt(1);
+                        m.setMovieId(rs.getInt(1));
                     } else {
-                        throw new SQLException("Failed to retrieve movie_id.");
+                        throw new SQLException("Không lấy được movie_id");
                     }
                 }
             }
 
-            // 2. Insert movie_genres
-            try (PreparedStatement ps = conn.prepareStatement(insertMovieGenreSql)) {
-                for (Integer genreId : genreIds) {
-                    ps.setInt(1, movieId);
-                    ps.setInt(2, genreId);
-                    ps.addBatch();
+            if (genreIds != null && !genreIds.isEmpty()) {
+                try (PreparedStatement psGenre = conn.prepareStatement(insertGenreSql)) {
+                    for (Integer genreId : genreIds) {
+                        psGenre.setInt(1, m.getMovieId());
+                        psGenre.setInt(2, genreId);
+                        psGenre.addBatch();
+                    }
+                    psGenre.executeBatch();
                 }
-                ps.executeBatch();
             }
 
             conn.commit();
-
         } catch (SQLException e) {
-            e.printStackTrace();
-            try {
-                if (conn != null)
-                    conn.rollback();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
             }
+            throw e;
         } finally {
-            try {
-                if (conn != null)
-                    conn.setAutoCommit(true);
-            } catch (SQLException e) {
-                e.printStackTrace();
+            if (conn != null) {
+                try { conn.setAutoCommit(true); } catch (SQLException ex) { ex.printStackTrace(); }
             }
         }
     }
-
-    public void updateMovieWithGenres(Movie m, List<Integer> genreIds) {
-        String updateMovieSql = """
-                UPDATE movies
-                SET title = ?, description = ?, duration = ?, release_date = ?, end_date = ?,
-                    rating = ?, age_rating = ?, director = ?, cast = ?, poster_url = ?, is_active = ?
-                WHERE movie_id = ?
-                """;
-
-        String deleteMovieGenresSql = """
-                DELETE FROM movie_genres WHERE movie_id = ?
-                """;
-
-        String insertMovieGenreSql = """
-                INSERT INTO movie_genres (movie_id, genre_id)
-                VALUES (?, ?)
-                """;
-
-        Connection conn = null;
-
-        try {
-            conn = connection;
-            conn.setAutoCommit(false);
-
-            // 1. Update movies
-            try (PreparedStatement ps = conn.prepareStatement(updateMovieSql)) {
-                ps.setString(1, m.getTitle());
-                ps.setString(2, m.getDescription());
-                ps.setInt(3, m.getDuration());
-                ps.setDate(4, m.getReleaseDate() != null ? Date.valueOf(m.getReleaseDate()) : null);
-                ps.setDate(5, m.getEndDate() != null ? Date.valueOf(m.getEndDate()) : null);
-                ps.setDouble(6, m.getRating());
-                ps.setString(7, m.getAgeRating());
-                ps.setString(8, m.getDirector());
-                ps.setString(9, m.getCast());
-                ps.setString(10, m.getPosterUrl());
-                ps.setBoolean(11, m.isActive());
-                ps.setInt(12, m.getMovieId());
-
-                ps.executeUpdate();
-            }
-
-            // 2. Delete old genres
-            try (PreparedStatement ps = conn.prepareStatement(deleteMovieGenresSql)) {
-                ps.setInt(1, m.getMovieId());
-                ps.executeUpdate();
-            }
-
-            // 3. Insert new genres
-            try (PreparedStatement ps = conn.prepareStatement(insertMovieGenreSql)) {
-                for (Integer genreId : genreIds) {
-                    ps.setInt(1, m.getMovieId());
-                    ps.setInt(2, genreId);
-                    ps.addBatch();
-                }
-                ps.executeBatch();
-            }
-
-            conn.commit();
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            try {
-                if (conn != null)
-                    conn.rollback();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-        } finally {
-            try {
-                if (conn != null)
-                    conn.setAutoCommit(true);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
+    
     public void deleteMovieWithGenres(int movieId) {
         String deleteMovieGenresSql = """
                 DELETE FROM movie_genres WHERE movie_id = ?
@@ -820,6 +728,94 @@ public class Movies extends DBContext {
             } catch (SQLException e) {
                 e.printStackTrace();
             }
+        }
+    }
+    
+    public void updateMovieWithGenres(Movie m, List<Integer> genreIds) throws SQLException {
+        String updateMovieSql = """
+            UPDATE movies SET
+                title = ?,
+                description = ?,
+                duration = ?,
+                release_date = ?,
+                end_date = ?,
+                rating = ?,
+                age_rating = ?,
+                director = ?,
+                cast = ?,
+                poster_url = ?,
+                is_active = ?,
+                updated_at = GETDATE()
+            WHERE movie_id = ?
+        """;
+
+        String deleteGenresSql = "DELETE FROM movie_genres WHERE movie_id = ?";
+        String insertGenreSql = "INSERT INTO movie_genres (movie_id, genre_id) VALUES (?, ?)";
+
+        Connection conn = null;
+        try {
+            conn = connection;
+            conn.setAutoCommit(false);
+
+            // 1. Update phim
+            try (PreparedStatement ps = conn.prepareStatement(updateMovieSql)) {
+                ps.setString(1, m.getTitle());
+                ps.setString(2, m.getDescription());
+                ps.setInt(3, m.getDuration() != null ? m.getDuration() : 0);
+                ps.setDate(4, m.getReleaseDate() != null ? Date.valueOf(m.getReleaseDate()) : null);
+                ps.setDate(5, m.getEndDate() != null ? Date.valueOf(m.getEndDate()) : null);
+                ps.setDouble(6, m.getRating() != null ? m.getRating() : 0.0);
+                ps.setString(7, m.getAgeRating());
+                ps.setString(8, m.getDirector());
+                ps.setString(9, m.getCast());
+                ps.setString(10, m.getPosterUrl());
+                ps.setBoolean(11, m.isActive());
+                ps.setInt(12, m.getMovieId());
+
+                int rows = ps.executeUpdate();
+                if (rows == 0) {
+                    throw new SQLException("Không tìm thấy phim với ID " + m.getMovieId());
+                }
+            }
+
+            // 2. Xóa thể loại cũ
+            try (PreparedStatement psDelete = conn.prepareStatement(deleteGenresSql)) {
+                psDelete.setInt(1, m.getMovieId());
+                psDelete.executeUpdate();
+            }
+
+            // 3. Thêm thể loại mới (nếu có)
+            if (genreIds != null && !genreIds.isEmpty()) {
+                try (PreparedStatement psInsert = conn.prepareStatement(insertGenreSql)) {
+                    for (Integer genreId : genreIds) {
+                        psInsert.setInt(1, m.getMovieId());
+                        psInsert.setInt(2, genreId);
+                        psInsert.addBatch();
+                    }
+                    psInsert.executeBatch();
+                }
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
+            throw e;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
+        }
+    }
+    
+    public boolean deleteMovie(int movieId) {
+        try {
+            deleteMovieWithGenres(movieId);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 

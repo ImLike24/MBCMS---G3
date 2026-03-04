@@ -1,171 +1,114 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-    <!DOCTYPE html>
-    <html lang="en">
+    <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+        <!DOCTYPE html>
+        <html lang="en">
 
-    <head>
-        <meta charset="utf-8">
-        <title>Lịch Chiếu - MBCMS</title>
-        <link href="${pageContext.request.contextPath}/css/bootstrap.min.css" rel="stylesheet">
-        <link href="${pageContext.request.contextPath}/css/font-awesome.min.css" rel="stylesheet">
-        <link href="${pageContext.request.contextPath}/css/global.css" rel="stylesheet">
-        <link href="${pageContext.request.contextPath}/css/index.css" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300..800;1,300..800&display=swap"
-            rel="stylesheet">
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-        <link href="${pageContext.request.contextPath}/css/showtime.css" rel="stylesheet">
-        <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+        <head>
+            <meta charset="utf-8">
+            <title>Lịch Chiếu - MBCMS</title>
+            <link href="${pageContext.request.contextPath}/css/bootstrap.min.css" rel="stylesheet">
+            <link href="${pageContext.request.contextPath}/css/font-awesome.min.css" rel="stylesheet">
+            <link href="${pageContext.request.contextPath}/css/global.css" rel="stylesheet">
+            <link href="${pageContext.request.contextPath}/css/index.css" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300..800;1,300..800&display=swap"
+                rel="stylesheet">
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+            <link href="${pageContext.request.contextPath}/css/showtime.css" rel="stylesheet">
+            <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
 
-    </head>
+        </head>
 
-    <body>
+        <body>
 
-        <jsp:include page="/components/layout/Sidebar.jsp" />
-        <jsp:include page="/components/layout/Header.jsp" />
+            <jsp:include page="/components/layout/Sidebar.jsp" />
+            <jsp:include page="/components/layout/Header.jsp" />
 
-        <div class="main clearfix position-relative" style="margin-top: 100px; min-height: 600px;">
-            <div class="container-xl">
-                <div class="row mb-4">
-                    <div class="col-12 text-center">
-                        <h1 class="mb-0 font_50">Lịch Chiếu Phim</h1>
-                        <p class="text-muted">Xem lịch chiếu mới nhất tại các rạp</p>
+            <div class="main clearfix position-relative" style="margin-top: 100px; min-height: 600px;">
+                <div class="container-xl">
+                    <div class="row mb-4">
+                        <div class="col-12 text-center">
+                            <h1 class="mb-0 font_50">Lịch Chiếu Phim</h1>
+                            <p class="text-muted">Xem lịch chiếu mới nhất tại các rạp</p>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Filter Bar -->
-                <div class="row mb-4 p-4 bg-light rounded shadow-sm">
-                    <div class="col-md-10 mb-3 mb-md-0">
-                        <label for="branchSelect" class="form-label fw-bold">Chọn Rạp / Chi nhánh</label>
-                        <select id="branchSelect" class="form-select form-select-lg" disabled>
-                            <option value="" disabled selected>-- Đang tải danh sách chi nhánh --</option>
-                        </select>
+                    <!-- Filter Bar -->
+                    <div class="row mb-4 p-4 bg-light rounded shadow-sm">
+                        <div class="col-md-10 mb-3 mb-md-0">
+                            <label for="branchSelect" class="form-label fw-bold">Chọn Rạp</label>
+                            <select id="branchSelect" class="form-select form-select-lg">
+                                <option value="" disabled selected>-- Vui lòng chọn Rạp --</option>
+                                <c:forEach var="branch" items="${branches}">
+                                    <option value="${branch.branchId}">${branch.branchName}</option>
+                                </c:forEach>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button id="resetBtn" class="btn btn-outline-secondary w-100 btn-lg">Đặt lại</button>
+                        </div>
                     </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button id="resetBtn" class="btn btn-outline-secondary w-100 btn-lg">Đặt lại</button>
-                    </div>
-                </div>
 
-                <!-- Date Bar -->
-                <div id="dateBarContainer" style="display: none;">
-                    <h5 class="mb-3">Chọn ngày chiếu:</h5>
-                    <div class="date-bar" id="dateBar">
-                        <!-- Dates will be generated by JS -->
+                    <div id="dateBarContainer" style="display: none;">
+                        <h5 class="mb-3">Chọn ngày chiếu:</h5>
+                        <div class="date-bar" id="dateBar">
+                            <c:forEach var="date" items="${dates}" varStatus="status">
+                                <div class="date-item ${status.index == 0 ? 'active' : ''}"
+                                    data-date="${date.fullDate}">
+                                    <div class="day-name">${date.dayName}</div>
+                                    <div class="date-val">${date.dayStr}</div>
+                                </div>
+                            </c:forEach>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Showtimes Grid -->
-                <div id="showtimesGrid">
-                    <div class="text-center p-5 bg-light rounded">
-                        <i class="fa fa-film fa-3x text-muted mb-3"></i>
-                        <h4>Vui lòng chọn khu vực và rạp để xem lịch chiếu</h4>
+                    <div id="showtimesGrid">
+                        <div class="text-center p-5 bg-light rounded">
+                            <i class="fa fa-film fa-3x text-muted mb-3"></i>
+                            <h4>Vui lòng chọn rạp để xem lịch chiếu</h4>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <jsp:include page="/components/layout/Footer.jsp" />
+            <jsp:include page="/components/layout/Footer.jsp" />
 
-        <script>
-            $(document).ready(function () {
-                // Init Date Bar
-                generateDateBar();
+            <script>
+                $(document).ready(function () {
+                    $('#branchSelect').change(function () {
+                        $('#dateBarContainer').slideDown();
+                        loadSchedule();
+                    });
 
-                // Load branches (public) on page load
-                loadBranches();
+                    $('#resetBtn').click(function () {
+                        $('#branchSelect').val('');
+                        $('#dateBarContainer').slideUp();
+                        $('#showtimesGrid').html('<div class="text-center p-5 bg-light rounded"><i class="fa fa-film fa-3x text-muted mb-3"></i><h4>Vui lòng chọn rạp để xem lịch chiếu</h4></div>');
+                    });
 
-                // Branch Change Event
-                $('#branchSelect').change(function () {
-                    $('#dateBarContainer').slideDown();
-                    loadSchedule();
+                    $(document).on('click', '.date-item', function () {
+                        $('.date-item').removeClass('active');
+                        $(this).addClass('active');
+                        loadSchedule();
+                    });
                 });
 
-                // Reset Button
-                $('#resetBtn').click(function () {
-                    $('#branchSelect').val('');
-                    $('#dateBarContainer').slideUp();
-                    $('#showtimesGrid').html('<div class="text-center p-5 bg-light rounded"><i class="fa fa-film fa-3x text-muted mb-3"></i><h4>Vui lòng chọn khu vực và rạp để xem lịch chiếu</h4></div>');
-                });
+                function loadSchedule() {
+                    var branchId = $('#branchSelect').val();
+                    var date = $('.date-item.active').data('date');
 
-                // Date Click Event
-                $(document).on('click', '.date-item', function () {
-                    $('.date-item').removeClass('active');
-                    $(this).addClass('active');
-                    loadSchedule();
-                });
-            });
+                    if (!branchId || !date) return;
 
-            function generateDateBar() {
-                var days = ['CN', 'Hai', 'Ba', 'Tư', 'Năm', 'Sáu', 'Bảy'];
-                var today = new Date();
-                var html = '';
-
-                for (var i = 0; i < 7; i++) {
-                    var date = new Date(today);
-                    date.setDate(today.getDate() + i);
-
-                    var dayName = i === 0 ? 'Hôm nay' : (i === 1 ? 'Ngày mai' : 'Thứ ' + days[date.getDay()]);
-                    if (i > 1 && date.getDay() === 0) dayName = "Chủ Nhật";
-
-                    var dayStr = date.getDate().toString().padStart(2, '0') + '/' + (date.getMonth() + 1).toString().padStart(2, '0');
-                    var fullDate = date.getFullYear() + '-' + (date.getMonth() + 1).toString().padStart(2, '0') + '-' + date.getDate().toString().padStart(2, '0');
-
-                    var activeClass = i === 0 ? 'active' : '';
-
-                    html += '<div class="date-item ' + activeClass + '" data-date="' + fullDate + '">';
-                    html += '<div class="day-name">' + dayName + '</div>';
-                    html += '<div class="date-val">' + dayStr + '</div>';
-                    html += '</div>';
-                }
-                $('#dateBar').html(html);
-            }
-
-            function loadBranches() {
-                $('#branchSelect').prop('disabled', true).html('<option value="">Đang tải...</option>');
-
-                $.ajax({
-                    url: '${pageContext.request.contextPath}/showtimes',
-                    type: 'GET',
-                    data: { action: 'get_branches' },
-                    dataType: 'json',
-                    success: function (branches) {
-                        var options = '<option value="" disabled selected>-- Chọn Rạp / Chi nhánh --</option>';
-                        if (branches.length > 0) {
-                            $.each(branches, function (i, branch) {
-                                options += '<option value="' + branch.branchId + '">' + branch.branchName + '</option>';
-                            });
-                            $('#branchSelect').prop('disabled', false).html(options);
-                        } else {
-                            $('#branchSelect').prop('disabled', true).html('<option value="">Không tìm thấy chi nhánh nào</option>');
+                    $.ajax({
+                        url: '${pageContext.request.contextPath}/showtimes',
+                        type: 'GET',
+                        data: { branchId: branchId, date: date },
+                        success: function (htmlResponse) {
+                            $('#showtimesGrid').html(htmlResponse);
                         }
-                    },
-                    error: function () {
-                        alert('Lỗi khi tải danh sách chi nhánh');
-                        $('#branchSelect').html('<option value="" disabled selected>Lỗi tải dữ liệu</option>');
-                    }
-                });
-            }
+                    });
+                }
+            </script>
 
-            function loadSchedule() {
-                var branchId = $('#branchSelect').val();
-                var date = $('.date-item.active').data('date');
+        </body>
 
-                if (!branchId || !date) return;
-
-                $('#showtimesGrid').html('<div class="loading-spinner"><i class="fa fa-spinner fa-spin fa-2x"></i><p>Đang tải lịch chiếu...</p></div>');
-
-                $.ajax({
-                    url: '${pageContext.request.contextPath}/showtimes',
-                    type: 'GET',
-                    data: { action: 'get_schedule', branchId: branchId, date: date },
-                    success: function (htmlResponse) {
-                        $('#showtimesGrid').html(htmlResponse);
-                    },
-                    error: function () {
-                        $('#showtimesGrid').html('<div class="alert alert-danger">Lỗi khi tải lịch chiếu. Vui lòng thử lại sau.</div>');
-                    }
-                });
-            }
-        </script>
-
-    </body>
-
-    </html>
+        </html>

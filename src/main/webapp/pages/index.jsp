@@ -155,7 +155,7 @@
                             <div class="movie-info">
                                 <div class="movie-title" title="${m.title}">${m.title}</div>
                                 <div class="movie-rating">
-                                    <i class="fa fa-star"></i> ${m.rating}/10
+                                    <i class="fa fa-star"></i> ${m.rating}/5
                                 </div>
                             </div>
                         </div>
