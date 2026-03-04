@@ -99,11 +99,8 @@
                 <div class="mb-4">
                     <h5 class="mb-3">Phương thức thanh toán</h5>
                     <div class="d-flex gap-3">
-                        <button type="button" class="btn btn-outline-light flex-fill" id="btnCod">
-                            Thanh toán tại quầy
-                        </button>
                         <button type="button" class="btn btn-outline-light flex-fill" id="btnOnline">
-                            Thanh toán online (demo)
+                            Thanh toán online
                         </button>
                     </div>
                 </div>
