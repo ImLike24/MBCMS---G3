@@ -14,7 +14,9 @@ import repositories.Showtimes;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet(name = "ShowtimesListForChosenMovie", urlPatterns = {"/customer/booking-showtimes"})
 public class BookingShowtimes extends HttpServlet {
@@ -97,6 +99,20 @@ public class BookingShowtimes extends HttpServlet {
             // Lấy danh sách suất chiếu theo ngày đã chọn
             List<Showtime> showtimes = showtimesRepo.getShowtimesForMovieOnDate(movieId, selectedDate);
 
+            // Giống CounterBooking: tính số ghế còn lại / tổng ghế cho từng suất chiếu
+            Map<Integer, Integer> availableSeatsMap = new HashMap<>();
+            Map<Integer, Integer> totalSeatsMap = new HashMap<>();
+            for (Showtime st : showtimes) {
+                int stId = st.getShowtimeId();
+                int available = showtimesRepo.countAvailableSeats(stId);
+                availableSeatsMap.put(stId, available);
+
+                Map<String, Object> details = showtimesRepo.getShowtimeDetails(stId);
+                if (details.containsKey("totalSeats")) {
+                    totalSeatsMap.put(stId, (Integer) details.get("totalSeats"));
+                }
+            }
+
             // Tạo danh sách các ngày (ví dụ: hôm nay + 6 ngày tới) để user chọn nhanh
             List<LocalDate> dateList = new ArrayList<>();
             for (int i = 0; i < 7; i++) {
@@ -106,6 +122,8 @@ public class BookingShowtimes extends HttpServlet {
             // Gửi dữ liệu sang JSP
             request.setAttribute("movie", movie);
             request.setAttribute("showtimes", showtimes);
+            request.setAttribute("availableSeatsMap", availableSeatsMap);
+            request.setAttribute("totalSeatsMap", totalSeatsMap);
             request.setAttribute("selectedDate", selectedDate);
             request.setAttribute("today", today);
             request.setAttribute("dateList", dateList);
