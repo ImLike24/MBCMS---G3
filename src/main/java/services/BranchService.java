@@ -1,11 +1,11 @@
 package services;
 
+import java.util.List;
+
 import models.CinemaBranch;
 import models.User;
 import repositories.CinemaBranches;
 import repositories.Users;
-
-import java.util.List;
 
 public class BranchService {
     private final CinemaBranches branchDao = new CinemaBranches();
