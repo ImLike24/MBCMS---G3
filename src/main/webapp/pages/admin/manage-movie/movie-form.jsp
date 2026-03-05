@@ -57,18 +57,20 @@
         </div>
 
         <!-- Đánh giá -->
-        <div class="col-md-4">
-            <label class="form-label">Đánh giá (0-5) <span class="text-danger">*</span></label>
-            <input type="number" step="0.1" class="form-control" name="rating"
-                   value="${movie.rating != null ? movie.rating : '0.0'}"
-                   min="0" max="5"
-                   required
-                   oninput="if(Number(this.value) > 5) this.value = 5;
-                            if(Number(this.value) < 0) this.value = 0;"
-                   placeholder="Ví dụ: 2.5">
-            <div class="invalid-feedback">Đánh giá phải từ 0.0 đến 5.0</div>
-        </div>
-
+        <c:if test="${mode == 'add'}">
+            <div class="col-md-4">
+                <label class="form-label">Đánh giá (0-5) <span class="text-danger">*</span></label>
+                <input type="number" step="0.1" class="form-control" name="rating"
+                       value="${movie.rating != null ? movie.rating : '0.0'}"
+                       min="0" max="5"
+                       required
+                       oninput="if(Number(this.value) > 5) this.value = 5;
+                                if(Number(this.value) < 0) this.value = 0;"
+                       placeholder="Ví dụ: 2.5">
+                <div class="invalid-feedback">Đánh giá phải từ 0.0 đến 5.0</div>
+            </div>
+        </c:if>
+        
         <!-- Độ tuổi -->
         <div class="col-md-4">
             <label class="form-label">Độ tuổi</label>
