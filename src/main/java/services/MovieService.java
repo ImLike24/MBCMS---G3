@@ -21,7 +21,7 @@ public class MovieService {
         if (movie == null) return "Dữ liệu phim không hợp lệ";
         if (movie.getTitle() == null || movie.getTitle().trim().isEmpty()) return "Tên phim không được để trống";
         if (movie.getDuration() <= 0) return "Thời lượng phải lớn hơn 0 phút";
-        if (movie.getRating() < 0 || movie.getRating() > 10) return "Đánh giá phải từ 0.0 đến 10.0";
+        if (movie.getRating() < 0 || movie.getRating() > 5) return "Đánh giá phải từ 0.0 đến 5";
         if (genreIds == null || genreIds.isEmpty()) return "Vui lòng chọn ít nhất một thể loại";
 
         try {
