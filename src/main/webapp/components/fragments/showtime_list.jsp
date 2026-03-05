@@ -28,7 +28,10 @@
                                     <c:forEach var="st" items="${movie.showtimes}">
                                         <c:set var="timeStr" value="${st.startTime.toString().substring(0, 5)}" />
                                         <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=${st.showtimeId}"
-                                            class="showtime-btn">${timeStr}</a>
+                                           class="showtime-btn"
+                                           data-start-datetime="${st.showDate}T${st.startTime}">
+                                            ${timeStr}
+                                        </a>
                                     </c:forEach>
                                 </c:when>
                                 <c:otherwise>
@@ -39,3 +42,23 @@
                     </div>
                 </div>
             </c:forEach>
+
+            <script>
+                // Chặn chọn suất chiếu đã qua thời gian chiếu (client-side)
+                document.addEventListener('click', function (e) {
+                    const btn = e.target.closest('.showtime-btn');
+                    if (!btn) return;
+
+                    const dtStr = btn.getAttribute('data-start-datetime');
+                    if (!dtStr) return;
+
+                    const startTime = new Date(dtStr);
+                    if (isNaN(startTime.getTime())) return;
+
+                    const now = new Date();
+                    if (startTime <= now) {
+                        e.preventDefault();
+                        alert('Đã qua thời gian chiếu phim');
+                    }
+                });
+            </script>

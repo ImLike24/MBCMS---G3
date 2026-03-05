@@ -1,21 +1,21 @@
 package controllers;
 
-import models.CinemaBranch;
-import models.Movie;
-import repositories.CinemaBranches;
-import repositories.Showtimes;
-
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import models.CinemaBranch;
+import models.Movie;
+import repositories.CinemaBranches;
+import repositories.Showtimes;
 
 @WebServlet(name = "ShowtimeList", urlPatterns = { "/showtimes" })
 public class ShowtimesServlet extends HttpServlet {

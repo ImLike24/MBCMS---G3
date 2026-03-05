@@ -35,10 +35,6 @@
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="row mb-3">
-                <div class="col-md-3 fw-bold">ID:</div>
-                <div class="col-md-9">${genre.genreId}</div>
-            </div>
-            <div class="row mb-3">
                 <div class="col-md-3 fw-bold">Tên thể loại:</div>
                 <div class="col-md-9">${genre.genreName}</div>
             </div>
