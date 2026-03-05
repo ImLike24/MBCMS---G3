@@ -255,30 +255,25 @@
             .forEach(seat => {
                 const adultActiveClass = seat.ticketType === 'CHILD' ? '' : 'active';
                 const childActiveClass = seat.ticketType === 'CHILD' ? 'active' : '';
+                const seatTypeClass = seat.seatType ? seat.seatType.toLowerCase() : '';
+                const seatTypeLabel = seat.seatType || 'NORMAL';
 
                 const item = document.createElement('div');
                 item.className = 'selected-seat-item';
-                item.innerHTML = `
-                    <div class="seat-item-header">
-                        <span class="seat-code">${seat.seatCode}</span>
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <span class="seat-type-badge ${seat.seatType ? seat.seatType.toLowerCase() : ''}">${seat.seatType || ''}</span>
-                            <button class="btn-remove-seat" type="button" title="Bỏ ghế" onclick="removeSeat(${seat.seatId})">
-                                <i class="fa fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="ticket-type-selector">
-                        <button type="button" class="ticket-type-btn ${adultActiveClass}"
-                                onclick="setTicketType(${seat.seatId}, 'ADULT')">
-                            <i class="fa fa-user"></i> Người lớn
-                        </button>
-                        <button type="button" class="ticket-type-btn ${childActiveClass}"
-                                onclick="setTicketType(${seat.seatId}, 'CHILD')">
-                            <i class="fa fa-child"></i> Trẻ em
-                        </button>
-                    </div>
-                `;
+                item.innerHTML =
+                    '<div class="seat-item-header">' +
+                    '<span class="seat-code">' + (seat.seatCode || '') + '</span>' +
+                    '<div style="display:flex;align-items:center;gap:10px;">' +
+                    '<span class="seat-type-badge ' + seatTypeClass + '">' + seatTypeLabel + '</span>' +
+                    '<button class="btn-remove-seat" type="button" title="Bỏ ghế" onclick="removeSeat(' + seat.seatId + ')">' +
+                    '<i class="fa fa-times"></i></button>' +
+                    '</div></div>' +
+                    '<div class="ticket-type-selector">' +
+                    '<button type="button" class="ticket-type-btn ' + adultActiveClass + '" onclick="setTicketType(' + seat.seatId + ', \'ADULT\')">' +
+                    '<i class="fa fa-user"></i> Người lớn</button>' +
+                    '<button type="button" class="ticket-type-btn ' + childActiveClass + '" onclick="setTicketType(' + seat.seatId + ', \'CHILD\')">' +
+                    '<i class="fa fa-child"></i> Trẻ em</button>' +
+                    '</div>';
                 listContainer.appendChild(item);
             });
 
@@ -288,7 +283,7 @@
             const rate = surchargeRates[seat.seatType];
             if (rate != null && rate > 0) price *= (1 + rate / 100);
             if (seat.ticketType === 'CHILD') {
-                price *= 0.7; // giảm 30% cho vé trẻ em
+                price *= 0.7; // giam 30% ve cho CHILD
             }
             seat.price = price;
             total += price;
@@ -365,4 +360,3 @@
 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

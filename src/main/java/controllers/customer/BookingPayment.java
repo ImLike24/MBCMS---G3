@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import models.User;
+import models.Showtime;
 import models.OnlineTicket;
 
 // repositories
@@ -28,6 +29,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.BufferedReader;
 
 import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,6 +86,15 @@ public class BookingPayment extends HttpServlet {
             request.setAttribute("showtimeId", showtimeId);
             request.setAttribute("movieTitle", showtimeDetails.get("movieTitle"));
             request.setAttribute("branchName", showtimeDetails.get("branchName"));
+            Showtime st = (Showtime) showtimeDetails.get("showtime");
+            if (st != null) {
+                if (st.getShowDate() != null) {
+                    request.setAttribute("showDateFormatted", st.getShowDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                }
+                if (st.getStartTime() != null) {
+                    request.setAttribute("showTimeFormatted", st.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
+                }
+            }
             request.getRequestDispatcher("/pages/customer/booking-payment.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
@@ -152,7 +163,7 @@ public class BookingPayment extends HttpServlet {
                 return;
             }
 
-            // Only ONLINE payment for customer
+            // onlinePayment - customer
             String paymentMethod = "BANKING";
 
             bookingsRepo = new Bookings();

@@ -51,10 +51,10 @@ public class Bookings {
                 INSERT INTO bookings
                 (user_id, showtime_id, booking_code,
                  total_amount, discount_amount, final_amount,
-                 payment_method, payment_status, status)
+                 payment_method, payment_status, status, payment_time)
                 VALUES (?, ?, ?,
                         0, 0, 0,
-                        ?, 'PAID', 'CONFIRMED')
+                        ?, 'PAID', 'CONFIRMED', SYSDATETIME())
                 """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {

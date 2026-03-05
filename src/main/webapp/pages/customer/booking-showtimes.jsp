@@ -251,7 +251,7 @@
 
 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Chặn chọn suất chiếu đã qua thời gian chiếu (client-side) ở trang booking-showtimes
+    // Chan viec chon suat chieu da qua thoi gian chieu
     document.addEventListener('click', function (e) {
         const btn = e.target.closest('.btn-select-showtime');
         if (!btn) return;
