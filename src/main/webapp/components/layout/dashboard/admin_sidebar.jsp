@@ -28,12 +28,12 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/manage-movie" class="nav-link">
+            <a href="${pageContext.request.contextPath}/admin/movies" class="nav-link">
                 <i class="fa fa-film me-3"></i>Quản lý Phim
             </a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="${pageContext.request.contextPath}/admin/manage-genres" class="nav-link">
                 <i class="fa fa-tags me-3"></i>Quản lý thể loại
             </a>
         </li>

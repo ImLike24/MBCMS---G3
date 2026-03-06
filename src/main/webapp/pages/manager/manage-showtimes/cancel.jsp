@@ -167,9 +167,9 @@
                                                                         </c:otherwise>
                                                                     </c:choose>
                                                                 </td>
-                                                                <td class="text-end fw-semibold">
+                                                                <td class="text-end fw-semibold" data-amount="${b.finalAmount}">
                                                                     <fmt:formatNumber value="${b.finalAmount}"
-                                                                        type="number" groupingUsed="true" /> ₫
+                                                                        type="number" groupingUsed="true" maxFractionDigits="0" minFractionDigits="0" /> ₫
                                                                 </td>
                                                                 <td>
                                                                     <c:choose>
@@ -333,17 +333,18 @@
                     check.addEventListener('change', toggleBtn);
                     reason.addEventListener('input', toggleBtn);
 
-                    // Compute total refund from table
+                    // Compute total refund from table using data-amount attribute (raw number, no locale issues)
                     let total = 0;
                     document.querySelectorAll('tbody tr').forEach(row => {
                         const amtCell = row.cells[3];
                         if (amtCell) {
-                            const txt = amtCell.textContent.replace(/[^0-9]/g, '');
-                            total += parseInt(txt) || 0;
+                            const raw = amtCell.getAttribute('data-amount');
+                            const val = raw ? parseFloat(raw) : 0;
+                            if (!isNaN(val)) total += val;
                         }
                     });
                     document.getElementById('totalRefundDisplay').textContent =
-                        total > 0 ? total.toLocaleString('vi-VN') + ' ₫' : '0 ₫ (không có vé)';
+                        total > 0 ? Math.round(total).toLocaleString('vi-VN') + ' ₫' : '0 ₫ (không có vé)';
                 </script>
             </body>
 

@@ -28,6 +28,9 @@ public class Movie {
 
     // For Showtimes view
     private java.util.List<Showtime> showtimes = new java.util.ArrayList<>();
+    
+    // For counter booking - indicates if movie has showtimes on selected date
+    private boolean hasShowtimesToday = false;
 
     public String getReleaseDateFormatted() {
         if (releaseDate == null)

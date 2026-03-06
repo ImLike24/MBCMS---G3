@@ -93,8 +93,20 @@
             <form class="search-filter-form" id="filterForm" method="get" action="${pageContext.request.contextPath}/staff/counter-booking">
                 <div class="form-group">
                     <label for="dateSelect"><i class="fas fa-calendar-day"></i> Date</label>
-                    <input type="date" id="dateSelect" value="${selectedDate}" 
-                           min="${today}" onchange="changeDate(this.value)" name="date">
+                    <input type="date" id="dateSelect" value="" 
+                           min="${today}" onchange="changeDate(this.value)" name="date" autocomplete="off">
+                    <c:choose>
+                        <c:when test="${showAllMovies}">
+                        <script>
+                            document.getElementById('dateSelect').value = '';
+                        </script>
+                        </c:when>
+                        <c:when test="${!showAllMovies && selectedDate != null}">
+                        <script>
+                            document.getElementById('dateSelect').value = '${selectedDate}';
+                        </script>
+                        </c:when>
+                    </c:choose>
                 </div>
                 
                 <div class="form-group" style="flex: 2;">
@@ -143,6 +155,12 @@
                     <c:if test="${not empty searchQuery}">
                         for "<strong>${searchQuery}</strong>"
                     </c:if>
+                    <c:if test="${showAllMovies}">
+                        <span style="color: #d96c2c;"> (All Movies)</span>
+                    </c:if>
+                    <c:if test="${!showAllMovies && selectedDate != null}">
+                        <span style="color: #d96c2c;"> (Date: ${selectedDate})</span>
+                    </c:if>
                 </span>
                 <span>Page ${currentPage} of ${totalPages}</span>
             </div>
@@ -178,12 +196,27 @@
                                 </div>
                                 
                                 <span class="movie-genre">${movie.genre}</span>
+                                <c:if test="${showAllMovies && !movie.hasShowtimesToday}">
+                                    <span class="movie-badge">
+                                        <i class="fas fa-info-circle"></i>
+                                        No showtimes today
+                                    </span>
+                                </c:if>
                                 
                                 <div class="movie-actions">
-                                    <a href="${pageContext.request.contextPath}/staff/counter-booking-showtimes?movieId=${movie.movieId}&date=${selectedDate}" 
-                                       class="btn-select-movie">
-                                        <i class="fas fa-arrow-right"></i> Select Showtime
-                                    </a>
+                                    <c:choose>
+                                        <c:when test="${selectedDate != null}">
+                                            <a href="${pageContext.request.contextPath}/staff/counter-booking-showtimes?movieId=${movie.movieId}&date=${selectedDate}" 
+                                               class="btn-select-movie">
+                                                <i class="fas fa-arrow-right"></i> Select Showtime
+                                            </a>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <button class="btn-select-movie" onclick="alert('Please select a date first'); document.getElementById('dateSelect').focus();">
+                                                <i class="fas fa-arrow-right"></i> Select Showtime
+                                            </button>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
                         </div>
@@ -199,14 +232,20 @@
                             <c:when test="${not empty searchQuery || not empty selectedGenre || not empty selectedAgeRating}">
                                 No movies match your search criteria. Try adjusting your filters.
                             </c:when>
+                            <c:when test="${showAllMovies}">
+                                There are no active movies in the system.
+                            </c:when>
+                            <c:when test="${selectedDate != null}">
+                                There are no movies showing on ${selectedDate}. Please select another date.
+                            </c:when>
                             <c:otherwise>
-                                There are no movies showing on this date. Please select another date.
+                                There are no movies available.
                             </c:otherwise>
                         </c:choose>
                     </p>
-                    <c:if test="${not empty searchQuery || not empty selectedGenre || not empty selectedAgeRating}">
-                        <button class="reset-btn" onclick="resetFilters()" style="margin-top: 20px;">
-                            <i class="fas fa-redo"></i> Reset Filters
+                    <c:if test="${not empty searchQuery || not empty selectedGenre || not empty selectedAgeRating || showAllMovies}">
+                        <button class="reset-btn" onclick="window.location.href='${pageContext.request.contextPath}/staff/counter-booking'" style="margin-top: 20px;">
+                            <i class="fas fa-calendar-day"></i> Show Today's Movies
                         </button>
                     </c:if>
                 </div>
@@ -215,11 +254,18 @@
 
         <!-- Pagination -->
         <c:if test="${totalPages > 1}">
+            <c:set var="baseUrl" value="${pageContext.request.contextPath}/staff/counter-booking?" />
+            <c:set var="resetParam" value="${showAllMovies ? 'reset=true&' : ''}" />
+            <c:set var="dateParam" value="${!showAllMovies && selectedDate != null ? 'date='.concat(selectedDate).concat('&') : ''}" />
+            <c:set var="searchParam" value="${not empty searchQuery ? 'search='.concat(searchQuery).concat('&') : ''}" />
+            <c:set var="genreParam" value="${not empty selectedGenre ? 'genre='.concat(selectedGenre).concat('&') : ''}" />
+            <c:set var="ageRatingParam" value="${not empty selectedAgeRating ? 'ageRating='.concat(selectedAgeRating).concat('&') : ''}" />
+            
             <div class="pagination-section">
                 <!-- Previous Button -->
                 <c:choose>
                     <c:when test="${currentPage > 1}">
-                        <a href="${pageContext.request.contextPath}/staff/counter-booking?date=${selectedDate}&page=${currentPage - 1}&search=${searchQuery}&genre=${selectedGenre}&ageRating=${selectedAgeRating}" 
+                        <a href="${baseUrl}${resetParam}${dateParam}${searchParam}${genreParam}${ageRatingParam}page=${currentPage - 1}" 
                            class="pagination-btn">
                             <i class="fas fa-chevron-left"></i> Prev
                         </a>
@@ -239,7 +285,7 @@
                 </c:if>
 
                 <c:if test="${startPage > 1}">
-                    <a href="${pageContext.request.contextPath}/staff/counter-booking?date=${selectedDate}&page=1&search=${searchQuery}&genre=${selectedGenre}&ageRating=${selectedAgeRating}" 
+                    <a href="${baseUrl}${resetParam}${dateParam}${searchParam}${genreParam}${ageRatingParam}page=1" 
                        class="pagination-btn">1</a>
                     <c:if test="${startPage > 2}">
                         <span class="pagination-info">...</span>
@@ -252,7 +298,7 @@
                             <span class="pagination-btn active">${i}</span>
                         </c:when>
                         <c:otherwise>
-                            <a href="${pageContext.request.contextPath}/staff/counter-booking?date=${selectedDate}&page=${i}&search=${searchQuery}&genre=${selectedGenre}&ageRating=${selectedAgeRating}" 
+                            <a href="${baseUrl}${resetParam}${dateParam}${searchParam}${genreParam}${ageRatingParam}page=${i}" 
                                class="pagination-btn">${i}</a>
                         </c:otherwise>
                     </c:choose>
@@ -262,14 +308,14 @@
                     <c:if test="${endPage < totalPages - 1}">
                         <span class="pagination-info">...</span>
                     </c:if>
-                    <a href="${pageContext.request.contextPath}/staff/counter-booking?date=${selectedDate}&page=${totalPages}&search=${searchQuery}&genre=${selectedGenre}&ageRating=${selectedAgeRating}" 
+                    <a href="${baseUrl}${resetParam}${dateParam}${searchParam}${genreParam}${ageRatingParam}page=${totalPages}" 
                        class="pagination-btn">${totalPages}</a>
                 </c:if>
 
                 <!-- Next Button -->
                 <c:choose>
                     <c:when test="${currentPage < totalPages}">
-                        <a href="${pageContext.request.contextPath}/staff/counter-booking?date=${selectedDate}&page=${currentPage + 1}&search=${searchQuery}&genre=${selectedGenre}&ageRating=${selectedAgeRating}" 
+                        <a href="${baseUrl}${resetParam}${dateParam}${searchParam}${genreParam}${ageRatingParam}page=${currentPage + 1}" 
                            class="pagination-btn">
                             Next <i class="fas fa-chevron-right"></i>
                         </a>
@@ -312,10 +358,9 @@
             window.location.href = url;
         }
 
-        // Reset all filters
+        // Reset all filters including date - show ALL movies
         function resetFilters() {
-            const date = document.getElementById('dateSelect').value;
-            window.location.href = '${pageContext.request.contextPath}/staff/counter-booking?date=' + date;
+            window.location.href = '${pageContext.request.contextPath}/staff/counter-booking?reset=true';
         }
 
         // Submit form on filter change (optional - for instant filter)

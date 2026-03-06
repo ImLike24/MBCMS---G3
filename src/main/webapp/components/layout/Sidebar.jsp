@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
     <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h3>Menu</h3>
@@ -56,6 +57,21 @@
 
             .sidebar.open {
                 left: 0;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+                transition: opacity 0.3s ease;
+            }
+            .sidebar-overlay.show {
+                display: block;
             }
 
             .sidebar-header {
@@ -123,6 +139,10 @@
         <script>
             function toggleSidebar() {
                 const sidebar = document.getElementById('sidebar');
-                sidebar.classList.toggle('open');
+                var overlay = document.getElementById('sidebarOverlay');
+                if(sidebar && overlay){
+                    sidebar.classList.toggle('open');
+                    overlay.classList.toggle('show', sidebar.classList.contains('open'));
+                }
             }
         </script>

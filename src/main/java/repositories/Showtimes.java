@@ -14,9 +14,7 @@ import java.util.Map;
 
 public class Showtimes extends DBContext {
 
-    /**
-     * Get showtimes for a specific movie on a specific date
-     */
+    
     public List<Showtime> getShowtimesForMovieOnDate(int movieId, LocalDate date) {
         List<Showtime> showtimes = new ArrayList<>();
         String sql = "SELECT * FROM showtimes " +
@@ -39,9 +37,7 @@ public class Showtimes extends DBContext {
         return showtimes;
     }
 
-    /**
-     * Get showtime by ID
-     */
+    
     public Showtime getShowtimeById(int showtimeId) {
         String sql = "SELECT * FROM showtimes WHERE showtime_id = ?";
 
@@ -322,12 +318,14 @@ public class Showtimes extends DBContext {
     public List<models.Movie> getMoviesWithShowtimes(int branchId, LocalDate date) {
         Map<Integer, models.Movie> movieMap = new java.util.LinkedHashMap<>();
 
-        String sql = "SELECT s.*, m.* " +
-                "FROM showtimes s " +
-                "JOIN movies m ON s.movie_id = m.movie_id " +
-                "JOIN screening_rooms r ON s.room_id = r.room_id " +
-                "WHERE r.branch_id = ? AND s.show_date = ? AND s.status IN ('SCHEDULED', 'ONGOING') " +
-                "ORDER BY m.title, s.start_time";
+        String sql =""" 
+                    SELECT s.*, m.* 
+                    FROM showtimes s 
+                    JOIN movies m ON s.movie_id = m.movie_id
+                    JOIN screening_rooms r ON s.room_id = r.room_id
+                    WHERE r.branch_id = ? AND s.show_date = ? AND s.status IN ('SCHEDULED', 'ONGOING') 
+                    ORDER BY s.start_time
+                    """;
 
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, branchId);
@@ -344,8 +342,6 @@ public class Showtimes extends DBContext {
                         movie.setDuration(rs.getInt("duration"));
                         movie.setRating(rs.getDouble("rating"));
                         movie.setAgeRating(rs.getString("age_rating"));
-
-                        // Use helper to fetch genres
                         movie.setGenres(getGenresByMovieId(movieId));
 
                         movieMap.put(movieId, movie);
@@ -726,10 +722,14 @@ public class Showtimes extends DBContext {
             autoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
 
-            // 1. Cancel the showtime itself
-            String cancelShowtime = "UPDATE showtimes SET status = 'CANCELLED' WHERE showtime_id = ?";
+            // 1. Cancel the showtime itself and store the cancellation reason
+            String safeReason = (reason != null && !reason.isBlank()) ? reason
+                    : "Suất chiếu bị huỷ bởi Branch Manager";
+            String cancelShowtime = "UPDATE showtimes SET status = 'CANCELLED',"
+                    + " cancellation_reason = ?, cancelled_at = GETDATE() WHERE showtime_id = ?";
             try (PreparedStatement ps = connection.prepareStatement(cancelShowtime)) {
-                ps.setInt(1, showtimeId);
+                ps.setString(1, safeReason);
+                ps.setInt(2, showtimeId);
                 if (ps.executeUpdate() == 0) {
                     connection.rollback();
                     result.put("errorMsg", "Suất chiếu không tồn tại hoặc đã bị huỷ.");
@@ -765,8 +765,6 @@ public class Showtimes extends DBContext {
             }
 
             if (onlineRefunds > 0) {
-                String safeReason = (reason != null && !reason.isBlank()) ? reason
-                        : "Suất chiếu bị huỷ bởi Branch Manager";
                 String updateBookings = """
                         UPDATE bookings
                         SET status = 'CANCELLED',
@@ -821,5 +819,268 @@ public class Showtimes extends DBContext {
             }
         }
         return result;
+    }
+
+    /**
+     * Get full detail of a CANCELLED showtime for review:
+     * - cancellationReason, cancelledAt (from bookings)
+     * - onlineTickets: bookingCode, customerName, customerEmail, seatCode,
+     * ticketType, seatType, price, paymentStatus
+     * - counterTickets: ticketCode, customerName, customerPhone, seatCode,
+     * ticketType, seatType, price, paymentMethod
+     * - counts and revenue totals
+     */
+    public Map<String, Object> getCancelledShowtimeDetail(int showtimeId) {
+        Map<String, Object> detail = new HashMap<>();
+        detail.put("cancellationReason", null);
+        detail.put("cancelledAt", null);
+
+        // --- Cancellation reason from showtimes (primary source) then bookings
+        // (fallback) ---
+        String reasonSql = """
+                SELECT cancellation_reason, cancelled_at
+                FROM showtimes
+                WHERE showtime_id = ?
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(reasonSql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String r = rs.getString("cancellation_reason");
+                    if (r != null && !r.isBlank()) {
+                        detail.put("cancellationReason", r);
+                        java.sql.Timestamp ts = rs.getTimestamp("cancelled_at");
+                        if (ts != null)
+                            detail.put("cancelledAt", ts.toLocalDateTime());
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            // showtimes may not have these columns yet — fallback to bookings
+            e.printStackTrace();
+        }
+        // Fallback: try bookings table if reason not found in showtimes
+        if (detail.get("cancellationReason") == null) {
+            String fallbackSql = """
+                    SELECT TOP 1 cancellation_reason, cancelled_at
+                    FROM bookings
+                    WHERE showtime_id = ? AND cancellation_reason IS NOT NULL
+                    ORDER BY cancelled_at DESC
+                    """;
+            try (PreparedStatement ps = connection.prepareStatement(fallbackSql)) {
+                ps.setInt(1, showtimeId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        detail.put("cancellationReason", rs.getString("cancellation_reason"));
+                        java.sql.Timestamp ts = rs.getTimestamp("cancelled_at");
+                        if (ts != null)
+                            detail.put("cancelledAt", ts.toLocalDateTime());
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // --- Online tickets ---
+        List<Map<String, Object>> onlineTickets = new ArrayList<>();
+        java.math.BigDecimal onlineRevenue = java.math.BigDecimal.ZERO;
+
+        String onlineSql = """
+                SELECT ot.e_ticket_code AS ticket_code,
+                       b.booking_code,
+                       COALESCE(u.fullName, 'N/A') AS customer_name,
+                       COALESCE(u.email, '')        AS customer_email,
+                       s.seat_code, ot.ticket_type, ot.seat_type, ot.price,
+                       b.payment_status
+                FROM online_tickets ot
+                JOIN bookings b ON ot.booking_id = b.booking_id
+                JOIN users u   ON b.user_id = u.user_id
+                JOIN seats s   ON ot.seat_id = s.seat_id
+                WHERE ot.showtime_id = ?
+                ORDER BY b.booking_code, s.seat_code
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(onlineSql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("ticketCode", rs.getString("ticket_code"));
+                    row.put("bookingCode", rs.getString("booking_code"));
+                    row.put("customerName", rs.getString("customer_name"));
+                    row.put("customerEmail", rs.getString("customer_email"));
+                    row.put("seatCode", rs.getString("seat_code"));
+                    row.put("ticketType", rs.getString("ticket_type"));
+                    row.put("seatType", rs.getString("seat_type"));
+                    row.put("price", rs.getBigDecimal("price"));
+                    row.put("paymentStatus", rs.getString("payment_status"));
+                    onlineTickets.add(row);
+                    java.math.BigDecimal p = rs.getBigDecimal("price");
+                    if (p != null)
+                        onlineRevenue = onlineRevenue.add(p);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // --- Counter tickets ---
+        List<Map<String, Object>> counterTickets = new ArrayList<>();
+        java.math.BigDecimal counterRevenue = java.math.BigDecimal.ZERO;
+
+        String counterSql = """
+                SELECT ct.ticket_code,
+                       COALESCE(ct.customer_name,  'Walk-in') AS customer_name,
+                       COALESCE(ct.customer_phone, '')         AS customer_phone,
+                       s.seat_code, ct.ticket_type, ct.seat_type, ct.price,
+                       ct.payment_method
+                FROM counter_tickets ct
+                JOIN seats s ON ct.seat_id = s.seat_id
+                WHERE ct.showtime_id = ?
+                ORDER BY s.seat_code
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(counterSql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("ticketCode", rs.getString("ticket_code"));
+                    row.put("customerName", rs.getString("customer_name"));
+                    row.put("customerPhone", rs.getString("customer_phone"));
+                    row.put("seatCode", rs.getString("seat_code"));
+                    row.put("ticketType", rs.getString("ticket_type"));
+                    row.put("seatType", rs.getString("seat_type"));
+                    row.put("price", rs.getBigDecimal("price"));
+                    row.put("paymentMethod", rs.getString("payment_method"));
+                    counterTickets.add(row);
+                    java.math.BigDecimal p = rs.getBigDecimal("price");
+                    if (p != null)
+                        counterRevenue = counterRevenue.add(p);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        detail.put("onlineTickets", onlineTickets);
+        detail.put("counterTickets", counterTickets);
+        detail.put("onlineCount", onlineTickets.size());
+        detail.put("counterCount", counterTickets.size());
+        detail.put("totalCount", onlineTickets.size() + counterTickets.size());
+        detail.put("onlineRevenue", onlineRevenue);
+        detail.put("counterRevenue", counterRevenue);
+        detail.put("totalRevenue", onlineRevenue.add(counterRevenue));
+        return detail;
+    }
+
+    /**
+     * Force-delete a CANCELLED showtime and all its associated data.
+     * Cascade order (to respect FK constraints):
+     * 1. NULL out invoice_items.online_ticket_id for tickets belonging to this
+     * showtime
+     * 2. NULL out invoice_items.counter_ticket_id for tickets belonging to this
+     * showtime
+     * 3. NULL out invoices.booking_id for bookings belonging to this showtime
+     * 4. DELETE online_tickets where showtime_id = ?
+     * 5. DELETE counter_tickets where showtime_id = ?
+     * 6. DELETE bookings where showtime_id = ?
+     * 7. DELETE showtimes where showtime_id = ? AND status = 'CANCELLED'
+     * Returns true on success, false on failure.
+     */
+    public boolean forceDeleteCancelledShowtime(int showtimeId) {
+        boolean autoCommit = true;
+        try {
+            autoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            // Step 1: Nullify invoice_items referencing online tickets of this showtime
+            String nullOnlineItems = """
+                    UPDATE invoice_items
+                    SET online_ticket_id = NULL
+                    WHERE online_ticket_id IN (
+                        SELECT ticket_id FROM online_tickets WHERE showtime_id = ?
+                    )
+                    """;
+            try (PreparedStatement ps = connection.prepareStatement(nullOnlineItems)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 2: Nullify invoice_items referencing counter tickets of this showtime
+            String nullCounterItems = """
+                    UPDATE invoice_items
+                    SET counter_ticket_id = NULL
+                    WHERE counter_ticket_id IN (
+                        SELECT ticket_id FROM counter_tickets WHERE showtime_id = ?
+                    )
+                    """;
+            try (PreparedStatement ps = connection.prepareStatement(nullCounterItems)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 3: Nullify invoices.booking_id for bookings of this showtime
+            String nullInvoiceBooking = """
+                    UPDATE invoices
+                    SET booking_id = NULL
+                    WHERE booking_id IN (
+                        SELECT booking_id FROM bookings WHERE showtime_id = ?
+                    )
+                    """;
+            try (PreparedStatement ps = connection.prepareStatement(nullInvoiceBooking)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 4: Delete online tickets
+            String delOnline = "DELETE FROM online_tickets WHERE showtime_id = ?";
+            try (PreparedStatement ps = connection.prepareStatement(delOnline)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 5: Delete counter tickets
+            String delCounter = "DELETE FROM counter_tickets WHERE showtime_id = ?";
+            try (PreparedStatement ps = connection.prepareStatement(delCounter)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 6: Delete bookings
+            String delBookings = "DELETE FROM bookings WHERE showtime_id = ?";
+            try (PreparedStatement ps = connection.prepareStatement(delBookings)) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // Step 7: Delete the showtime (only if CANCELLED)
+            String delShowtime = "DELETE FROM showtimes WHERE showtime_id = ? AND status = 'CANCELLED'";
+            try (PreparedStatement ps = connection.prepareStatement(delShowtime)) {
+                ps.setInt(1, showtimeId);
+                int rows = ps.executeUpdate();
+                if (rows == 0) {
+                    connection.rollback();
+                    return false;
+                }
+            }
+
+            connection.commit();
+            return true;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            try {
+                connection.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            return false;
+        } finally {
+            try {
+                connection.setAutoCommit(autoCommit);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

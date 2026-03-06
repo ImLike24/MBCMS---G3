@@ -6,9 +6,11 @@ import repositories.CinemaBranches;
 import repositories.Showtimes;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -25,49 +27,56 @@ public class ShowtimesServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String action = request.getParameter("action");
+        if (request.getParameter("branchId") == null || request.getParameter("date") == null) {
+            List<Map<String, String>> dates = new ArrayList<>();
+            LocalDate today = LocalDate.now();
+            String[] day = { "Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy" };
 
-        if (action == null) {
+            for (int i = 0; i < 7; i++) {
+                LocalDate date = today.plusDays(i);
+                Map<String, String> dateMap = new HashMap<>();
+
+                String dayName;
+                if (i == 0) {
+                    dayName = "Hôm nay";
+                } else if (i == 1) {
+                    dayName = "Ngày mai";
+                } else {
+                    int dayIndex = date.getDayOfWeek().getValue() % 7;
+                    dayName = day[dayIndex];
+                }
+
+                String dayStr = String.format("%02d/%02d", date.getDayOfMonth(), date.getMonthValue());
+                String fullDate = date.toString();
+
+                dateMap.put("dayName", dayName);
+                dateMap.put("dayStr", dayStr);
+                dateMap.put("fullDate", fullDate);
+                dates.add(dateMap);
+            }
+            request.setAttribute("dates", dates);
+
+            List<CinemaBranch> branches = cinemaBranches.getActiveBranches();
+            request.setAttribute("branches", branches);
+
             request.getRequestDispatcher("/pages/showtimes.jsp").forward(request, response);
             return;
         }
 
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        PrintWriter out = response.getWriter();
-
         try {
-            if ("get_branches".equals(action)) {
-                String city = request.getParameter("city");
-                List<CinemaBranch> branches = cinemaBranches.findByCity(city);
+            response.setContentType("text/html");
+            response.setCharacterEncoding("UTF-8");
+            try {
+                int branchId = Integer.parseInt(request.getParameter("branchId"));
+                String dateStr = request.getParameter("date");
+                LocalDate date = LocalDate.parse(dateStr);
 
-                StringBuilder json = new StringBuilder("[");
-                for (int i = 0; i < branches.size(); i++) {
-                    CinemaBranch b = branches.get(i);
-                    json.append("{");
-                    json.append("\"branchId\":").append(b.getBranchId()).append(",");
-                    json.append("\"branchName\":\"").append(b.getBranchName().replace("\"", "\\\"")).append("\"");
-                    json.append("}");
-                    if (i < branches.size() - 1) {
-                        json.append(",");
-                    }
-                }
-                json.append("]");
-                out.print(json.toString());
-            } else if ("get_schedule".equals(action)) {
-                try {
-                    int branchId = Integer.parseInt(request.getParameter("branchId"));
-                    String dateStr = request.getParameter("date");
-                    LocalDate date = LocalDate.parse(dateStr);
-
-                    List<Movie> movies = showtimes.getMoviesWithShowtimes(branchId, date);
-                    request.setAttribute("movies", movies);
-                    request.getRequestDispatcher("/components/fragments/showtime_list.jsp").forward(request, response);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    out.print("Invalid parameters");
-                }
+                List<Movie> movies = showtimes.getMoviesWithShowtimes(branchId, date);
+                request.setAttribute("movies", movies);
+                request.getRequestDispatcher("/components/fragments/showtime_list.jsp").forward(request, response);
+            } catch (Exception e) {
+                e.printStackTrace();
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             }
         } catch (Exception e) {
             e.printStackTrace();

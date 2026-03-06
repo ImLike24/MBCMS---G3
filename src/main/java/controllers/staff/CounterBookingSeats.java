@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -76,6 +77,18 @@ public class CounterBookingSeats extends HttpServlet {
             request.setAttribute("roomName", showtimeDetails.get("roomName"));
             request.setAttribute("totalSeats", showtimeDetails.get("totalSeats"));
             request.setAttribute("branchName", showtimeDetails.get("branchName"));
+
+            // Pre-format LocalTime / LocalDate so JSP EL can display them directly
+            if (showtime != null) {
+                if (showtime.getStartTime() != null) {
+                    request.setAttribute("formattedStartTime",
+                            showtime.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
+                }
+                if (showtime.getShowDate() != null) {
+                    request.setAttribute("formattedShowDate",
+                            showtime.getShowDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                }
+            }
             
             request.getRequestDispatcher("/pages/staff/counter-booking-seats.jsp").forward(request, response);
             
