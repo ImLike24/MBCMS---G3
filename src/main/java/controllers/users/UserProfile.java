@@ -8,7 +8,7 @@ import repositories.Users;
 import java.io.IOException;
 import utils.Password;
 
-@WebServlet(name = "UserProfile", urlPatterns = {"/profile"})
+@WebServlet(name = "UserProfile", urlPatterns = {"/customer/profile"})
 public class UserProfile extends HttpServlet {
 
     private final Users userRepo = new Users();

@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 public class TicketPrice {
     private Integer priceId;
     private Integer branchId;
-    private String seatType;     // COUPLE, VIP, NORMAL
     private String ticketType;   // CHILD, ADULT
     private String dayType;      // HOLIDAY, WEEKEND, WEEKDAY
     private String timeSlot;     // NIGHT, EVENING, AFTERNOON, MORNING

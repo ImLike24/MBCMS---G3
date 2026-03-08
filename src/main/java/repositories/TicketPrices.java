@@ -13,7 +13,6 @@ public class TicketPrices extends DBContext {
         TicketPrice p = new TicketPrice();
         p.setPriceId(rs.getInt("price_id"));
         p.setBranchId(rs.getInt("branch_id"));
-        p.setSeatType(rs.getString("seat_type"));
         p.setTicketType(rs.getString("ticket_type"));
         p.setDayType(rs.getString("day_type"));
         p.setTimeSlot(rs.getString("time_slot"));
@@ -43,7 +42,6 @@ public class TicketPrices extends DBContext {
         String sql = "INSERT INTO ticket_prices (branch_id, seat_type, ticket_type, day_type, time_slot, price, effective_from, effective_to, is_active) VALUES (?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, p.getBranchId());
-            st.setString(2, p.getSeatType());
             st.setString(3, p.getTicketType());
             st.setString(4, p.getDayType());
             st.setString(5, p.getTimeSlot());
@@ -65,7 +63,6 @@ public class TicketPrices extends DBContext {
 
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, p.getBranchId());
-            st.setString(2, p.getSeatType());
             st.setString(3, p.getTicketType());
             st.setString(4, p.getDayType());
             st.setString(5, p.getTimeSlot());
@@ -133,38 +130,30 @@ public class TicketPrices extends DBContext {
         List<Object> params = new ArrayList<>();
         params.add(branchId);
 
-        // Filter theo search (Loại ghế hoặc Loại khách)
         if (search != null && !search.trim().isEmpty()) {
-            sql.append(" AND (seat_type LIKE ? OR ticket_type LIKE ?)");
-            params.add("%" + search.trim() + "%");
+            // Chỉ còn search theo loại khách
+            sql.append(" AND ticket_type LIKE ?");
             params.add("%" + search.trim() + "%");
         }
-        // Filter theo Loại ngày
         if (dayType != null && !dayType.trim().isEmpty()) {
             sql.append(" AND day_type = ?");
             params.add(dayType);
         }
-        // Filter theo Trạng thái
         if (status != null && !status.trim().isEmpty()) {
             sql.append(" AND is_active = ?");
             params.add("ACTIVE".equalsIgnoreCase(status) ? 1 : 0);
         }
 
-        // Phân trang
         sql.append(" ORDER BY day_type, time_slot, ticket_type OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
         params.add((page - 1) * pageSize);
         params.add(pageSize);
 
         try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                st.setObject(i + 1, params.get(i));
-            }
+            for (int i = 0; i < params.size(); i++) st.setObject(i + 1, params.get(i));
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return list;
     }
 
@@ -175,8 +164,7 @@ public class TicketPrices extends DBContext {
         params.add(branchId);
 
         if (search != null && !search.trim().isEmpty()) {
-            sql.append(" AND (seat_type LIKE ? OR ticket_type LIKE ?)");
-            params.add("%" + search.trim() + "%");
+            sql.append(" AND ticket_type LIKE ?");
             params.add("%" + search.trim() + "%");
         }
         if (dayType != null && !dayType.trim().isEmpty()) {
@@ -189,15 +177,11 @@ public class TicketPrices extends DBContext {
         }
 
         try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                st.setObject(i + 1, params.get(i));
-            }
+            for (int i = 0; i < params.size(); i++) st.setObject(i + 1, params.get(i));
             try (ResultSet rs = st.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return 0;
     }
 }

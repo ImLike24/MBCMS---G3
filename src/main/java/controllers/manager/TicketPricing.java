@@ -101,6 +101,7 @@ public class TicketPricing extends HttpServlet {
         List<TicketPrice> prices = priceDao.getPricesWithFilterAndPagination(branchId, search, dayType, status, page, pageSize);
 
         request.setAttribute("prices", prices);
+
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
 
@@ -121,7 +122,6 @@ public class TicketPricing extends HttpServlet {
         try {
             TicketPrice p = new TicketPrice();
             p.setBranchId(selectedBranchId);
-            p.setSeatType(request.getParameter("seatType"));
             p.setTicketType(request.getParameter("ticketType"));
             p.setDayType(request.getParameter("dayType"));
             p.setTimeSlot(request.getParameter("timeSlot"));

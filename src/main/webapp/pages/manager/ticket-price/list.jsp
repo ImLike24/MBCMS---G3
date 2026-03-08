@@ -87,7 +87,7 @@
                         <thead>
                         <tr>
                             <th class="ps-4">Loại Ngày / Giờ</th>
-                            <th>Loại Khách / Ghế</th>
+                            <th>Loại Khách</th>
                             <th class="text-danger fw-bold">Giá (VNĐ)</th>
                             <th>Hiệu lực từ</th>
                             <th>Hiệu lực đến</th>
@@ -103,8 +103,7 @@
                                     <small class="text-muted"><i class="fa fa-clock-o me-1"></i>${p.timeSlot}</small>
                                 </td>
                                 <td>
-                                    <div><span class="badge bg-light text-dark border">${p.ticketType}</span></div>
-                                    <div class="mt-1"><span class="badge bg-secondary">${p.seatType}</span></div>
+                                    <span class="badge bg-light text-dark border">${p.ticketType}</span>
                                 </td>
                                 <td class="fw-bold fs-5" style="color: #d96c2c;">${p.price}</td>
                                 <td>${p.effectiveFrom}</td>

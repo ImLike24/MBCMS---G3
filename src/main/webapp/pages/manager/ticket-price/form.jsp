@@ -53,14 +53,6 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Loại Ghế <span class="text-danger">*</span></label>
-                            <select class="form-select" name="seatType" required ${disabledAttr}>
-                                <option value="NORMAL" ${priceObj.seatType == 'NORMAL' ? 'selected' : ''}>Ghế Thường (NORMAL)</option>
-                                <option value="VIP" ${priceObj.seatType == 'VIP' ? 'selected' : ''}>Ghế VIP (VIP)</option>
-                                <option value="COUPLE" ${priceObj.seatType == 'COUPLE' ? 'selected' : ''}>Ghế Đôi (COUPLE)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
                             <label class="form-label fw-bold">Loại Ngày <span class="text-danger">*</span></label>
                             <select class="form-select" name="dayType" required ${disabledAttr}>
                                 <option value="WEEKDAY" ${priceObj.dayType == 'WEEKDAY' ? 'selected' : ''}>Ngày thường (T2-T6)</option>
