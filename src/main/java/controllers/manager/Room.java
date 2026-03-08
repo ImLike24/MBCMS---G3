@@ -14,7 +14,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet(name = "ManagerRoomController", urlPatterns = { "/manager/rooms" })
+@WebServlet(name = "ManagerRoomController", urlPatterns = { "/branch-manager/rooms" })
 public class Room extends HttpServlet {
 
     private final RoomService roomService = new RoomService();
