@@ -36,7 +36,7 @@ public class EditTierServlet extends HttpServlet {
             }
 
             request.setAttribute("tier", tier);
-            request.getRequestDispatcher("/pages/admin/edit-tier.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/admin/manage-loyalty/edit-tier.jsp").forward(request, response);
 
         } catch (Exception e) {
             e.printStackTrace();

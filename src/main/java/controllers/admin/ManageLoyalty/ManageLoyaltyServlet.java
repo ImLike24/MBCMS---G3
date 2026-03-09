@@ -23,7 +23,7 @@ public class ManageLoyaltyServlet extends HttpServlet {
         LoyaltyConfig config = dao.getConfig();
 
         request.setAttribute("config", config);
-        request.getRequestDispatcher("/pages/admin/loyalty-config.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/admin/manage-loyalty/loyalty-config.jsp").forward(request, response);
     }
 
     @Override

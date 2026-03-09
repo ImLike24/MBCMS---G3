@@ -17,7 +17,7 @@ public class CreateTierServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getRequestDispatcher("/pages/admin/create-tier.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/admin/manage-loyalty/create-tier.jsp").forward(request, response);
     }
 
     @Override
