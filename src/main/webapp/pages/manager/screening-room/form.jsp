@@ -49,26 +49,21 @@
                     </div>
 
                     <div class="row g-4">
-                        <div class="col-12">
-                            <label class="form-label fw-bold">Tên Phòng <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" name="roomName"
-                                   value="${room.roomName}" required>
-                        </div>
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Tên Phòng <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-lg" name="roomName"
+                                       value="${room.roomName}" required placeholder="Ví dụ: Room 01">
+                            </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Số lượng ghế</label>
-                            <input type="number" class="form-control" name="totalSeats"
-                                   value="${room.totalSeats}" min="0" placeholder="0">
-                            <div class="form-text text-muted">Số ghế sẽ tự động cập nhật khi vẽ sơ đồ.</div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Trạng thái vận hành</label>
-                            <select class="form-select" name="status">
-                                <option value="ACTIVE" ${room.status == 'ACTIVE' ? 'selected' : ''}>ACTIVE (Hoạt động)</option>
-                                <option value="MAINTENANCE" ${room.status == 'MAINTENANCE' ? 'selected' : ''}>MAINTENANCE (Bảo trì)</option>
-                                <option value="CLOSED" ${room.status == 'CLOSED' ? 'selected' : ''}>CLOSED (Đóng cửa)</option>
-                            </select>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Trạng thái vận hành</label>
+                                <select class="form-select form-control-lg" name="status">
+                                    <option value="ACTIVE" ${room.status == 'ACTIVE' ? 'selected' : ''}>ACTIVE (Hoạt động)</option>
+                                    <option value="MAINTENANCE" ${room.status == 'MAINTENANCE' ? 'selected' : ''}>MAINTENANCE (Bảo trì)</option>
+                                    <option value="CLOSED" ${room.status == 'CLOSED' ? 'selected' : ''}>CLOSED (Đóng cửa)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -4,7 +4,7 @@ import models.CinemaBranch;
 import models.TicketPrice;
 import models.User;
 import repositories.CinemaBranches;
-import repositories.TicketPrices;
+import services.TicketPriceService; // IMPORT SERVICE MỚI
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -19,18 +19,22 @@ import java.util.List;
 @WebServlet(name = "TicketPricingController", urlPatterns = {"/manager/ticket-prices"})
 public class TicketPricing extends HttpServlet {
 
-    private final TicketPrices priceDao = new TicketPrices();
+    private final TicketPriceService priceService = new TicketPriceService();
     private final CinemaBranches branchDao = new CinemaBranches();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
         User user = (User) session.getAttribute("user");
-        if (user == null) return;
+        if (user == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
 
         List<CinemaBranch> managedBranches = branchDao.findListByManagerId(user.getUserId());
         if (managedBranches == null || managedBranches.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied."); return;
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập, hoặc chưa được gán quản lý chi nhánh nào.");
+            return;
         }
 
         Integer selectedBranchId = null;
@@ -58,19 +62,22 @@ public class TicketPricing extends HttpServlet {
                 case "view":
                 case "edit":
                     int id = Integer.parseInt(request.getParameter("id"));
-                    TicketPrice price = priceDao.findById(id);
+                    // GỌI SERVICE
+                    TicketPrice price = priceService.getPriceById(id);
                     request.setAttribute("priceObj", price);
-                    request.setAttribute("isViewMode", "view".equals(action)); // Phân biệt View và Edit
+                    request.setAttribute("isViewMode", "view".equals(action));
                     request.getRequestDispatcher("/pages/manager/ticket-price/form.jsp").forward(request, response);
                     break;
                 case "deactivate":
                     int deactId = Integer.parseInt(request.getParameter("id"));
-                    priceDao.deactivate(deactId);
+                    // GỌI SERVICE
+                    priceService.deactivateTicketPrice(deactId);
                     response.sendRedirect("ticket-prices?message=deactivated");
                     break;
                 case "delete":
                     int delId = Integer.parseInt(request.getParameter("id"));
-                    priceDao.delete(delId);
+                    // GỌI SERVICE
+                    priceService.deleteTicketPrice(delId);
                     response.sendRedirect("ticket-prices?message=deleted");
                     break;
                 default:
@@ -95,17 +102,15 @@ public class TicketPricing extends HttpServlet {
             page = Integer.parseInt(pageParam);
         }
 
-        int totalRecords = priceDao.countPricesWithFilter(branchId, search, dayType, status);
+        // GỌI SERVICE
+        int totalRecords = priceService.countPricesWithFilter(branchId, search, dayType, status);
         int totalPages = (int) Math.ceil((double) totalRecords / pageSize);
-
-        List<TicketPrice> prices = priceDao.getPricesWithFilterAndPagination(branchId, search, dayType, status, page, pageSize);
+        List<TicketPrice> prices = priceService.getPricesWithFilterAndPagination(branchId, search, dayType, status, page, pageSize);
 
         request.setAttribute("prices", prices);
-
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
 
-        // Gửi lại param để giữ trạng thái form
         request.setAttribute("searchQuery", search);
         request.setAttribute("dayTypeFilter", dayType);
         request.setAttribute("statusFilter", status);
@@ -132,20 +137,21 @@ public class TicketPricing extends HttpServlet {
             if(effTo != null && !effTo.isEmpty()) {
                 p.setEffectiveTo(LocalDate.parse(effTo));
             }
+
             p.setActive(request.getParameter("isActive") != null);
 
+            // GỌI SERVICE XỬ LÝ
             if ("create".equals(action)) {
-                priceDao.insert(p);
+                priceService.createTicketPrice(p);
                 response.sendRedirect("ticket-prices?message=created");
             } else if ("update".equals(action)) {
                 p.setPriceId(Integer.parseInt(request.getParameter("priceId")));
-                priceDao.update(p);
+                priceService.updateTicketPrice(p);
                 response.sendRedirect("ticket-prices?message=updated");
             }
-
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "Vui lòng kiểm tra lại định dạng dữ liệu (Giá tiền, Ngày tháng).");
+            request.setAttribute("error", e.getMessage());
             request.getRequestDispatcher("/pages/manager/ticket-price/form.jsp").forward(request, response);
         }
     }
