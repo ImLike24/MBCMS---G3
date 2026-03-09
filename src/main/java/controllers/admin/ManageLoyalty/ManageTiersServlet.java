@@ -20,7 +20,7 @@ public class ManageTiersServlet extends HttpServlet {
         MembershipTiers dao = new MembershipTiers();
         List<MembershipTier> tiers = dao.getAllTiers();
         request.setAttribute("tiers", tiers);
-        request.getRequestDispatcher("/pages/admin/manage-tiers.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/admin/manage-loyalty/manage-tiers.jsp").forward(request, response);
     }
 
     @Override

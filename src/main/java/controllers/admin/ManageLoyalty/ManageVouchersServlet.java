@@ -20,7 +20,7 @@ public class ManageVouchersServlet extends HttpServlet {
         Vouchers dao = new Vouchers();
         List<Voucher> vouchers = dao.getAllActiveVouchers();
         request.setAttribute("vouchers", vouchers);
-        request.getRequestDispatcher("/pages/admin/manage-vouchers.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/admin/manage-loyalty/manage-vouchers.jsp").forward(request, response);
     }
 
     @Override
