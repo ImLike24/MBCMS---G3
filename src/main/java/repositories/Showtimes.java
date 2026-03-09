@@ -431,12 +431,28 @@ public class Showtimes extends DBContext {
      * AND end_time <= now)
      */
     public void autoUpdateStatuses(int branchId) {
-        // Mark COMPLETED first (past showtimes)
-        String sqlCompleted = "UPDATE showtimes SET status = 'COMPLETED' " +
-                "WHERE status IN ('SCHEDULED','ONGOING') " +
-                "AND room_id IN (SELECT room_id FROM screening_rooms WHERE branch_id = ?) " +
-                "AND (show_date < CAST(GETDATE() AS DATE) " +
-                "     OR (show_date = CAST(GETDATE() AS DATE) AND end_time <= CAST(GETDATE() AS TIME)))";
+        // ── Mark COMPLETED ──────────────────────────────────────────────────
+        // Regular (end_time >= start_time): ends same calendar day
+        // Overnight (end_time < start_time): effective end is show_date + 1 day
+        // → only COMPLETED when show_date+1 has passed OR end_time has passed today
+        String sqlCompleted = """
+                UPDATE showtimes SET status = 'COMPLETED'
+                WHERE status IN ('SCHEDULED','ONGOING')
+                  AND room_id IN (SELECT room_id FROM screening_rooms WHERE branch_id = ?)
+                  AND (
+                      (end_time >= start_time AND (
+                          show_date < CAST(GETDATE() AS DATE)
+                          OR (show_date = CAST(GETDATE() AS DATE)
+                              AND end_time <= CAST(GETDATE() AS TIME))
+                      ))
+                      OR
+                      (end_time < start_time AND (
+                          DATEADD(day, 1, show_date) < CAST(GETDATE() AS DATE)
+                          OR (DATEADD(day, 1, show_date) = CAST(GETDATE() AS DATE)
+                              AND end_time <= CAST(GETDATE() AS TIME))
+                      ))
+                  )
+                """;
         try (PreparedStatement ps = connection.prepareStatement(sqlCompleted)) {
             ps.setInt(1, branchId);
             ps.executeUpdate();
@@ -444,13 +460,30 @@ public class Showtimes extends DBContext {
             e.printStackTrace();
         }
 
-        // Mark ONGOING (currently showing)
-        String sqlOngoing = "UPDATE showtimes SET status = 'ONGOING' " +
-                "WHERE status = 'SCHEDULED' " +
-                "AND room_id IN (SELECT room_id FROM screening_rooms WHERE branch_id = ?) " +
-                "AND show_date = CAST(GETDATE() AS DATE) " +
-                "AND start_time <= CAST(GETDATE() AS TIME) " +
-                "AND end_time > CAST(GETDATE() AS TIME)";
+        // ── Mark ONGOING ─────────────────────────────────────────────────────
+        // Regular: today, within start–end window
+        // Overnight case A: started today (start_time <= now, hasn't hit midnight yet)
+        // Overnight case B: started yesterday, still running past midnight (end_time >
+        // now)
+        String sqlOngoing = """
+                UPDATE showtimes SET status = 'ONGOING'
+                WHERE status = 'SCHEDULED'
+                  AND room_id IN (SELECT room_id FROM screening_rooms WHERE branch_id = ?)
+                  AND (
+                      (end_time >= start_time
+                       AND show_date = CAST(GETDATE() AS DATE)
+                       AND start_time <= CAST(GETDATE() AS TIME)
+                       AND end_time   >  CAST(GETDATE() AS TIME))
+                      OR
+                      (end_time < start_time
+                       AND show_date = CAST(GETDATE() AS DATE)
+                       AND start_time <= CAST(GETDATE() AS TIME))
+                      OR
+                      (end_time < start_time
+                       AND show_date = DATEADD(day, -1, CAST(GETDATE() AS DATE))
+                       AND end_time > CAST(GETDATE() AS TIME))
+                  )
+                """;
         try (PreparedStatement ps = connection.prepareStatement(sqlOngoing)) {
             ps.setInt(1, branchId);
             ps.executeUpdate();

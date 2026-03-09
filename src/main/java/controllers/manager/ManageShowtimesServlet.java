@@ -235,6 +235,10 @@ public class ManageShowtimesServlet extends HttpServlet {
             LocalTime start = LocalTime.parse(request.getParameter("startTime"));
             LocalTime end = LocalTime.parse(request.getParameter("endTime"));
             BigDecimal price = new BigDecimal(request.getParameter("basePrice"));
+            boolean overnight = "1".equals(request.getParameter("overnight"));
+
+            // If overnight, end is on the next calendar day
+            LocalDate endDate = overnight ? date.plusDays(1) : date;
 
             // Validate room belongs to this branch
             ScreeningRoom room = roomsDao.getRoomById(roomId);
@@ -244,8 +248,10 @@ public class ManageShowtimesServlet extends HttpServlet {
                 return;
             }
 
-            // Validate end > start
-            if (!end.isAfter(start)) {
+            // Validate end is after start (using LocalDateTime to handle overnight)
+            java.time.LocalDateTime startDT = java.time.LocalDateTime.of(date, start);
+            java.time.LocalDateTime endDT = java.time.LocalDateTime.of(endDate, end);
+            if (!endDT.isAfter(startDT)) {
                 forwardWithError(request, response, "create", branchId,
                         "Giờ kết thúc phải sau giờ bắt đầu.", movieId, roomId, date, start, price, null);
                 return;
@@ -258,7 +264,7 @@ public class ManageShowtimesServlet extends HttpServlet {
                 return;
             }
 
-            // Check scheduling conflict
+            // Check scheduling conflict (pass endDate so overnight conflicts are caught)
             if (showtimesDao.hasSchedulingConflict(roomId, date, start, end, null)) {
                 forwardWithError(request, response, "create", branchId,
                         "Phòng đã có suất chiếu trong khung giờ này. Vui lòng chọn giờ khác.",
