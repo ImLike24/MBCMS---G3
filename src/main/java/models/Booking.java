@@ -22,4 +22,5 @@ public class Booking {
     private String status = "PENDING";
     private String cancellationReason;
     private LocalDateTime cancelledAt;
+    private Integer appliedVoucherId;
 }

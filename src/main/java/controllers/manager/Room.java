@@ -14,7 +14,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet(name = "ManagerRoomController", urlPatterns = { "/manager/rooms" })
+@WebServlet(name = "ManagerRoomController", urlPatterns = { "/branch-manager/rooms" })
 public class Room extends HttpServlet {
 
     private final RoomService roomService = new RoomService();
@@ -94,31 +94,66 @@ public class Room extends HttpServlet {
         String action = request.getParameter("action");
 
         try {
-            ScreeningRoom room = extractFromRequest(request);
-            room.setBranchId(selectedBranchId); // Gán đúng chi nhánh đang chọn
-
             if ("create".equals(action)) {
+                ScreeningRoom room = new ScreeningRoom();
+                room.setBranchId(selectedBranchId);
+                room.setRoomName(request.getParameter("roomName"));
+                room.setStatus(request.getParameter("status"));
+
                 roomService.createRoom(room);
                 response.sendRedirect("rooms?message=created");
+
             } else if ("update".equals(action)) {
-                room.setRoomId(Integer.parseInt(request.getParameter("roomId")));
-                roomService.updateRoom(room);
+                int roomId = Integer.parseInt(request.getParameter("roomId"));
+
+                ScreeningRoom existingRoom = roomService.getRoomById(roomId);
+                if (existingRoom == null) throw new Exception("Phòng chiếu không tồn tại.");
+
+                existingRoom.setRoomName(request.getParameter("roomName"));
+                existingRoom.setStatus(request.getParameter("status"));
+
+                roomService.updateRoom(existingRoom);
                 response.sendRedirect("rooms?message=updated");
             }
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("error", e.getMessage());
-            request.setAttribute("room", extractFromRequest(request));
-            request.getRequestDispatcher("/pages/manager/screening-room/form.jsp").forward(request, response);
+            ScreeningRoom r = new ScreeningRoom();
+            r.setRoomName(request.getParameter("roomName"));
+            r.setStatus(request.getParameter("status"));
+            request.setAttribute("room", r);
+
+            showForm(request, response, r, selectedBranchId);
         }
     }
 
     // --- Helpers ---
-
     private void listRooms(HttpServletRequest request, HttpServletResponse response, int branchId)
             throws ServletException, IOException {
-        List<ScreeningRoom> list = roomService.getRoomsByBranch(branchId);
+
+        String search = request.getParameter("search");
+        String status = request.getParameter("status");
+
+        int page = 1;
+        int pageSize = 10;
+        String pageParam = request.getParameter("page");
+        if (pageParam != null && !pageParam.isEmpty()) {
+            try { page = Integer.parseInt(pageParam); }
+            catch (NumberFormatException e) { page = 1; }
+        }
+
+        int totalRooms = roomService.countRoomsWithFilter(branchId, search, status);
+        int totalPages = (int) Math.ceil((double) totalRooms / pageSize);
+
+        List<ScreeningRoom> list = roomService.getRoomsWithFilter(branchId, search, status, page, pageSize);
+
         request.setAttribute("rooms", list);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("totalPages", totalPages);
+
+        request.setAttribute("searchQuery", search);
+        request.setAttribute("statusFilter", status);
+
         request.getRequestDispatcher("/pages/manager/screening-room/list.jsp").forward(request, response);
     }
 

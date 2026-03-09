@@ -54,6 +54,44 @@
             </div>
         </c:if>
 
+        <div class="card card-custom mb-4">
+            <div class="card-body p-4">
+                <form action="rooms" method="get">
+                    <input type="hidden" name="branchId" value="${selectedBranchId}">
+
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fa fa-search text-muted"></i></span>
+                                <input type="text" class="form-control border-start-0 bg-light" name="search"
+                                       value="${searchQuery}" placeholder="Tìm theo tên phòng (VD: Cinema 1)...">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <select class="form-select" name="status">
+                                <option value="">-- Tất cả Trạng thái --</option>
+                                <option value="ACTIVE" ${statusFilter == 'ACTIVE' ? 'selected' : ''}>Đang hoạt động</option>
+                                <option value="MAINTENANCE" ${statusFilter == 'MAINTENANCE' ? 'selected' : ''}>Bảo trì</option>
+                                <option value="CLOSED" ${statusFilter == 'CLOSED' ? 'selected' : ''}>Đóng cửa</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="d-flex gap-2 h-100">
+                                <button type="submit" class="btn btn-dark flex-grow-1" title="Lọc dữ liệu">
+                                    <i class="fa fa-filter me-1"></i> Lọc
+                                </button>
+                                <a href="rooms?branchId=${selectedBranchId}" class="btn btn-light border flex-grow-1" title="Xóa bộ lọc">
+                                    <i class="fa fa-undo me-1"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div class="card card-custom">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -106,10 +144,43 @@
                         <c:if test="${empty rooms}">
                             <tr><td colspan="6" class="text-center py-5 text-muted">Chưa có dữ liệu phòng chiếu.</td></tr>
                         </c:if>
+                        <c:if test="${totalPages > 1}">
+                            <div class="card-footer bg-white border-0 py-3">
+                                <nav class="d-flex justify-content-end mb-0">
+                                    <ul class="pagination mb-0">
+                                        <c:set var="queryParams" value="&branchId=${selectedBranchId}" />
+
+                                        <c:forEach begin="1" end="${totalPages}" var="i">
+                                            <li class="page-item ${currentPage == i ? 'active' : ''}">
+                                                <a class="page-link" href="rooms?page=${i}${queryParams}">${i}</a>
+                                            </li>
+                                        </c:forEach>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </c:if>
                         </tbody>
                     </table>
                 </div>
             </div>
+        </div>
+
+        <div class="card card-custom">
+            <c:if test="${totalPages > 1}">
+                <div class="card-footer bg-white border-0 py-3">
+                    <nav class="d-flex justify-content-end mb-0">
+                        <ul class="pagination mb-0">
+                            <c:set var="q" value="&branchId=${selectedBranchId}&search=${param.search}&status=${param.status}" />
+
+                            <c:forEach begin="1" end="${totalPages}" var="i">
+                                <li class="page-item ${currentPage == i ? 'active' : ''}">
+                                    <a class="page-link" href="rooms?page=${i}${q}">${i}</a>
+                                </li>
+                            </c:forEach>
+                        </ul>
+                    </nav>
+                </div>
+            </c:if>
         </div>
     </div>
 </main>

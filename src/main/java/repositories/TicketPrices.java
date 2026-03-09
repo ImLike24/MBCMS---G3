@@ -1,102 +1,36 @@
 package repositories;
 
-import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-
 import config.DBContext;
 import models.TicketPrice;
 
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TicketPrices extends DBContext {
-    
-    /**
-     * Map ResultSet to TicketPrice object
-     */
-    private TicketPrice getTicketPricesFromResultSet(ResultSet rs) throws SQLException {
-        TicketPrice tp = new TicketPrice();
-        tp.setPriceId(rs.getInt("price_id"));
-        tp.setSeatType(rs.getString("seat_type"));
-        tp.setTicketType(rs.getString("ticket_type"));
-        tp.setDayType(rs.getString("day_type"));
-        tp.setTimeSlot(rs.getString("time_slot"));
-        tp.setPrice(rs.getBigDecimal("price"));
-        tp.setEffectiveFrom(rs.getDate("effective_from").toLocalDate());
-        
-        Date effectiveTo = rs.getDate("effective_to");
-        tp.setEffectiveTo(effectiveTo != null ? effectiveTo.toLocalDate() : null);
-        
-        tp.setActive(rs.getBoolean("is_active"));
-        
-        Timestamp createdAt = rs.getTimestamp("created_at");
-        tp.setCreatedAt(createdAt != null ? createdAt.toLocalDateTime() : null);
-        
-        return tp;
+
+    private TicketPrice mapRow(ResultSet rs) throws SQLException {
+        TicketPrice p = new TicketPrice();
+        p.setPriceId(rs.getInt("price_id"));
+        p.setBranchId(rs.getInt("branch_id"));
+        p.setTicketType(rs.getString("ticket_type"));
+        p.setDayType(rs.getString("day_type"));
+        p.setTimeSlot(rs.getString("time_slot"));
+        p.setPrice(rs.getBigDecimal("price"));
+        if (rs.getDate("effective_from") != null) p.setEffectiveFrom(rs.getDate("effective_from").toLocalDate());
+        if (rs.getDate("effective_to") != null) p.setEffectiveTo(rs.getDate("effective_to").toLocalDate());
+        p.setActive(rs.getBoolean("is_active"));
+        return p;
     }
 
-    /**
-     * Get price by specific criteria (seat type, ticket type, day type, time slot)
-     * Returns the active price for the given date
-     */
-    public BigDecimal getPrice(String seatType, String ticketType, String dayType, String timeSlot, LocalDate date) {
-        String sql = "SELECT TOP 1 price FROM ticket_prices " +
-                     "WHERE seat_type = ? AND ticket_type = ? AND day_type = ? AND time_slot = ? " +
-                     "AND is_active = 1 " +
-                     "AND effective_from <= ? " +
-                     "AND (effective_to IS NULL OR effective_to >= ?) " +
-                     "ORDER BY effective_from DESC";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setString(1, seatType);
-            ps.setString(2, ticketType);
-            ps.setString(3, dayType);
-            ps.setString(4, timeSlot);
-            ps.setDate(5, java.sql.Date.valueOf(date));
-            ps.setDate(6, java.sql.Date.valueOf(date));
-            
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getBigDecimal("price");
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    /**
-     * Get all active ticket prices by date
-     */
-    public List<TicketPrice> getAllActiveByDate(LocalDate date) {
+    // Lấy bảng giá theo chi nhánh
+    public List<TicketPrice> findByBranchId(int branchId) {
         List<TicketPrice> list = new ArrayList<>();
-        String sql = "SELECT * FROM ticket_prices " +
-                     "WHERE is_active = 1 " +
-                     "AND effective_from <= ? " +
-                     "AND (effective_to IS NULL OR effective_to >= ?) " +
-                     "ORDER BY seat_type, ticket_type, day_type, time_slot";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setDate(1, java.sql.Date.valueOf(date));
-            ps.setDate(2, java.sql.Date.valueOf(date));
-            
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(getTicketPricesFromResultSet(rs));
-                }
+        String sql = "SELECT * FROM ticket_prices WHERE branch_id = ? ORDER BY day_type, time_slot, ticket_type";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, branchId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -104,271 +38,150 @@ public class TicketPrices extends DBContext {
         return list;
     }
 
-    /**
-     * Get ticket price by ID
-     */
-    public TicketPrice getById(int priceId) {
-        String sql = "SELECT * FROM ticket_prices WHERE price_id = ?";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setInt(1, priceId);
-            
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return getTicketPricesFromResultSet(rs);
-                }
-            }
+    public boolean insert(TicketPrice p) {
+        String sql = "INSERT INTO ticket_prices (branch_id, seat_type, ticket_type, day_type, time_slot, price, effective_from, effective_to, is_active) VALUES (?,?,?,?,?,?,?,?,?)";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, p.getBranchId());
+            st.setString(3, p.getTicketType());
+            st.setString(4, p.getDayType());
+            st.setString(5, p.getTimeSlot());
+            st.setBigDecimal(6, p.getPrice());
+            st.setDate(7, Date.valueOf(p.getEffectiveFrom()));
+            if (p.getEffectiveTo() != null) st.setDate(8, Date.valueOf(p.getEffectiveTo()));
+            else st.setNull(8, Types.DATE);
+            st.setBoolean(9, p.isActive());
+            return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
+        return false;
     }
 
-    /**
-     * Get all ticket prices
-     */
-    public List<TicketPrice> getAll() {
-        List<TicketPrice> list = new ArrayList<>();
-        String sql = "SELECT * FROM ticket_prices ORDER BY effective_from DESC, seat_type, ticket_type, day_type, time_slot";
-        
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            
-            while (rs.next()) {
-                list.add(getTicketPricesFromResultSet(rs));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
+    // Cập nhật bảng giá
+    public boolean update(TicketPrice p) {
+        String sql = "UPDATE ticket_prices SET branch_id = ?, seat_type = ?, ticket_type = ?, day_type = ?, time_slot = ?, price = ?, effective_from = ?, effective_to = ?, is_active = ? WHERE price_id = ?";
 
-    /**
-     * Get all active ticket prices
-     */
-    public List<TicketPrice> getAllActive() {
-        List<TicketPrice> list = new ArrayList<>();
-        String sql = "SELECT * FROM ticket_prices WHERE is_active = 1 ORDER BY seat_type, ticket_type, day_type, time_slot";
-        
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            
-            while (rs.next()) {
-                list.add(getTicketPricesFromResultSet(rs));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, p.getBranchId());
+            st.setString(3, p.getTicketType());
+            st.setString(4, p.getDayType());
+            st.setString(5, p.getTimeSlot());
+            st.setBigDecimal(6, p.getPrice());
+            st.setDate(7, Date.valueOf(p.getEffectiveFrom()));
 
-    /**
-     * Create new ticket price
-     */
-    public boolean create(TicketPrice ticketPrice) {
-        // Auto-set is_active to false if current date is after effective_to
-        if (ticketPrice.getEffectiveTo() != null && LocalDate.now().isAfter(ticketPrice.getEffectiveTo())) {
-            ticketPrice.setActive(false);
-        }
-        
-        String sql = "INSERT INTO ticket_prices (seat_type, ticket_type, day_type, time_slot, price, effective_from, effective_to, is_active) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            
-            ps.setString(1, ticketPrice.getSeatType());
-            ps.setString(2, ticketPrice.getTicketType());
-            ps.setString(3, ticketPrice.getDayType());
-            ps.setString(4, ticketPrice.getTimeSlot());
-            ps.setBigDecimal(5, ticketPrice.getPrice());
-            ps.setDate(6, java.sql.Date.valueOf(ticketPrice.getEffectiveFrom()));
-            
-            if (ticketPrice.getEffectiveTo() != null) {
-                ps.setDate(7, java.sql.Date.valueOf(ticketPrice.getEffectiveTo()));
+            if (p.getEffectiveTo() != null) {
+                st.setDate(8, Date.valueOf(p.getEffectiveTo()));
             } else {
-                ps.setNull(7, Types.DATE);
+                st.setNull(8, Types.DATE);
             }
-            
-            ps.setBoolean(8, ticketPrice.isActive());
-            
-            int affectedRows = ps.executeUpdate();
-            if (affectedRows > 0) {
-                // Get the generated price_id and set it to the ticketPrice object
-                try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        ticketPrice.setPriceId(generatedKeys.getInt(1));
-                    }
-                }
-                return true;
-            }
+
+            st.setBoolean(9, p.isActive());
+            st.setInt(10, p.getPriceId());
+
+            return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
     }
 
-    /**
-     * Update existing ticket price
-     */
-    public boolean update(TicketPrice ticketPrice) {
-        String sql = "UPDATE ticket_prices SET seat_type = ?, ticket_type = ?, day_type = ?, time_slot = ?, " +
-                     "price = ?, effective_from = ?, effective_to = ?, is_active = ? WHERE price_id = ?";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setString(1, ticketPrice.getSeatType());
-            ps.setString(2, ticketPrice.getTicketType());
-            ps.setString(3, ticketPrice.getDayType());
-            ps.setString(4, ticketPrice.getTimeSlot());
-            ps.setBigDecimal(5, ticketPrice.getPrice());
-            ps.setDate(6, java.sql.Date.valueOf(ticketPrice.getEffectiveFrom()));
-            
-            if (ticketPrice.getEffectiveTo() != null) {
-                ps.setDate(7, java.sql.Date.valueOf(ticketPrice.getEffectiveTo()));
-            }
-            
-            ps.setBoolean(8, ticketPrice.isActive());
-            ps.setInt(9, ticketPrice.getPriceId());
-            
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    /**
-     * Delete ticket price by ID
-     */
+    // Xóa bảng giá theo id
     public boolean delete(int priceId) {
         String sql = "DELETE FROM ticket_prices WHERE price_id = ?";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setInt(1, priceId);
-            return ps.executeUpdate() > 0;
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, priceId);
+            return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
     }
 
-    /**
-     * Deactivate ticket price (soft delete)
-     */
     public boolean deactivate(int priceId) {
         String sql = "UPDATE ticket_prices SET is_active = 0 WHERE price_id = ?";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setInt(1, priceId);
-            return ps.executeUpdate() > 0;
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, priceId);
+            return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
     }
 
-    /**
-     * Activate ticket price
-     */
-    public boolean activate(int priceId) {
-        String sql = "UPDATE ticket_prices SET is_active = 1 WHERE price_id = ?";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setInt(1, priceId);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    /**
-     * Get prices by seat type and ticket type
-     */
-    public List<TicketPrice> getPricesByCategory(String seatType, String ticketType) {
-        List<TicketPrice> list = new ArrayList<>();
-        String sql = "SELECT * FROM ticket_prices " +
-                     "WHERE seat_type = ? AND ticket_type = ? " +
-                     "ORDER BY day_type, time_slot, effective_from DESC";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setString(1, seatType);
-            ps.setString(2, ticketType);
-            
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(getTicketPricesFromResultSet(rs));
-                }
+    public TicketPrice findById(int priceId) {
+        String sql = "SELECT * FROM ticket_prices WHERE price_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, priceId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return null;
+    }
+
+    // Lấy danh sách có Filter, Search và Phân trang
+    public List<TicketPrice> getPricesWithFilterAndPagination(int branchId, String search, String dayType, String status, int page, int pageSize) {
+        List<TicketPrice> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT * FROM ticket_prices WHERE branch_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(branchId);
+
+        if (search != null && !search.trim().isEmpty()) {
+            // Chỉ còn search theo loại khách
+            sql.append(" AND ticket_type LIKE ?");
+            params.add("%" + search.trim() + "%");
+        }
+        if (dayType != null && !dayType.trim().isEmpty()) {
+            sql.append(" AND day_type = ?");
+            params.add(dayType);
+        }
+        if (status != null && !status.trim().isEmpty()) {
+            sql.append(" AND is_active = ?");
+            params.add("ACTIVE".equalsIgnoreCase(status) ? 1 : 0);
+        }
+
+        sql.append(" ORDER BY day_type, time_slot, ticket_type OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        params.add((page - 1) * pageSize);
+        params.add(pageSize);
+
+        try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) st.setObject(i + 1, params.get(i));
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
         return list;
     }
 
-    /**
-     * Get prices by day type and time slot
-     */
-    public List<TicketPrice> getPricesByDayAndTime(String dayType, String timeSlot) {
-        List<TicketPrice> list = new ArrayList<>();
-        String sql = "SELECT * FROM ticket_prices " +
-                     "WHERE day_type = ? AND time_slot = ? AND is_active = 1 " +
-                     "ORDER BY seat_type, ticket_type, effective_from DESC";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setString(1, dayType);
-            ps.setString(2, timeSlot);
-            
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(getTicketPricesFromResultSet(rs));
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
+    // Đếm tổng số để tính số trang
+    public int countPricesWithFilter(int branchId, String search, String dayType, String status) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM ticket_prices WHERE branch_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(branchId);
 
-    /**
-     * Check if price configuration exists for specific criteria
-     */
-    public boolean exists(String seatType, String ticketType, String dayType, String timeSlot) {
-        String sql = "SELECT COUNT(*) as cnt FROM ticket_prices " +
-                     "WHERE seat_type = ? AND ticket_type = ? AND day_type = ? AND time_slot = ?";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setString(1, seatType);
-            ps.setString(2, ticketType);
-            ps.setString(3, dayType);
-            ps.setString(4, timeSlot);
-            
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("cnt") > 0;
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append(" AND ticket_type LIKE ?");
+            params.add("%" + search.trim() + "%");
         }
-        return false;
+        if (dayType != null && !dayType.trim().isEmpty()) {
+            sql.append(" AND day_type = ?");
+            params.add(dayType);
+        }
+        if (status != null && !status.trim().isEmpty()) {
+            sql.append(" AND is_active = ?");
+            params.add("ACTIVE".equalsIgnoreCase(status) ? 1 : 0);
+        }
+
+        try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) st.setObject(i + 1, params.get(i));
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return 0;
     }
 }

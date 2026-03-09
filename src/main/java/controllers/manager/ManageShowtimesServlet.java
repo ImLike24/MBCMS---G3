@@ -49,6 +49,9 @@ public class ManageShowtimesServlet extends HttpServlet {
             action = "list";
 
         switch (action) {
+            case "view-detail":
+                showActiveDetail(request, response, branch.getBranchId());
+                break;
             case "create":
                 showScheduleForm(request, response, branch.getBranchId());
                 break;
@@ -119,16 +122,44 @@ public class ManageShowtimesServlet extends HttpServlet {
             }
         }
 
-        List<Map<String, Object>> showtimes = showtimesDao.getShowtimesByBranch(branchId, filterDate, statusFilter,
+        List<Map<String, Object>> allShowtimes = showtimesDao.getShowtimesByBranch(branchId, filterDate, statusFilter,
                 movieKw);
 
         Map<String, Integer> stats = showtimesDao.countShowtimesByBranch(branchId);
+
+        // ── Pagination ────────────────────────────────────────────────────
+        int pageSize = 5;
+        int totalShowtimes = allShowtimes.size();
+        int totalPages = (int) Math.ceil((double) totalShowtimes / pageSize);
+        if (totalPages == 0)
+            totalPages = 1;
+
+        int currentPage = 1;
+        String pageParam = request.getParameter("page");
+        if (pageParam != null && !pageParam.isBlank()) {
+            try {
+                currentPage = Integer.parseInt(pageParam);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        if (currentPage < 1)
+            currentPage = 1;
+        if (currentPage > totalPages)
+            currentPage = totalPages;
+
+        int fromIndex = (currentPage - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, totalShowtimes);
+        List<Map<String, Object>> showtimes = allShowtimes.subList(fromIndex, toIndex);
+        // ─────────────────────────────────────────────────────────────────
 
         request.setAttribute("showtimes", showtimes);
         request.setAttribute("stats", stats);
         request.setAttribute("filterDate", dateStr);
         request.setAttribute("filterStatus", statusFilter);
         request.setAttribute("filterMovie", movieKw);
+        request.setAttribute("currentPage", currentPage);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalShowtimes", totalShowtimes);
 
         request.getRequestDispatcher("/pages/manager/manage-showtimes/list.jsp")
                 .forward(request, response);
@@ -204,6 +235,10 @@ public class ManageShowtimesServlet extends HttpServlet {
             LocalTime start = LocalTime.parse(request.getParameter("startTime"));
             LocalTime end = LocalTime.parse(request.getParameter("endTime"));
             BigDecimal price = new BigDecimal(request.getParameter("basePrice"));
+            boolean overnight = "1".equals(request.getParameter("overnight"));
+
+            // If overnight, end is on the next calendar day
+            LocalDate endDate = overnight ? date.plusDays(1) : date;
 
             // Validate room belongs to this branch
             ScreeningRoom room = roomsDao.getRoomById(roomId);
@@ -213,8 +248,10 @@ public class ManageShowtimesServlet extends HttpServlet {
                 return;
             }
 
-            // Validate end > start
-            if (!end.isAfter(start)) {
+            // Validate end is after start (using LocalDateTime to handle overnight)
+            java.time.LocalDateTime startDT = java.time.LocalDateTime.of(date, start);
+            java.time.LocalDateTime endDT = java.time.LocalDateTime.of(endDate, end);
+            if (!endDT.isAfter(startDT)) {
                 forwardWithError(request, response, "create", branchId,
                         "Giờ kết thúc phải sau giờ bắt đầu.", movieId, roomId, date, start, price, null);
                 return;
@@ -227,7 +264,7 @@ public class ManageShowtimesServlet extends HttpServlet {
                 return;
             }
 
-            // Check scheduling conflict
+            // Check scheduling conflict (pass endDate so overnight conflicts are caught)
             if (showtimesDao.hasSchedulingConflict(roomId, date, start, end, null)) {
                 forwardWithError(request, response, "create", branchId,
                         "Phòng đã có suất chiếu trong khung giờ này. Vui lòng chọn giờ khác.",
@@ -326,6 +363,46 @@ public class ManageShowtimesServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath()
                     + "/branch-manager/manage-showtimes?error=invalid");
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET: View Active Showtime Detail (SCHEDULED / ONGOING / COMPLETED)
+    // ─────────────────────────────────────────────────────────────────────────
+    private void showActiveDetail(HttpServletRequest request, HttpServletResponse response, int branchId)
+            throws ServletException, IOException {
+
+        String idStr = request.getParameter("id");
+        if (idStr == null) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
+            return;
+        }
+        int showtimeId;
+        try {
+            showtimeId = Integer.parseInt(idStr);
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
+            return;
+        }
+
+        Showtime showtime = showtimesDao.getShowtimeById(showtimeId);
+        if (showtime == null) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notfound");
+            return;
+        }
+
+        // Only allow SCHEDULED, ONGOING, COMPLETED
+        String status = showtime.getStatus();
+        if (!"SCHEDULED".equals(status) && !"ONGOING".equals(status) && !"COMPLETED".equals(status)) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
+            return;
+        }
+
+        java.util.Map<String, Object> detail = showtimesDao.getActiveShowtimeDetail(showtimeId);
+
+        request.setAttribute("showtime", showtime);
+        request.setAttribute("detail", detail);
+        request.getRequestDispatcher("/pages/manager/manage-showtimes/detail.jsp")
+                .forward(request, response);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -100,6 +100,7 @@
                                     action="${pageContext.request.contextPath}/branch-manager/manage-showtimes"
                                     novalidate>
                                     <input type="hidden" name="action" value="create">
+                                    <input type="hidden" name="overnight" id="overnightFlag" value="0">
 
                                     <!-- Movie -->
                                     <div class="mb-4">
@@ -227,6 +228,8 @@
                                 <ul class="small text-muted ps-3 mb-0">
                                     <li class="mb-1">Giờ kết thúc được tự động tính = Giờ bắt đầu + Thời lượng phim.
                                     </li>
+                                    <li class="mb-1">Nếu suất chiếu kết thúc <strong>sau 23:59</strong>, hệ thống sẽ tự
+                                        động ghi nhận ngày kết thúc là <strong>ngày hôm sau</strong>.</li>
                                     <li class="mb-1">Hệ thống tự kiểm tra xung đột lịch phòng chiếu.</li>
                                     <li class="mb-1">Chỉ phòng đang <strong>hoạt động</strong> mới được chọn.</li>
                                     <li>Ngày chiếu phải từ hôm nay trở đi.</li>
@@ -266,24 +269,57 @@
                     if (!startVal || !duration) { endInput.value = ''; return; }
                     const [h, m] = startVal.split(':').map(Number);
                     const totalMin = h * 60 + m + duration;
+                    const isOvernight = totalMin >= 24 * 60;
                     const eh = Math.floor(totalMin / 60) % 24;
                     const em = totalMin % 60;
                     endInput.value = String(eh).padStart(2, '0') + ':' + String(em).padStart(2, '0');
+                    document.getElementById('overnightFlag').value = isOvernight ? '1' : '0';
                     updatePreview();
                 }
 
                 function updatePreview() {
                     const movieText = movieSelect.options[movieSelect.selectedIndex]?.text || '—';
                     const roomText = roomSelect.options[roomSelect.selectedIndex]?.text || '—';
-                    const dateVal = showDate.value ? new Date(showDate.value).toLocaleDateString('vi-VN') : '—';
+                    const dateVal = showDate.value ? new Date(showDate.value + 'T00:00:00').toLocaleDateString('vi-VN') : '—';
                     const startVal = startInput.value || '—';
                     const endVal = endInput.value || '—';
                     const price = priceInput.value ? parseInt(priceInput.value).toLocaleString('vi-VN') + ' ₫' : '—';
+                    const isOvernight = document.getElementById('overnightFlag').value === '1';
 
                     document.getElementById('previewMovie').textContent = movieText !== '-- Chọn phim --' ? movieText : '—';
                     document.getElementById('previewRoom').textContent = roomText !== '-- Chọn phòng chiếu --' ? roomText : '—';
                     document.getElementById('previewDate').textContent = dateVal;
-                    document.getElementById('previewTime').textContent = startVal !== '—' ? startVal + ' → ' + endVal : '—';
+
+                    let timeText = startVal !== '—' ? startVal + ' → ' + endVal : '—';
+                    const previewTimeEl = document.getElementById('previewTime');
+                    if (isOvernight && startVal !== '—') {
+                        timeText += ' (+1 ngày)';
+                        previewTimeEl.innerHTML = timeText + ' <span class="badge bg-warning text-dark ms-1">Qua nửa đêm</span>';
+                    } else {
+                        previewTimeEl.textContent = timeText;
+                    }
+
+                    // Show/hide overnight warning alert
+                    let alertEl = document.getElementById('overnightAlert');
+                    if (!alertEl) {
+                        alertEl = document.createElement('div');
+                        alertEl.id = 'overnightAlert';
+                        alertEl.className = 'alert alert-warning alert-dismissible mt-2 mb-0 py-2 small';
+                        alertEl.innerHTML = '<i class="fa-solid fa-moon me-1"></i><strong>Lưu ý:</strong> Suất chiếu kết thúc sang ngày hôm sau. Hệ thống sẽ ghi nhận ngày kết thúc là <strong id="nextDateLabel"></strong>.<button type="button" class="btn-close btn-sm" onclick="this.parentElement.style.display=\'none\'"></button>';
+                        document.getElementById('endTime').parentElement.appendChild(alertEl);
+                    }
+                    if (isOvernight && startVal !== '—') {
+                        // Compute next-day label
+                        if (showDate.value) {
+                            const d = new Date(showDate.value + 'T00:00:00');
+                            d.setDate(d.getDate() + 1);
+                            document.getElementById('nextDateLabel').textContent = d.toLocaleDateString('vi-VN');
+                        }
+                        alertEl.style.display = '';
+                    } else {
+                        alertEl.style.display = 'none';
+                    }
+
                     document.getElementById('previewPrice').textContent = price;
                 }
 

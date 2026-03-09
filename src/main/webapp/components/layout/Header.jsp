@@ -49,23 +49,7 @@
 
         <div class="collapse navbar-collapse" id="navbarMain">
 
-            <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <a class="nav-link active" href="${pageContext.request.contextPath}/home">
-                        Trang chủ
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="${pageContext.request.contextPath}/about">
-                        About Us
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="${pageContext.request.contextPath}/contact">
-                        Contact Us
-                    </a>
-                </li>
-            </ul>
+
 
             <ul class="navbar-nav mb-0">
                 <li class="nav-item">
@@ -74,47 +58,7 @@
                     </a>
                 </li>
 
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle"
-                       href="#"
-                       role="button"
-                       data-bs-toggle="dropdown">
-                        <i class="fa fa-user"></i>
-                        <c:if test="${not empty sessionScope.user}">
-                            <span class="ms-1">${sessionScope.user.username}</span>
-                        </c:if>
-                    </a>
-
-                    <ul class="dropdown-menu dropdown-menu-end end-0">
-                        <c:choose>
-                            <c:when test="${not empty sessionScope.user}">
-                                <li>
-                                    <a class="dropdown-item" href="${pageContext.request.contextPath}/profile">
-                                        Hồ sơ người dùng
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="${pageContext.request.contextPath}/logout">
-                                        Đăng xuất
-                                    </a>
-                                </li>
-                            </c:when>
-                            <c:otherwise>
-                                <li>
-                                    <a class="dropdown-item" href="${pageContext.request.contextPath}/login">
-                                        Đăng nhập
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="${pageContext.request.contextPath}/register">
-                                        Đăng ký
-                                    </a>
-                                </li>
-                            </c:otherwise>
-                        </c:choose>
-                    </ul>
-                </li>
+                
             </ul>
 
         </div>
