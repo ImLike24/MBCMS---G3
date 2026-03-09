@@ -27,6 +27,10 @@ public class Users extends DBContext {
         u.setAvatarUrl(rs.getString("avatarURL"));
         u.setStatus(rs.getString("status"));
         u.setPoints(rs.getInt("points"));
+        
+        // Loyalty additions
+        u.setTotalAccumulatedPoints(rs.getInt("total_accumulated_points"));
+        u.setTierId(rs.getInt("tier_id"));
 
         if (rs.getTimestamp("created_at") != null)
             u.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
@@ -81,9 +85,9 @@ public class Users extends DBContext {
     }
 
     public boolean insert(User u) {
-        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points) "
+        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points, total_accumulated_points, tier_id) "
                 +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, u.getRoleId());
             st.setString(2, u.getUsername());
@@ -98,7 +102,9 @@ public class Users extends DBContext {
 
             st.setString(7, u.getPhone());
             st.setString(8, u.getStatus());
-            st.setInt(9, u.getPoints());
+            st.setInt(9, u.getPoints() != null ? u.getPoints() : 0);
+            st.setInt(10, u.getTotalAccumulatedPoints() != null ? u.getTotalAccumulatedPoints() : 0);
+            st.setInt(11, u.getTierId() != null ? u.getTierId() : 1);
 
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
