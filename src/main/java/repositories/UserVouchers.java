@@ -45,6 +45,28 @@ public class UserVouchers extends DBContext {
         return lists;
     }
 
+    /**
+     * Lấy các voucher còn hiệu lực cho 1 user:
+     * - status = 'AVAILABLE'
+     * - expires_at > SYSDATETIME()
+     * Kết quả sắp xếp theo ngày hết hạn tăng dần (ưu tiên voucher sắp hết hạn).
+     */
+    public List<UserVoucher> getAvailableVouchersByUserId(int userId) {
+        List<UserVoucher> lists = new ArrayList<>();
+        String sql = "SELECT * FROM user_vouchers WHERE user_id = ? AND status = 'AVAILABLE' AND expires_at > SYSDATETIME() ORDER BY expires_at ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, userId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    lists.add(mapResultSetToUserVoucher(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return lists;
+    }
+
     public UserVoucher getVoucherByCode(String code) {
         String sql = "SELECT * FROM user_vouchers WHERE voucher_code = ?";
         try (PreparedStatement st = connection.prepareStatement(sql)) {

@@ -100,6 +100,24 @@
             color: #d96c2c;
         }
 
+        /* Highlight voucher discount + final amount */
+        #discountInfo {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffd27f;
+        }
+
+        #discountInfo span,
+        #discountInfo strong {
+            display: block;
+        }
+
+        #discountInfo strong {
+            font-size: 20px;
+            color: #ffb347;
+        }
+
         .form-section {
             margin-bottom: 30px;
         }
@@ -516,6 +534,10 @@
                     <span class="label">Total Amount:</span>
                     <span class="amount" id="totalAmountDisplay">0 VND</span>
                 </div>
+                <div id="discountInfo" style="display: none;">
+                    <div>Voucher Discount: <span id="discountAmountDisplay">0 VND</span></div>
+                    <div>Final Amount: <strong id="finalAmountDisplay">0 VND</strong></div>
+                </div>
             </div>
 
             <!-- Customer Information (Optional) -->
@@ -532,6 +554,24 @@
                 <div class="form-group">
                     <label for="customerEmail">Email</label>
                     <input type="email" id="customerEmail" placeholder="customer@example.com">
+                </div>
+            </div>
+
+            <!-- Voucher -->
+            <div class="form-section">
+                <h3><i class="fas fa-ticket-alt"></i> Voucher</h3>
+                <div class="form-group">
+                    <label for="voucherCode">Voucher Code (optional)</label>
+                    <input type="text" id="voucherCode" placeholder="Enter voucher code if any">
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-secondary" style="width:100%;justify-content:center;" onclick="suggestBestVoucher()">
+                        <i class="fas fa-magic"></i> Suggest Best Voucher (by phone)
+                    </button>
+                </div>
+                <div class="form-group" id="voucherSuggestionsContainer" style="display:none; margin-top:8px;">
+                    <label style="color:#ccc;font-size:13px;">Available vouchers for this customer</label>
+                    <div id="voucherSuggestionsList" style="max-height:160px; overflow-y:auto; border:1px solid #262625; border-radius:8px; padding:8px;"></div>
                 </div>
             </div>
 
@@ -615,6 +655,12 @@
         const bookingData = JSON.parse(sessionStorage.getItem('bookingData') || '{}');
         const showtimeId = ${showtimeId};
         let ticketCodeGenerated = '';
+        let lastFinalAmount = null;
+        let lastDiscountAmount = null;
+        let lastTotalAmount = 0;
+        let voucherSuggestions = [];
+        let selectedVoucherCode = null;
+        let lastVoucherResponse = null;
 
         // Display booking summary
         function displayBookingSummary() {
@@ -650,8 +696,170 @@
                 totalAmount += price;
             });
 
+            lastTotalAmount = totalAmount;
             document.getElementById('totalAmountDisplay').textContent =
                 new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalAmount);
+        }
+
+        function applyVoucherChoice(voucherCode, effectiveDiscountStr) {
+            const codeInput = document.getElementById('voucherCode');
+            const discountInfo = document.getElementById('discountInfo');
+            const discountEl = document.getElementById('discountAmountDisplay');
+            const finalEl = document.getElementById('finalAmountDisplay');
+
+            if (!codeInput || !discountInfo || !discountEl || !finalEl) return;
+
+            selectedVoucherCode = voucherCode;
+
+            codeInput.value = voucherCode;
+
+            const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+            const discount = Number(effectiveDiscountStr || 0);
+            let finalAmt = lastTotalAmount;
+            if (!isNaN(discount) && discount > 0) {
+                finalAmt = lastTotalAmount - discount;
+                if (finalAmt < 0) finalAmt = 0;
+                discountEl.textContent = formatter.format(discount);
+                finalEl.textContent = formatter.format(finalAmt);
+                discountInfo.style.display = 'block';
+            } else {
+                discountInfo.style.display = 'none';
+            }
+        }
+
+        function renderVoucherSuggestions(data) {
+            const container = document.getElementById('voucherSuggestionsContainer');
+            const listEl = document.getElementById('voucherSuggestionsList');
+            if (!container || !listEl) return;
+
+            lastVoucherResponse = data;
+            voucherSuggestions = Array.isArray(data.vouchers) ? data.vouchers : [];
+
+            if (voucherSuggestions.length === 0) {
+                container.style.display = 'none';
+                listEl.innerHTML = '';
+                return;
+            }
+
+            container.style.display = 'block';
+            listEl.innerHTML = '';
+
+            voucherSuggestions.forEach(v => {
+                const item = document.createElement('div');
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.style.alignItems = 'center';
+                item.style.padding = '6px 8px';
+                item.style.borderRadius = '6px';
+                item.style.marginBottom = '4px';
+                const isSelected = selectedVoucherCode
+                    ? selectedVoucherCode === v.voucherCode
+                    : (data.bestVoucherCode && data.bestVoucherCode === v.voucherCode);
+                item.style.background = isSelected ? 'rgba(217,108,44,0.18)' : 'transparent';
+
+                const left = document.createElement('div');
+                left.style.fontSize = '12px';
+                left.style.color = '#ccc';
+                left.innerHTML =
+                    '<div><strong>' + (v.voucherName || v.voucherCode) + '</strong></div>' +
+                    '<div>Code: <span class="font-monospace">' + v.voucherCode + '</span></div>' +
+                    (v.expiresAt ? '<div>Expires: ' + v.expiresAt + '</div>' : '') +
+                    '<div>Discount: ' + v.effectiveDiscount + ' VND</div>';
+
+                const rightBtn = document.createElement('button');
+                rightBtn.type = 'button';
+                rightBtn.className = 'btn btn-secondary';
+                rightBtn.style.flex = '0 0 auto';
+                rightBtn.style.fontSize = '12px';
+                rightBtn.style.padding = '6px 10px';
+                rightBtn.textContent = 'Use';
+                rightBtn.onclick = function() {
+                    applyVoucherChoice(v.voucherCode, v.effectiveDiscount);
+                    // Re-render list so that selected voucher is highlighted
+                    if (lastVoucherResponse) {
+                        renderVoucherSuggestions(lastVoucherResponse);
+                    }
+                };
+
+                item.appendChild(left);
+                item.appendChild(rightBtn);
+                listEl.appendChild(item);
+            });
+        }
+
+        // Gợi ý voucher tốt nhất dựa trên số điện thoại khách & tổng bill hiện tại
+        async function suggestBestVoucher() {
+            const phone = document.getElementById('customerPhone').value.trim();
+            const errorEl = document.getElementById('errorMessage');
+
+            errorEl.classList.remove('show');
+
+            if (!phone) {
+                errorEl.textContent = 'Please enter customer phone to lookup vouchers.';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            if (!bookingData.seats || bookingData.seats.length === 0) {
+                errorEl.textContent = 'No seats selected. Please go back and select seats.';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            try {
+                const payload = {
+                    customerPhone: phone,
+                    totalAmount: String(lastTotalAmount || 0)
+                };
+
+                const res = await fetch('${pageContext.request.contextPath}/staff/counter-best-voucher', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    errorEl.textContent = data.message || 'Cannot suggest voucher.';
+                    errorEl.classList.add('show');
+                    return;
+                }
+
+                if (data.bestVoucherCode) {
+                    document.getElementById('voucherCode').value = data.bestVoucherCode;
+
+                    // Hiển thị preview discount/final amount (ước tính)
+                    try {
+                        const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+                        const discount = data.bestDiscount ? Number(data.bestDiscount) : 0;
+                        const finalAmt = data.finalAmount ? Number(data.finalAmount) : (lastTotalAmount || 0);
+
+                        if (!isNaN(discount) && discount > 0 && !isNaN(finalAmt)) {
+                            const discountInfo = document.getElementById('discountInfo');
+                            const discountEl = document.getElementById('discountAmountDisplay');
+                            const finalEl = document.getElementById('finalAmountDisplay');
+                            if (discountInfo && discountEl && finalEl) {
+                                discountEl.textContent = formatter.format(discount);
+                                finalEl.textContent = formatter.format(finalAmt);
+                                discountInfo.style.display = 'block';
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Cannot render suggested voucher preview', e);
+                    }
+                } else {
+                    errorEl.textContent = 'Customer has vouchers but none give additional discount for this bill.';
+                    errorEl.classList.add('show');
+                }
+
+                // Luôn render danh sách để staff có thể switch giữa các voucher
+                renderVoucherSuggestions(data);
+            } catch (e) {
+                console.error('Suggest voucher error:', e);
+                errorEl.textContent = 'Error while suggesting voucher.';
+                errorEl.classList.add('show');
+            }
         }
 
         // Payment method selection
@@ -700,6 +908,7 @@
             const customerName  = document.getElementById('customerName').value.trim();
             const customerPhone = document.getElementById('customerPhone').value.trim();
             const customerEmail = document.getElementById('customerEmail').value.trim();
+            const voucherCode   = document.getElementById('voucherCode').value.trim();
 
             document.getElementById('loadingOverlay').classList.add('show');
             document.getElementById('btnConfirmPayment').disabled = true;
@@ -710,6 +919,7 @@
                 customerName:  customerName  || null,
                 customerPhone: customerPhone || null,
                 customerEmail: customerEmail || null,
+                voucherCode:   voucherCode   || null,
                 seats:         bookingData.seats
             };
 
@@ -726,6 +936,28 @@
 
                 if (result.success) {
                     ticketCodeGenerated = result.ticketCode;
+                    // Lưu lại tổng tiền sau voucher (nếu có) để hiển thị
+                    try {
+                        const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+                        const total = result.totalAmount ? Number(result.totalAmount) : null;
+                        const discount = result.discountAmount ? Number(result.discountAmount) : 0;
+                        const finalAmt = result.finalAmount ? Number(result.finalAmount) : total;
+                        lastDiscountAmount = discount;
+                        lastFinalAmount = finalAmt;
+
+                        if (!isNaN(discount) && discount > 0 && !isNaN(finalAmt)) {
+                            const discountInfo = document.getElementById('discountInfo');
+                            const discountEl = document.getElementById('discountAmountDisplay');
+                            const finalEl = document.getElementById('finalAmountDisplay');
+                            if (discountInfo && discountEl && finalEl) {
+                                discountEl.textContent = formatter.format(discount);
+                                finalEl.textContent = formatter.format(finalAmt);
+                                discountInfo.style.display = 'block';
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Cannot render voucher discount info', e);
+                    }
                     sessionStorage.removeItem('bookingData');
                     document.getElementById('successModalOverlay').classList.add('active');
                 } else {

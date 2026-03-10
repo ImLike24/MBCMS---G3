@@ -27,6 +27,28 @@ public class Vouchers extends DBContext {
         return v;
     }
 
+    /**
+     * Lấy voucher còn hoạt động theo mã code (không phân biệt hoa thường).
+     */
+    public Voucher getActiveVoucherByCode(String code) {
+        if (code == null || code.trim().isEmpty()) {
+            return null;
+        }
+
+        String sql = "SELECT * FROM vouchers WHERE UPPER(voucher_code) = UPPER(?) AND is_active = 1";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, code.trim());
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToVoucher(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public List<Voucher> getAllActiveVouchers() {
         List<Voucher> lists = new ArrayList<>();
         String sql = "SELECT * FROM vouchers WHERE is_active = 1 ORDER BY created_at DESC";

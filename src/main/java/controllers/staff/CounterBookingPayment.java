@@ -2,7 +2,11 @@ package controllers.staff;
 
 import models.User;
 import models.CounterTicket;
+import models.Voucher;
+import models.UserVoucher;
 import repositories.CounterTickets;
+import repositories.Vouchers;
+import repositories.UserVouchers;
 import repositories.Showtimes;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -16,6 +20,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.BufferedReader;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -126,6 +131,8 @@ public class CounterBookingPayment extends HttpServlet {
 
         CounterTickets counterTicketsRepo = null;
         Showtimes showtimesRepo = null;
+        Vouchers vouchersRepo = null;
+        UserVouchers userVouchersRepo = null;
         
         try {
             // Parse request data
@@ -135,6 +142,7 @@ public class CounterBookingPayment extends HttpServlet {
             String customerName  = getStringOrNull(requestData, "customerName");
             String customerPhone = getStringOrNull(requestData, "customerPhone");
             String customerEmail = getStringOrNull(requestData, "customerEmail");
+            String voucherCode  = getStringOrNull(requestData, "voucherCode");
             
             JsonArray seatsArray = requestData.getAsJsonArray("seats");
             
@@ -157,6 +165,8 @@ public class CounterBookingPayment extends HttpServlet {
             // Create counter tickets
             List<Integer> ticketIds = new ArrayList<>();
             BigDecimal totalAmount = BigDecimal.ZERO;
+            BigDecimal discountAmount = BigDecimal.ZERO;
+            BigDecimal finalAmount;
 
             for (int i = 0; i < seatsArray.size(); i++) {
                 JsonObject seatObj = seatsArray.get(i).getAsJsonObject();
@@ -221,12 +231,64 @@ public class CounterBookingPayment extends HttpServlet {
                 }
             }
 
+            // Apply voucher discount to total bill if voucher code is provided
+            String appliedVoucherCode = null;
+            if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+                vouchersRepo = new Vouchers();
+                userVouchersRepo = new UserVouchers();
+
+                String trimmedCode = voucherCode.trim();
+                Voucher voucher = null;
+
+                // 1. Ưu tiên kiểm tra voucher cá nhân (user_vouchers) theo code
+                UserVoucher uv = userVouchersRepo.getVoucherByCode(trimmedCode);
+                if (uv != null) {
+                    // Kiểm tra trạng thái & hạn dùng
+                    if (!"AVAILABLE".equalsIgnoreCase(uv.getStatus())) {
+                        response.getWriter().write("{\"success\": false, \"message\": \"Voucher is not available for use\"}");
+                        return;
+                    }
+                    if (uv.getExpiresAt() != null && uv.getExpiresAt().isBefore(LocalDateTime.now())) {
+                        response.getWriter().write("{\"success\": false, \"message\": \"Voucher has expired\"}");
+                        return;
+                    }
+
+                    voucher = vouchersRepo.getVoucherById(uv.getVoucherId());
+                } else {
+                    // 2. Nếu không phải voucher cá nhân, fallback sang voucher public theo code trong bảng vouchers
+                    voucher = vouchersRepo.getActiveVoucherByCode(trimmedCode);
+                }
+
+                if (voucher == null || Boolean.FALSE.equals(voucher.getIsActive())) {
+                    response.getWriter().write("{\"success\": false, \"message\": \"Invalid or inactive voucher code\"}");
+                    return;
+                }
+
+                if (voucher.getDiscountAmount() != null) {
+                    discountAmount = voucher.getDiscountAmount();
+                    if (discountAmount.compareTo(BigDecimal.ZERO) < 0) {
+                        discountAmount = BigDecimal.ZERO;
+                    }
+                    if (discountAmount.compareTo(totalAmount) > 0) {
+                        discountAmount = totalAmount;
+                    }
+                }
+                appliedVoucherCode = trimmedCode;
+            }
+
+            finalAmount = totalAmount.subtract(discountAmount);
+
             // Success response
             JsonObject successResponse = new JsonObject();
             successResponse.addProperty("success", true);
             successResponse.addProperty("message", "Booking completed successfully");
             successResponse.addProperty("ticketCode", ticketCode);
             successResponse.addProperty("totalAmount", totalAmount.toString());
+            successResponse.addProperty("discountAmount", discountAmount.toString());
+            successResponse.addProperty("finalAmount", finalAmount.toString());
+            if (appliedVoucherCode != null) {
+                successResponse.addProperty("appliedVoucherCode", appliedVoucherCode);
+            }
             successResponse.addProperty("ticketCount", ticketIds.size());
             
             JsonArray ticketIdsArray = new JsonArray();
@@ -248,6 +310,12 @@ public class CounterBookingPayment extends HttpServlet {
             }
             if (showtimesRepo != null) {
                 showtimesRepo.closeConnection();
+            }
+            if (vouchersRepo != null) {
+                vouchersRepo.closeConnection();
+            }
+            if (userVouchersRepo != null) {
+                userVouchersRepo.closeConnection();
             }
         }
     }
