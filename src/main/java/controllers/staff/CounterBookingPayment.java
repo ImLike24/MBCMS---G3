@@ -162,8 +162,9 @@ public class CounterBookingPayment extends HttpServlet {
             Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
             BigDecimal basePrice = ((models.Showtime) showtimeDetails.get("showtime")).getBasePrice();
 
-            // Create counter tickets
+            // Prepare counter tickets in memory first (no DB writes yet)
             List<Integer> ticketIds = new ArrayList<>();
+            List<CounterTicket> ticketsToCreate = new ArrayList<>();
             BigDecimal totalAmount = BigDecimal.ZERO;
             BigDecimal discountAmount = BigDecimal.ZERO;
             BigDecimal finalAmount;
@@ -198,15 +199,16 @@ public class CounterBookingPayment extends HttpServlet {
                 
                 // Round to 2 decimal places
                 price = price.setScale(2, BigDecimal.ROUND_HALF_UP);
+
+                totalAmount = totalAmount.add(price);
                 
-                // Create counter ticket
+                // Prepare counter ticket object (will insert later after voucher validation)
                 CounterTicket ticket = new CounterTicket();
                 ticket.setShowtimeId(showtimeId);
                 ticket.setSeatId(seatId);
                 ticket.setTicketType(ticketType);
                 ticket.setSeatType(seatType);
                 ticket.setPrice(price);
-                ticket.setTicketCode(ticketCode);
                 ticket.setSoldBy(staffId);
                 ticket.setPaymentMethod(paymentMethod);
                 ticket.setCustomerName(customerName);
@@ -214,21 +216,8 @@ public class CounterBookingPayment extends HttpServlet {
                 ticket.setCustomerEmail(customerEmail);
                 // Unique ticket_code per row (DB has UNIQUE constraint); base code + index for receipt grouping
                 ticket.setTicketCode(ticketCode + "-" + (i + 1));
-                
-                int ticketId = counterTicketsRepo.createCounterTicket(ticket);
-                
-                if (ticketId > 0) {
-                    ticketIds.add(ticketId);
-                    totalAmount = totalAmount.add(price);
-                } else {
-                    String dbError = counterTicketsRepo.getLastErrorMessage();
-                    String msg = dbError != null ? "Failed to create ticket: " + dbError : "Failed to create ticket";
-                    LOGGER.log(Level.SEVERE, "[CounterBookingPayment] createCounterTicket failed for seatId={0}, ticketCode={1}, dbError={2}",
-                            new Object[]{seatId, ticket.getTicketCode(), dbError});
-                    System.err.println("[CounterBookingPayment] FAIL create ticket: seatId=" + seatId + " ticketCode=" + ticket.getTicketCode() + " dbError=" + dbError);
-                    response.getWriter().write("{\"success\": false, \"message\": \"" + escapeJson(msg) + "\"}");
-                    return;
-                }
+
+                ticketsToCreate.add(ticket);
             }
 
             // Apply voucher discount to total bill if voucher code is provided
@@ -277,6 +266,23 @@ public class CounterBookingPayment extends HttpServlet {
             }
 
             finalAmount = totalAmount.subtract(discountAmount);
+
+            // Now actually create counter tickets in DB (only after all validations pass)
+            for (CounterTicket ticket : ticketsToCreate) {
+                int ticketId = counterTicketsRepo.createCounterTicket(ticket);
+
+                if (ticketId > 0) {
+                    ticketIds.add(ticketId);
+                } else {
+                    String dbError = counterTicketsRepo.getLastErrorMessage();
+                    String msg = dbError != null ? "Failed to create ticket: " + dbError : "Failed to create ticket";
+                    LOGGER.log(Level.SEVERE, "[CounterBookingPayment] createCounterTicket failed for seatId={0}, ticketCode={1}, dbError={2}",
+                            new Object[]{ticket.getSeatId(), ticket.getTicketCode(), dbError});
+                    System.err.println("[CounterBookingPayment] FAIL create ticket: seatId=" + ticket.getSeatId() + " ticketCode=" + ticket.getTicketCode() + " dbError=" + dbError);
+                    response.getWriter().write("{\"success\": false, \"message\": \"" + escapeJson(msg) + "\"}");
+                    return;
+                }
+            }
 
             // Success response
             JsonObject successResponse = new JsonObject();
