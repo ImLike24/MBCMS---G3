@@ -32,7 +32,7 @@ public class DeleteMovie extends HttpServlet {
 
         movieService.deleteMovie(id);
 
-        response.sendRedirect(request.getContextPath() + "/admin/movies?message=Xóa thành công");
+        response.sendRedirect(request.getContextPath() + "/admin/movies?message=delete-success");
     }
 
     private boolean isAdminLoggedIn(HttpServletRequest request) {

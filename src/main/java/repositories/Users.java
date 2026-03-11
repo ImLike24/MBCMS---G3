@@ -117,26 +117,54 @@ public class Users extends DBContext {
         }
     }
 
-    public boolean updateProfile(User u) {
+    public boolean updateProfileInfo(User u) {
         String sql = """
-                    UPDATE users
-                    SET fullName = ?, email = ?, phone = ?, birthday = ?, password = ?, updated_at = SYSDATETIME()
-                    WHERE user_id = ?
-                """;
-
+            UPDATE users
+            SET fullName = ?, email = ?, phone = ?, birthday = ?, updated_at = SYSDATETIME()
+            WHERE user_id = ?
+        """;
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, u.getFullName());
             st.setString(2, u.getEmail());
             st.setString(3, u.getPhone());
-
-            if (u.getBirthday() != null)
+            if (u.getBirthday() != null) {
                 st.setTimestamp(4, Timestamp.valueOf(u.getBirthday()));
-            else
+            } else {
                 st.setNull(4, java.sql.Types.TIMESTAMP);
+            }
+            st.setInt(5, u.getUserId());
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    public boolean updatePassword(User u) {
+        String sql = """
+            UPDATE users
+            SET password = ?, updated_at = SYSDATETIME()
+            WHERE user_id = ?
+        """;
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, u.getPassword());
+            st.setInt(2, u.getUserId());
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
-            st.setString(5, u.getPassword());
-            st.setInt(6, u.getUserId());
-
+    public boolean updateAvatar(User u) {
+        String sql = """
+            UPDATE users
+            SET avatarUrl = ?, updated_at = SYSDATETIME()
+            WHERE user_id = ?
+        """;
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, u.getAvatarUrl());
+            st.setInt(2, u.getUserId());
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

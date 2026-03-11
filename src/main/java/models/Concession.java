@@ -8,7 +8,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Concession {
     private Integer concessionId;
-    private String concessionType;      
+    private String concessionType;  
+    private String concessionName;
     private Integer quantity;           
     private Double priceBase;           
     private Integer addedBy;            
