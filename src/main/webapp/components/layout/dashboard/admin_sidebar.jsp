@@ -42,6 +42,24 @@
                 <i class="fa fa-coffee me-3"></i>Quản lý đồ ăn & nước uống
             </a>
         </li>
+        <li class="nav-item mt-3">
+            <span class="nav-link text-muted fw-bold ps-3" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Hệ Thống Loyalty</span>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/loyalty-config" class="nav-link">
+                <i class="fa fa-cogs me-3"></i>Cấu hình Tích Điểm
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/manage-tiers" class="nav-link">
+                <i class="fa fa-trophy me-3"></i>Hạng Thành Viên
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/manage-vouchers" class="nav-link">
+                <i class="fa fa-tag me-3"></i>Quản lý Vouchers
+            </a>
+        </li>
     </ul>
 
     <div class="mt-auto pt-3 border-top border-secondary">
