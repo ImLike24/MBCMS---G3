@@ -386,4 +386,60 @@ public class Users extends DBContext {
         }
         return false;
     }
+
+    /**
+     * Cộng thêm điểm cho user: vừa cập nhật points hiện tại,
+     * vừa cập nhật total_accumulated_points.
+     *
+     * @param userId      ID user cần cộng điểm
+     * @param deltaPoints số điểm cộng (dương). Nếu <= 0 sẽ không làm gì.
+     * @return true nếu cập nhật thành công, ngược lại false.
+     */
+    public boolean addPoints(int userId, int deltaPoints) {
+        if (deltaPoints <= 0) {
+            return false;
+        }
+
+        String sql = """
+                UPDATE users
+                SET points = points + ?,
+                    total_accumulated_points = total_accumulated_points + ?
+                WHERE user_id = ?
+                """;
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, deltaPoints);
+            st.setInt(2, deltaPoints);
+            st.setInt(3, userId);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Trừ điểm hiện có của user (dùng khi quy đổi điểm).
+     * Không ảnh hưởng total_accumulated_points.
+     *
+     * @param userId          ID user
+     * @param pointsToRedeem  số điểm muốn trừ (dương)
+     * @return true nếu trừ thành công, false nếu không đủ điểm hoặc lỗi
+     */
+    public boolean redeemPoints(int userId, int pointsToRedeem) {
+        if (pointsToRedeem <= 0) {
+            return false;
+        }
+
+        String sql = "UPDATE users SET points = points - ? WHERE user_id = ? AND points >= ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, pointsToRedeem);
+            st.setInt(2, userId);
+            st.setInt(3, pointsToRedeem);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
