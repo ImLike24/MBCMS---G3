@@ -120,12 +120,16 @@ public class TicketPricing extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        response.setContentType("text/html; charset=UTF-8");
+
         HttpSession session = request.getSession();
         Integer selectedBranchId = (Integer) session.getAttribute("selectedBranchId");
         String action = request.getParameter("action");
 
+        TicketPrice p = new TicketPrice();
+
         try {
-            TicketPrice p = new TicketPrice();
             p.setBranchId(selectedBranchId);
             p.setTicketType(request.getParameter("ticketType"));
             p.setDayType(request.getParameter("dayType"));
@@ -140,7 +144,6 @@ public class TicketPricing extends HttpServlet {
 
             p.setActive(request.getParameter("isActive") != null);
 
-            // GỌI SERVICE XỬ LÝ
             if ("create".equals(action)) {
                 priceService.createTicketPrice(p);
                 response.sendRedirect("ticket-prices?message=created");
@@ -149,9 +152,13 @@ public class TicketPricing extends HttpServlet {
                 priceService.updateTicketPrice(p);
                 response.sendRedirect("ticket-prices?message=updated");
             }
+
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", e.getMessage());
+
+            request.setAttribute("errorMessage", e.getMessage());
+
+            request.setAttribute("priceObj", p);
             request.getRequestDispatcher("/pages/manager/ticket-price/form.jsp").forward(request, response);
         }
     }
