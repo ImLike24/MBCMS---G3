@@ -16,7 +16,7 @@
         <ul class="nav nav-pills flex-column flex-grow-1">
 
             <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/manager/dashboard"
+                <a href="${pageContext.request.contextPath}/branch-manager/dashboard"
                     class="nav-link text-white ${param.page == 'dashboard' ? 'active' : ''}">
                     <i class="fa fa-home me-2" style="width: 20px; text-align: center;"></i>
                     Bảng điều khiển
@@ -24,14 +24,7 @@
             </li>
 
             <li class="nav-item">
-                <a href="#" class="nav-link text-white">
-                    <i class="fa fa-building me-2" style="width: 20px; text-align: center;"></i>
-                    Thông tin chi nhánh
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/manager/rooms"
+                <a href="${pageContext.request.contextPath}/branch-manager/rooms"
                     class="nav-link text-white ${param.page == 'rooms' ? 'active' : ''}">
                     <i class="fa fa-desktop me-2" style="width: 20px; text-align: center;"></i>
                     Phòng chiếu
@@ -67,6 +60,14 @@
                     class="nav-link text-white ${param.page == 'showtimes' ? 'active' : ''}">
                     <i class="fa fa-calendar me-2" style="width: 20px; text-align: center;"></i>
                     Quản lý suất chiếu
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/manager/ticket-prices"
+                   class="nav-link text-white ${param.page == 'ticket-prices' ? 'active' : ''}">
+                    <i class="fa fa-ticket me-2" style="width: 20px; text-align: center;"></i>
+                    Cấu hình Giá vé
                 </a>
             </li>
 

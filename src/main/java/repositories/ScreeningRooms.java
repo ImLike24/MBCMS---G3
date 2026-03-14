@@ -165,22 +165,31 @@ public class ScreeningRooms extends DBContext {
         return list;
     }
 
-    // Lấy danh sách phòng có phân trang
-    public List<ScreeningRoom> getRoomsByBranchWithPagination(int branchId, int page, int pageSize) {
+    public List<ScreeningRoom> getRoomsByBranchWithFilterAndPagination(int branchId, String search, String status, int page, int pageSize) {
         List<ScreeningRoom> rooms = new ArrayList<>();
-        int offset = (page - 1) * pageSize;
+        StringBuilder sql = new StringBuilder("SELECT * FROM screening_rooms WHERE branch_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(branchId);
 
-        String sql = "SELECT * FROM screening_rooms WHERE branch_id = ? ORDER BY room_name ASC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append(" AND room_name LIKE ?");
+            params.add("%" + search.trim() + "%");
+        }
+        if (status != null && !status.trim().isEmpty()) {
+            sql.append(" AND status = ?");
+            params.add(status);
+        }
 
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, branchId);
-            st.setInt(2, offset);
-            st.setInt(3, pageSize);
+        sql.append(" ORDER BY room_name ASC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        params.add((page - 1) * pageSize);
+        params.add(pageSize);
 
+        try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                st.setObject(i + 1, params.get(i));
+            }
             try (ResultSet rs = st.executeQuery()) {
-                while (rs.next()) {
-                    rooms.add(mapResultSetToScreeningRoom(rs));
-                }
+                while (rs.next()) rooms.add(mapResultSetToScreeningRoom(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -188,15 +197,27 @@ public class ScreeningRooms extends DBContext {
         return rooms;
     }
 
-    // Đếm tổng số phòng của 1 rạp để tính số trang
-    public int countRoomsByBranch(int branchId) {
-        String sql = "SELECT COUNT(*) FROM screening_rooms WHERE branch_id = ?";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, branchId);
+    // 2. Đếm tổng số phòng (để tính số trang)
+    public int countRoomsByBranchWithFilter(int branchId, String search, String status) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM screening_rooms WHERE branch_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(branchId);
+
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append(" AND room_name LIKE ?");
+            params.add("%" + search.trim() + "%");
+        }
+        if (status != null && !status.trim().isEmpty()) {
+            sql.append(" AND status = ?");
+            params.add(status);
+        }
+
+        try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                st.setObject(i + 1, params.get(i));
+            }
             try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
+                if (rs.next()) return rs.getInt(1);
             }
         } catch (SQLException e) {
             e.printStackTrace();

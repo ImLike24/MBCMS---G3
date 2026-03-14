@@ -1,6 +1,8 @@
 package models;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -10,10 +12,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TicketPrice {
     private Integer priceId;
-    private String seatType;
-    private String ticketType;
-    private String dayType;
-    private String timeSlot;
+    private Integer branchId;
+    private String ticketType;   // CHILD, ADULT
+    private String dayType;      // HOLIDAY, WEEKEND, WEEKDAY
+    private String timeSlot;     // NIGHT, EVENING, AFTERNOON, MORNING
     private BigDecimal price;
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;

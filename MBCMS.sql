@@ -747,3 +747,83 @@ GO
 ALTER TABLE showtimes
     ADD cancellation_reason NVARCHAR(500) NULL,
         cancelled_at DATETIME2 NULL;
+
+
+
+
+
+-- 1. BẢNG CẤP BẬC THÀNH VIÊN (MEMBERSHIP TIERS)
+CREATE TABLE membership_tiers (
+    tier_id INT IDENTITY(1,1) PRIMARY KEY,
+    tier_name NVARCHAR(50) NOT NULL UNIQUE,
+    min_points_required INT NOT NULL DEFAULT 0,
+    point_multiplier DECIMAL(3,2) DEFAULT 1.0, -- Hệ số nhân điểm (VD: VIP x1.2)
+    created_at DATETIME2 DEFAULT SYSDATETIME()
+);
+GO
+
+INSERT INTO membership_tiers (tier_name, min_points_required, point_multiplier) VALUES
+('MEMBER', 0, 1.0),
+('BRONZE', 100, 1.1),
+('SILVER', 200, 1.2),
+('GOLD', 300, 1.3),
+('DIAMOND', 500, 1.5);
+GO
+
+-- 2. CẬP NHẬT BẢNG USERS
+
+ALTER TABLE users 
+ADD total_accumulated_points INT DEFAULT 0,
+    tier_id INT DEFAULT 1;
+GO
+
+ALTER TABLE users
+ADD CONSTRAINT FK_users_tier FOREIGN KEY (tier_id) REFERENCES membership_tiers(tier_id);
+GO
+
+-- 3. BẢNG LỊCH SỬ ĐIỂM (POINT HISTORY)
+CREATE TABLE point_history (
+    history_id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT NOT NULL,
+    points_changed INT NOT NULL,
+    transaction_type VARCHAR(20) NOT NULL, 
+    description NVARCHAR(255),
+    reference_id INT,
+    created_at DATETIME2 DEFAULT SYSDATETIME(),
+    CONSTRAINT FK_point_history_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT CK_point_transaction_type CHECK (transaction_type IN ('EARN', 'REDEEM', 'REFUND', 'EXPIRE', 'ADJUSTMENT'))
+);
+GO
+
+-- 4. BẢNG DANH MỤC QUÀ TẶNG & PROMO (REWARD VOUCHERS)
+-- Lưu các Voucher do Admin tạo ra
+CREATE TABLE vouchers (
+    voucher_id INT IDENTITY(1,1) PRIMARY KEY,
+    voucher_name NVARCHAR(100) NOT NULL,          
+    voucher_type VARCHAR(20) DEFAULT 'LOYALTY',   
+    voucher_code VARCHAR(50) NULL,                
+    points_cost INT NOT NULL DEFAULT 0,           
+    discount_amount DECIMAL(10,2) NOT NULL,
+    max_usage_limit INT DEFAULT 0,                
+    valid_days INT DEFAULT 30,                    
+    is_active BIT DEFAULT 1,
+    created_at DATETIME2 DEFAULT SYSDATETIME(),
+    CONSTRAINT CK_voucher_type CHECK (voucher_type IN ('LOYALTY', 'PUBLIC'))
+);
+GO
+
+-- 5. BẢNG VOUCHER CỦA KHÁCH HÀNG (USER VOUCHERS)
+-- Lưu mã voucher cá nhân của từng khách
+CREATE TABLE user_vouchers (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT NOT NULL,
+    voucher_id INT NOT NULL,
+    voucher_code VARCHAR(50) UNIQUE NOT NULL,
+    status VARCHAR(15) DEFAULT 'AVAILABLE', 
+    redeemed_at DATETIME2 DEFAULT SYSDATETIME(),
+    expires_at DATETIME2 NOT NULL,
+    used_at DATETIME2,
+    CONSTRAINT FK_uv_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT FK_uv_voucher FOREIGN KEY (voucher_id) REFERENCES vouchers(voucher_id),
+    CONSTRAINT CK_uv_status CHECK (status IN ('AVAILABLE', 'USED', 'EXPIRED'))
+);

@@ -14,7 +14,6 @@ import java.util.Map;
 
 public class Showtimes extends DBContext {
 
-    
     public List<Showtime> getShowtimesForMovieOnDate(int movieId, LocalDate date) {
         List<Showtime> showtimes = new ArrayList<>();
         String sql = "SELECT * FROM showtimes " +
@@ -37,7 +36,6 @@ public class Showtimes extends DBContext {
         return showtimes;
     }
 
-    
     public Showtime getShowtimeById(int showtimeId) {
         String sql = "SELECT * FROM showtimes WHERE showtime_id = ?";
 
@@ -318,14 +316,14 @@ public class Showtimes extends DBContext {
     public List<models.Movie> getMoviesWithShowtimes(int branchId, LocalDate date) {
         Map<Integer, models.Movie> movieMap = new java.util.LinkedHashMap<>();
 
-        String sql =""" 
-                    SELECT s.*, m.* 
-                    FROM showtimes s 
-                    JOIN movies m ON s.movie_id = m.movie_id
-                    JOIN screening_rooms r ON s.room_id = r.room_id
-                    WHERE r.branch_id = ? AND s.show_date = ? AND s.status IN ('SCHEDULED', 'ONGOING') 
-                    ORDER BY s.start_time
-                    """;
+        String sql = """
+                SELECT s.*, m.*
+                FROM showtimes s
+                JOIN movies m ON s.movie_id = m.movie_id
+                JOIN screening_rooms r ON s.room_id = r.room_id
+                WHERE r.branch_id = ? AND s.show_date = ? AND s.status IN ('SCHEDULED', 'ONGOING')
+                ORDER BY s.start_time
+                """;
 
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, branchId);
@@ -433,12 +431,28 @@ public class Showtimes extends DBContext {
      * AND end_time <= now)
      */
     public void autoUpdateStatuses(int branchId) {
-        // Mark COMPLETED first (past showtimes)
-        String sqlCompleted = "UPDATE showtimes SET status = 'COMPLETED' " +
-                "WHERE status IN ('SCHEDULED','ONGOING') " +
-                "AND room_id IN (SELECT room_id FROM screening_rooms WHERE branch_id = ?) " +
-                "AND (show_date < CAST(GETDATE() AS DATE) " +
-                "     OR (show_date = CAST(GETDATE() AS DATE) AND end_time <= CAST(GETDATE() AS TIME)))";
+        // ── Mark COMPLETED ──────────────────────────────────────────────────
+        // Regular (end_time >= start_time): ends same calendar day
+        // Overnight (end_time < start_time): effective end is show_date + 1 day
+        // → only COMPLETED when show_date+1 has passed OR end_time has passed today
+        String sqlCompleted = """
+                UPDATE showtimes SET status = 'COMPLETED'
+                WHERE status IN ('SCHEDULED','ONGOING')
+                  AND room_id IN (SELECT room_id FROM screening_rooms WHERE branch_id = ?)
+                  AND (
+                      (end_time >= start_time AND (
+                          show_date < CAST(GETDATE() AS DATE)
+                          OR (show_date = CAST(GETDATE() AS DATE)
+                              AND end_time <= CAST(GETDATE() AS TIME))
+                      ))
+                      OR
+                      (end_time < start_time AND (
+                          DATEADD(day, 1, show_date) < CAST(GETDATE() AS DATE)
+                          OR (DATEADD(day, 1, show_date) = CAST(GETDATE() AS DATE)
+                              AND end_time <= CAST(GETDATE() AS TIME))
+                      ))
+                  )
+                """;
         try (PreparedStatement ps = connection.prepareStatement(sqlCompleted)) {
             ps.setInt(1, branchId);
             ps.executeUpdate();
@@ -446,13 +460,30 @@ public class Showtimes extends DBContext {
             e.printStackTrace();
         }
 
-        // Mark ONGOING (currently showing)
-        String sqlOngoing = "UPDATE showtimes SET status = 'ONGOING' " +
-                "WHERE status = 'SCHEDULED' " +
-                "AND room_id IN (SELECT room_id FROM screening_rooms WHERE branch_id = ?) " +
-                "AND show_date = CAST(GETDATE() AS DATE) " +
-                "AND start_time <= CAST(GETDATE() AS TIME) " +
-                "AND end_time > CAST(GETDATE() AS TIME)";
+        // ── Mark ONGOING ─────────────────────────────────────────────────────
+        // Regular: today, within start–end window
+        // Overnight case A: started today (start_time <= now, hasn't hit midnight yet)
+        // Overnight case B: started yesterday, still running past midnight (end_time >
+        // now)
+        String sqlOngoing = """
+                UPDATE showtimes SET status = 'ONGOING'
+                WHERE status = 'SCHEDULED'
+                  AND room_id IN (SELECT room_id FROM screening_rooms WHERE branch_id = ?)
+                  AND (
+                      (end_time >= start_time
+                       AND show_date = CAST(GETDATE() AS DATE)
+                       AND start_time <= CAST(GETDATE() AS TIME)
+                       AND end_time   >  CAST(GETDATE() AS TIME))
+                      OR
+                      (end_time < start_time
+                       AND show_date = CAST(GETDATE() AS DATE)
+                       AND start_time <= CAST(GETDATE() AS TIME))
+                      OR
+                      (end_time < start_time
+                       AND show_date = DATEADD(day, -1, CAST(GETDATE() AS DATE))
+                       AND end_time > CAST(GETDATE() AS TIME))
+                  )
+                """;
         try (PreparedStatement ps = connection.prepareStatement(sqlOngoing)) {
             ps.setInt(1, branchId);
             ps.executeUpdate();
@@ -947,6 +978,143 @@ public class Showtimes extends DBContext {
                     row.put("ticketCode", rs.getString("ticket_code"));
                     row.put("customerName", rs.getString("customer_name"));
                     row.put("customerPhone", rs.getString("customer_phone"));
+                    row.put("seatCode", rs.getString("seat_code"));
+                    row.put("ticketType", rs.getString("ticket_type"));
+                    row.put("seatType", rs.getString("seat_type"));
+                    row.put("price", rs.getBigDecimal("price"));
+                    row.put("paymentMethod", rs.getString("payment_method"));
+                    counterTickets.add(row);
+                    java.math.BigDecimal p = rs.getBigDecimal("price");
+                    if (p != null)
+                        counterRevenue = counterRevenue.add(p);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        detail.put("onlineTickets", onlineTickets);
+        detail.put("counterTickets", counterTickets);
+        detail.put("onlineCount", onlineTickets.size());
+        detail.put("counterCount", counterTickets.size());
+        detail.put("totalCount", onlineTickets.size() + counterTickets.size());
+        detail.put("onlineRevenue", onlineRevenue);
+        detail.put("counterRevenue", counterRevenue);
+        detail.put("totalRevenue", onlineRevenue.add(counterRevenue));
+        return detail;
+    }
+
+    /**
+     * Get full detail of a SCHEDULED / ONGOING / COMPLETED showtime.
+     * Returns movie+room info, online tickets, counter tickets, revenue totals.
+     */
+    public Map<String, Object> getActiveShowtimeDetail(int showtimeId) {
+        Map<String, Object> detail = new HashMap<>();
+
+        // --- Showtime + movie + room info ---
+        String infoSql = """
+                SELECT st.showtime_id, st.show_date, st.start_time, st.end_time,
+                       st.base_price, st.status,
+                       m.title AS movie_title, m.duration, m.age_rating, m.poster_url,
+                       sr.room_name, sr.total_seats,
+                       cb.branch_name, cb.address AS branch_address
+                FROM showtimes st
+                JOIN movies m           ON st.movie_id = m.movie_id
+                JOIN screening_rooms sr ON st.room_id  = sr.room_id
+                JOIN cinema_branches cb ON sr.branch_id = cb.branch_id
+                WHERE st.showtime_id = ?
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(infoSql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    detail.put("movieTitle", rs.getString("movie_title"));
+                    detail.put("movieDuration", rs.getInt("duration"));
+                    detail.put("movieAgeRating", rs.getString("age_rating"));
+                    detail.put("moviePosterUrl", rs.getString("poster_url"));
+                    detail.put("roomName", rs.getString("room_name"));
+                    detail.put("totalSeats", rs.getInt("total_seats"));
+                    detail.put("branchName", rs.getString("branch_name"));
+                    detail.put("branchAddress", rs.getString("branch_address"));
+                    detail.put("showDate",
+                            rs.getDate("show_date") != null ? rs.getDate("show_date").toLocalDate() : null);
+                    detail.put("startTime",
+                            rs.getTime("start_time") != null ? rs.getTime("start_time").toLocalTime() : null);
+                    detail.put("endTime", rs.getTime("end_time") != null ? rs.getTime("end_time").toLocalTime() : null);
+                    detail.put("basePrice", rs.getBigDecimal("base_price"));
+                    detail.put("status", rs.getString("status"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // --- Online tickets ---
+        List<Map<String, Object>> onlineTickets = new ArrayList<>();
+        java.math.BigDecimal onlineRevenue = java.math.BigDecimal.ZERO;
+        String onlineSql = """
+                SELECT ot.e_ticket_code AS ticket_code,
+                       b.booking_code,
+                       COALESCE(u.fullName, 'N/A') AS customer_name,
+                       COALESCE(u.email, '')        AS customer_email,
+                       s.seat_code, ot.ticket_type, ot.seat_type, ot.price,
+                       b.payment_status
+                FROM online_tickets ot
+                JOIN bookings b ON ot.booking_id = b.booking_id
+                JOIN users u    ON b.user_id     = u.user_id
+                JOIN seats s    ON ot.seat_id    = s.seat_id
+                WHERE ot.showtime_id = ?
+                  AND b.status NOT IN ('CANCELLED')
+                ORDER BY b.booking_code, s.seat_code
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(onlineSql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("ticketCode", rs.getString("ticket_code"));
+                    row.put("bookingCode", rs.getString("booking_code"));
+                    row.put("customerName", rs.getString("customer_name"));
+                    row.put("customerEmail", rs.getString("customer_email"));
+                    row.put("seatCode", rs.getString("seat_code"));
+                    row.put("ticketType", rs.getString("ticket_type"));
+                    row.put("seatType", rs.getString("seat_type"));
+                    row.put("price", rs.getBigDecimal("price"));
+                    row.put("paymentStatus", rs.getString("payment_status"));
+                    onlineTickets.add(row);
+                    java.math.BigDecimal p = rs.getBigDecimal("price");
+                    if (p != null)
+                        onlineRevenue = onlineRevenue.add(p);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // --- Counter tickets ---
+        List<Map<String, Object>> counterTickets = new ArrayList<>();
+        java.math.BigDecimal counterRevenue = java.math.BigDecimal.ZERO;
+        String counterSql = """
+                SELECT ct.ticket_code,
+                       COALESCE(ct.customer_name,  'Walk-in') AS customer_name,
+                       COALESCE(ct.customer_phone, '')         AS customer_phone,
+                       COALESCE(ct.customer_email, '')         AS customer_email,
+                       s.seat_code, ct.ticket_type, ct.seat_type, ct.price,
+                       ct.payment_method
+                FROM counter_tickets ct
+                JOIN seats s ON ct.seat_id = s.seat_id
+                WHERE ct.showtime_id = ?
+                ORDER BY s.seat_code
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(counterSql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("ticketCode", rs.getString("ticket_code"));
+                    row.put("customerName", rs.getString("customer_name"));
+                    row.put("customerPhone", rs.getString("customer_phone"));
+                    row.put("customerEmail", rs.getString("customer_email"));
                     row.put("seatCode", rs.getString("seat_code"));
                     row.put("ticketType", rs.getString("ticket_type"));
                     row.put("seatType", rs.getString("seat_type"));

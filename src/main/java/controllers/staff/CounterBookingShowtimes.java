@@ -2,8 +2,7 @@ package controllers.staff;
 
 import models.Movie;
 import models.Showtime;
-import repositories.Movies;
-import repositories.Showtimes;
+import services.CounterBookingShowtimesService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -46,50 +45,33 @@ public class CounterBookingShowtimes extends HttpServlet {
             return;
         }
 
-        Movies moviesRepo = null;
-        Showtimes showtimesRepo = null;
-
         try {
             int movieId = Integer.parseInt(movieIdParam);
             LocalDate selectedDate = (dateParam != null && !dateParam.isEmpty())
                     ? LocalDate.parse(dateParam)
                     : LocalDate.now();
 
-            moviesRepo = new Movies();
-            showtimesRepo = new Showtimes();
+            CounterBookingShowtimesService service = new CounterBookingShowtimesService();
+            CounterBookingShowtimesService.ShowtimesResult result =
+                    service.getShowtimesForMovie(movieId, selectedDate);
 
-            // Get movie details
-            Movie movie = moviesRepo.getMovieById(movieId);
+            Movie movie = result != null ? result.movie : null;
             if (movie == null) {
                 request.setAttribute("error", "Movie not found");
                 response.sendRedirect(request.getContextPath() + "/staff/counter-booking");
                 return;
             }
 
-            // Get showtimes for this movie on the selected date
-            List<Showtime> showtimes = showtimesRepo.getShowtimesForMovieOnDate(movieId, selectedDate);
-
-            // Get available seat count for each showtime
-            Map<Integer, Integer> availableSeatsMap = new HashMap<>();
-            Map<Integer, Integer> totalSeatsMap = new HashMap<>();
-
-            for (Showtime showtime : showtimes) {
-                int availableSeats = showtimesRepo.countAvailableSeats(showtime.getShowtimeId());
-                availableSeatsMap.put(showtime.getShowtimeId(), availableSeats);
-
-                // Get total seats from showtime details
-                Map<String, Object> details = showtimesRepo.getShowtimeDetails(showtime.getShowtimeId());
-                if (details.containsKey("totalSeats")) {
-                    totalSeatsMap.put(showtime.getShowtimeId(), (Integer) details.get("totalSeats"));
-                }
-            }
+            List<Showtime> showtimes = result.showtimes;
+            Map<Integer, Integer> availableSeatsMap = result.availableSeatsMap;
+            Map<Integer, Integer> totalSeatsMap = result.totalSeatsMap;
 
             // Set attributes for JSP
             request.setAttribute("movie", movie);
             request.setAttribute("showtimes", showtimes);
             request.setAttribute("availableSeatsMap", availableSeatsMap);
             request.setAttribute("totalSeatsMap", totalSeatsMap);
-            request.setAttribute("selectedDate", selectedDate);
+            request.setAttribute("selectedDate", result.selectedDate);
             request.setAttribute("today", LocalDate.now());
 
             request.getRequestDispatcher("/pages/staff/counter-booking-showtimes.jsp").forward(request, response);
@@ -102,13 +84,6 @@ public class CounterBookingShowtimes extends HttpServlet {
             e.printStackTrace();
             request.setAttribute("error", "Error loading showtimes: " + e.getMessage());
             request.getRequestDispatcher("/pages/staff/counter-booking-showtimes.jsp").forward(request, response);
-        } finally {
-            if (moviesRepo != null) {
-                moviesRepo.closeConnection();
-            }
-            if (showtimesRepo != null) {
-                showtimesRepo.closeConnection();
-            }
         }
     }
 }

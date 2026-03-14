@@ -100,6 +100,24 @@
             color: #d96c2c;
         }
 
+        /* Highlight voucher discount + final amount */
+        #discountInfo {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffd27f;
+        }
+
+        #discountInfo span,
+        #discountInfo strong {
+            display: block;
+        }
+
+        #discountInfo strong {
+            font-size: 20px;
+            color: #ffb347;
+        }
+
         .form-section {
             margin-bottom: 30px;
         }
@@ -431,6 +449,47 @@
         .error-message.show {
             display: block;
         }
+        
+        .summary-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            flex-wrap: nowrap;
+        }
+        
+        .summary-row-label {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* Keep points usage on one line */
+        #pointsUsageInfo {
+            white-space: nowrap;
+        }
+        .points-discount-inline {
+            white-space: nowrap;
+        }
+        #pointsUsageInfo span {
+            display: inline;
+        }
+        
+        .loyalty-info-text {
+            color: #ffd27f;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        
+        .loyalty-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        
+        .loyalty-actions button {
+            flex: 1;
+            padding: 6px 10px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -516,6 +575,21 @@
                     <span class="label">Total Amount:</span>
                     <span class="amount" id="totalAmountDisplay">0 VND</span>
                 </div>
+                <div id="discountInfo" style="display: none; margin-top: 8px; font-size: 13px;">
+                    <div class="summary-row">
+                        <span class="summary-row-label">Total Discount (voucher + points):</span>
+                        <span id="discountAmountDisplay">0 VND</span>
+                    </div>
+                    <div id="pointsUsageInfo" class="summary-row" style="color:#ccc;display:none;margin-top:3px;">
+                        <span class="summary-row-label">Points used:</span>
+                        <span id="pointsUsedDisplay">0</span>
+                        <span class="points-discount-inline">&nbsp;(≈ <span id="pointsDiscountDisplay">0 VND</span>)</span>
+                    </div>
+                    <div class="summary-row" style="margin-top:6px;">
+                        <span class="summary-row-label">Final Amount:</span>
+                        <strong id="finalAmountDisplay">0 VND</strong>
+                    </div>
+                </div>
             </div>
 
             <!-- Customer Information (Optional) -->
@@ -532,6 +606,51 @@
                 <div class="form-group">
                     <label for="customerEmail">Email</label>
                     <input type="email" id="customerEmail" placeholder="customer@example.com">
+                </div>
+            </div>
+
+            <!-- Voucher -->
+            <div class="form-section">
+                <h3><i class="fas fa-ticket-alt"></i> Voucher</h3>
+                <div class="form-group">
+                    <label for="voucherCode">Voucher Code (optional)</label>
+                    <input type="text" id="voucherCode" placeholder="Enter voucher code if any">
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-secondary" style="width:100%;justify-content:center;" onclick="suggestBestVoucher()">
+                        <i class="fas fa-magic"></i> Suggest Best Voucher (by phone)
+                    </button>
+                </div>
+                <div class="form-group" id="voucherSuggestionsContainer" style="display:none; margin-top:8px;">
+                    <label style="color:#ccc;font-size:13px;">Available vouchers for this customer</label>
+                    <div id="voucherSuggestionsList" style="max-height:160px; overflow-y:auto; border:1px solid #262625; border-radius:8px; padding:8px;"></div>
+                </div>
+            </div>
+
+            <!-- Loyalty Points (Optional) -->
+            <div class="form-section">
+                <h3><i class="fas fa-star"></i> Loyalty Points (Optional)</h3>
+                <div class="form-group">
+                    <label for="redeemPoints">Points to Use</label>
+                    <input type="number" id="redeemPoints" min="0" step="1" placeholder="Enter points customer wants to redeem">
+                </div>
+                <p style="color:#777;font-size:12px;margin-top:-8px;">
+                    1 point = 1,000 VND discount. Actual usable points will be capped by the customer's balance and bill amount.
+                </p>
+                <div class="form-group">
+                    <button type="button" class="btn btn-secondary" style="width:100%;justify-content:center;"
+                            onclick="lookupLoyalty()">
+                        <i class="fas fa-search"></i> Check Current Points (by phone)
+                    </button>
+                    <div id="loyaltyInfoText" class="loyalty-info-text"></div>
+                    <div class="loyalty-actions">
+                        <button type="button" class="btn btn-secondary" onclick="useAllPoints()">
+                            Use All Points
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="clearPointUsage()">
+                            Custom Amount
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -615,6 +734,15 @@
         const bookingData = JSON.parse(sessionStorage.getItem('bookingData') || '{}');
         const showtimeId = ${showtimeId};
         let ticketCodeGenerated = '';
+        let lastFinalAmount = null;
+        let lastDiscountAmount = null;
+        let lastTotalAmount = 0;
+        let voucherSuggestions = [];
+        let selectedVoucherCode = null;
+        let lastVoucherResponse = null;
+        let currentCustomerPoints = null;
+        let lastRedeemPointsRequested = 0;
+        let currentVoucherDiscountPreview = 0;
 
         // Display booking summary
         function displayBookingSummary() {
@@ -650,8 +778,301 @@
                 totalAmount += price;
             });
 
+            lastTotalAmount = totalAmount;
             document.getElementById('totalAmountDisplay').textContent =
                 new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalAmount);
+        }
+
+        function applyVoucherChoice(voucherCode, effectiveDiscountStr) {
+            const codeInput = document.getElementById('voucherCode');
+            const discountInfo = document.getElementById('discountInfo');
+            const discountEl = document.getElementById('discountAmountDisplay');
+            const finalEl = document.getElementById('finalAmountDisplay');
+
+            if (!codeInput || !discountInfo || !discountEl || !finalEl) return;
+
+            selectedVoucherCode = voucherCode;
+
+            codeInput.value = voucherCode;
+
+            const discount = Number(effectiveDiscountStr || 0);
+            if (!isNaN(discount) && discount > 0) {
+                currentVoucherDiscountPreview = discount;
+            } else {
+                currentVoucherDiscountPreview = 0;
+            }
+
+            updatePreviewTotals();
+        }
+
+        function renderVoucherSuggestions(data) {
+            const container = document.getElementById('voucherSuggestionsContainer');
+            const listEl = document.getElementById('voucherSuggestionsList');
+            if (!container || !listEl) return;
+
+            lastVoucherResponse = data;
+            voucherSuggestions = Array.isArray(data.vouchers) ? data.vouchers : [];
+
+            if (voucherSuggestions.length === 0) {
+                container.style.display = 'none';
+                listEl.innerHTML = '';
+                return;
+            }
+
+            container.style.display = 'block';
+            listEl.innerHTML = '';
+
+            voucherSuggestions.forEach(v => {
+                const item = document.createElement('div');
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.style.alignItems = 'center';
+                item.style.padding = '6px 8px';
+                item.style.borderRadius = '6px';
+                item.style.marginBottom = '4px';
+                const isSelected = selectedVoucherCode
+                    ? selectedVoucherCode === v.voucherCode
+                    : (data.bestVoucherCode && data.bestVoucherCode === v.voucherCode);
+                item.style.background = isSelected ? 'rgba(217,108,44,0.18)' : 'transparent';
+
+                const left = document.createElement('div');
+                left.style.fontSize = '12px';
+                left.style.color = '#ccc';
+                left.innerHTML =
+                    '<div><strong>' + (v.voucherName || v.voucherCode) + '</strong></div>' +
+                    '<div>Code: <span class="font-monospace">' + v.voucherCode + '</span></div>' +
+                    (v.expiresAt ? '<div>Expires: ' + v.expiresAt + '</div>' : '') +
+                    '<div>Discount: ' + v.effectiveDiscount + ' VND</div>';
+
+                const rightBtn = document.createElement('button');
+                rightBtn.type = 'button';
+                rightBtn.className = 'btn btn-secondary';
+                rightBtn.style.flex = '0 0 auto';
+                rightBtn.style.fontSize = '12px';
+                rightBtn.style.padding = '6px 10px';
+                rightBtn.textContent = 'Use';
+                rightBtn.onclick = function() {
+                    applyVoucherChoice(v.voucherCode, v.effectiveDiscount);
+                    // Re-render list so that selected voucher is highlighted
+                    if (lastVoucherResponse) {
+                        renderVoucherSuggestions(lastVoucherResponse);
+                    }
+                };
+
+                item.appendChild(left);
+                item.appendChild(rightBtn);
+                listEl.appendChild(item);
+            });
+        }
+
+        // Gợi ý voucher tốt nhất dựa trên số điện thoại khách & tổng bill hiện tại
+        async function suggestBestVoucher() {
+            const phone = document.getElementById('customerPhone').value.trim();
+            const errorEl = document.getElementById('errorMessage');
+
+            errorEl.classList.remove('show');
+
+            if (!phone) {
+                errorEl.textContent = 'Please enter customer phone to lookup vouchers.';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            if (!bookingData.seats || bookingData.seats.length === 0) {
+                errorEl.textContent = 'No seats selected. Please go back and select seats.';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            try {
+                const payload = {
+                    customerPhone: phone,
+                    totalAmount: String(lastTotalAmount || 0)
+                };
+
+                const res = await fetch('${pageContext.request.contextPath}/staff/counter-best-voucher', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    errorEl.textContent = data.message || 'Cannot suggest voucher.';
+                    errorEl.classList.add('show');
+                    return;
+                }
+
+                if (data.bestVoucherCode) {
+                    document.getElementById('voucherCode').value = data.bestVoucherCode;
+
+                    // Lưu giá trị voucher discount preview để kết hợp với điểm
+                    try {
+                        const discount = data.bestDiscount ? Number(data.bestDiscount) : 0;
+                        if (!isNaN(discount) && discount > 0) {
+                            currentVoucherDiscountPreview = discount;
+                        } else {
+                            currentVoucherDiscountPreview = 0;
+                        }
+                        updatePreviewTotals();
+                    } catch (e) {
+                        console.warn('Cannot render suggested voucher preview', e);
+                    }
+                } else {
+                    errorEl.textContent = 'Customer has vouchers but none give additional discount for this bill.';
+                    errorEl.classList.add('show');
+                }
+
+                // Luôn render danh sách để staff có thể switch giữa các voucher
+                renderVoucherSuggestions(data);
+            } catch (e) {
+                console.error('Suggest voucher error:', e);
+                errorEl.textContent = 'Error while suggesting voucher.';
+                errorEl.classList.add('show');
+            }
+        }
+
+        // Lookup loyalty info (points) by phone
+        async function lookupLoyalty() {
+            const phone = document.getElementById('customerPhone').value.trim();
+            const errorEl = document.getElementById('errorMessage');
+            const infoEl = document.getElementById('loyaltyInfoText');
+
+            errorEl.classList.remove('show');
+            infoEl.textContent = '';
+            currentCustomerPoints = null;
+
+            if (!phone) {
+                errorEl.textContent = 'Please enter customer phone to lookup points.';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            try {
+                const payload = { customerPhone: phone };
+                const res = await fetch('${pageContext.request.contextPath}/staff/counter-customer-loyalty', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    errorEl.textContent = data.message || 'Cannot load loyalty info.';
+                    errorEl.classList.add('show');
+                    return;
+                }
+
+                currentCustomerPoints = typeof data.points === 'number' ? data.points : 0;
+
+                const namePart = data.fullName ? ' (' + data.fullName + ')' : '';
+                const totalAccumulated =
+                    (typeof data.totalAccumulatedPoints === 'number')
+                        ? data.totalAccumulatedPoints
+                        : 0;
+                infoEl.textContent =
+                    'Customer' + namePart + ' has ' + currentCustomerPoints +
+                    ' points. Total accumulated: ' + totalAccumulated + '.';
+
+                const redeemInput = document.getElementById('redeemPoints');
+                if (redeemInput) {
+                    redeemInput.max = currentCustomerPoints;
+                }
+
+                // Cập nhật preview nếu đã có số điểm nhập trước đó
+                updatePreviewTotals();
+            } catch (e) {
+                console.error('Lookup loyalty error:', e);
+                errorEl.textContent = 'Error while loading loyalty info.';
+                errorEl.classList.add('show');
+            }
+        }
+
+        function useAllPoints() {
+            const redeemInput = document.getElementById('redeemPoints');
+            const errorEl = document.getElementById('errorMessage');
+
+            if (currentCustomerPoints == null) {
+                errorEl.textContent = 'Please check customer points first.';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            errorEl.classList.remove('show');
+            redeemInput.value = currentCustomerPoints;
+            lastRedeemPointsRequested = currentCustomerPoints;
+            updatePreviewTotals();
+        }
+
+        function clearPointUsage() {
+            const redeemInput = document.getElementById('redeemPoints');
+            redeemInput.value = '';
+            lastRedeemPointsRequested = 0;
+            updatePreviewTotals();
+        }
+
+        // Tính trước tổng giảm giá & số tiền phải trả dựa trên voucher (preview) + điểm nhập
+        function updatePreviewTotals() {
+            const discountInfo = document.getElementById('discountInfo');
+            const discountEl = document.getElementById('discountAmountDisplay');
+            const finalEl = document.getElementById('finalAmountDisplay');
+            const pointsInfo = document.getElementById('pointsUsageInfo');
+            const pointsUsedEl = document.getElementById('pointsUsedDisplay');
+            const pointsDiscountEl = document.getElementById('pointsDiscountDisplay');
+
+            if (!discountInfo || !discountEl || !finalEl) return;
+
+            const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+
+            const redeemInput = document.getElementById('redeemPoints');
+            let pointsRequested = lastRedeemPointsRequested || 0;
+            if (redeemInput && redeemInput.value.trim() !== '') {
+                const parsed = parseInt(redeemInput.value.trim(), 10);
+                if (!isNaN(parsed) && parsed > 0) {
+                    pointsRequested = parsed;
+                }
+            }
+
+            // Giới hạn điểm theo số point hiện có (nếu đã load)
+            if (currentCustomerPoints != null && pointsRequested > currentCustomerPoints) {
+                pointsRequested = currentCustomerPoints;
+            }
+
+            // Số tiền có thể trừ tối đa từ điểm = (total - voucherPreview)
+            let voucherDisc = currentVoucherDiscountPreview || 0;
+            if (voucherDisc < 0) voucherDisc = 0;
+            if (voucherDisc > lastTotalAmount) voucherDisc = lastTotalAmount;
+
+            let maxPointDiscountFromAmount = (lastTotalAmount - voucherDisc);
+            if (maxPointDiscountFromAmount < 0) maxPointDiscountFromAmount = 0;
+
+            let pointDiscount = pointsRequested * 1000;
+            if (pointDiscount > maxPointDiscountFromAmount) {
+                pointDiscount = maxPointDiscountFromAmount;
+            }
+
+            const totalDiscount = voucherDisc + pointDiscount;
+            let finalAmt = lastTotalAmount - totalDiscount;
+            if (finalAmt < 0) finalAmt = 0;
+
+            if (totalDiscount > 0) {
+                discountEl.textContent = formatter.format(totalDiscount);
+                finalEl.textContent = formatter.format(finalAmt);
+                discountInfo.style.display = 'block';
+            } else {
+                discountInfo.style.display = 'none';
+            }
+
+            if (pointsInfo && pointsUsedEl && pointsDiscountEl) {
+                if (pointDiscount > 0) {
+                    pointsUsedEl.textContent = String(pointsRequested);
+                    pointsDiscountEl.textContent = formatter.format(pointDiscount);
+                    pointsInfo.style.display = 'block';
+                } else {
+                    pointsInfo.style.display = 'none';
+                }
+            }
         }
 
         // Payment method selection
@@ -700,6 +1121,16 @@
             const customerName  = document.getElementById('customerName').value.trim();
             const customerPhone = document.getElementById('customerPhone').value.trim();
             const customerEmail = document.getElementById('customerEmail').value.trim();
+            const voucherCode   = document.getElementById('voucherCode').value.trim();
+            const redeemPointsRaw = document.getElementById('redeemPoints') ? document.getElementById('redeemPoints').value.trim() : '';
+            let redeemPoints = null;
+            if (redeemPointsRaw !== '') {
+                const parsed = parseInt(redeemPointsRaw, 10);
+                if (!isNaN(parsed) && parsed > 0) {
+                    redeemPoints = parsed;
+                }
+            }
+            lastRedeemPointsRequested = redeemPoints || 0;
 
             document.getElementById('loadingOverlay').classList.add('show');
             document.getElementById('btnConfirmPayment').disabled = true;
@@ -710,6 +1141,8 @@
                 customerName:  customerName  || null,
                 customerPhone: customerPhone || null,
                 customerEmail: customerEmail || null,
+                voucherCode:   voucherCode   || null,
+                redeemPoints:  redeemPoints,
                 seats:         bookingData.seats
             };
 
@@ -720,12 +1153,59 @@
                     body: JSON.stringify(paymentData)
                 });
 
+                const contentType = response.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(text || 'Server returned non-JSON response');
+                }
+
                 const result = await response.json();
 
                 document.getElementById('loadingOverlay').classList.remove('show');
 
                 if (result.success) {
                     ticketCodeGenerated = result.ticketCode;
+                    // Lưu lại tổng tiền sau voucher (nếu có) để hiển thị
+                    try {
+                        const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+                        const total = result.totalAmount ? Number(result.totalAmount) : null;
+                        const discount = result.discountAmount ? Number(result.discountAmount) : 0;
+                        const finalAmt = result.finalAmount ? Number(result.finalAmount) : total;
+                        lastDiscountAmount = discount;
+                        lastFinalAmount = finalAmt;
+
+                        if (!isNaN(discount) && discount > 0 && !isNaN(finalAmt)) {
+                            const discountInfo = document.getElementById('discountInfo');
+                            const discountEl = document.getElementById('discountAmountDisplay');
+                            const finalEl = document.getElementById('finalAmountDisplay');
+                            if (discountInfo && discountEl && finalEl) {
+                                discountEl.textContent = formatter.format(discount);
+                                finalEl.textContent = formatter.format(finalAmt);
+                                discountInfo.style.display = 'block';
+
+                                // Hiển thị số point đã dùng & tiền tương ứng (ước tính)
+                                const pointsInfo = document.getElementById('pointsUsageInfo');
+                                const pointsUsedEl = document.getElementById('pointsUsedDisplay');
+                                const pointsDiscountEl = document.getElementById('pointsDiscountDisplay');
+                                if (pointsInfo && pointsUsedEl && pointsDiscountEl) {
+                                    const pointsUsed = lastRedeemPointsRequested || 0;
+                                    if (pointsUsed > 0) {
+                                        let estimatedPointDiscount = pointsUsed * 1000;
+                                        if (!isNaN(discount) && estimatedPointDiscount > discount) {
+                                            estimatedPointDiscount = discount;
+                                        }
+                                        pointsUsedEl.textContent = String(pointsUsed);
+                                        pointsDiscountEl.textContent = formatter.format(estimatedPointDiscount);
+                                        pointsInfo.style.display = 'block';
+                                    } else {
+                                        pointsInfo.style.display = 'none';
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Cannot render voucher discount info', e);
+                    }
                     sessionStorage.removeItem('bookingData');
                     document.getElementById('successModalOverlay').classList.add('active');
                 } else {
@@ -758,6 +1238,13 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             displayBookingSummary();
+            const redeemInput = document.getElementById('redeemPoints');
+            if (redeemInput) {
+                redeemInput.addEventListener('input', function() {
+                    lastRedeemPointsRequested = 0; // sẽ đọc lại từ ô input
+                    updatePreviewTotals();
+                });
+            }
         });
     </script>
 </body>
