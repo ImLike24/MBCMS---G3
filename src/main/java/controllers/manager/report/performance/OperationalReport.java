@@ -12,10 +12,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-/**
- *
- * @author Admin
- */
 @WebServlet(name = "OperationalReport", urlPatterns = {"/manager/report/performance/operational-report"})
 public class OperationalReport extends HttpServlet {
 

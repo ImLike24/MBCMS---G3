@@ -12,10 +12,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-/**
- *
- * @author Admin
- */
 @WebServlet(name = "DateReport", urlPatterns = {"/manager/report/revenue/date-report"})
 public class DateReport extends HttpServlet {
 
