@@ -1,4 +1,4 @@
-package controllers.admin;
+package controllers.admin.ManageLoyalty;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
