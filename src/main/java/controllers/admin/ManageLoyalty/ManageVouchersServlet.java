@@ -18,7 +18,7 @@ public class ManageVouchersServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         Vouchers dao = new Vouchers();
-        List<Voucher> vouchers = dao.getAllActiveVouchers();
+        List<Voucher> vouchers = dao.getAllVouchers();
         request.setAttribute("vouchers", vouchers);
         request.getRequestDispatcher("/pages/admin/manage-loyalty/manage-vouchers.jsp").forward(request, response);
     }

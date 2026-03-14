@@ -38,6 +38,15 @@
                         background-color: #bb2d3b;
                     }
 
+                    .btn-edit {
+                        background-color: #ffc107;
+                        color: #212529 !important;
+                    }
+
+                    .btn-edit:hover {
+                        background-color: #e0a800;
+                    }
+
                     .btn-group-sm .action-btn+.action-btn {
                         margin-left: 8px;
                     }
@@ -106,12 +115,14 @@
                                                 <th>Mức Giảm</th>
                                                 <th>Giá Đổi (Điểm)</th>
                                                 <th>Hạn (ngày)</th>
+                                                <th>Lượt đổi còn lại</th>
                                                 <th class="text-center" width="100">Hành động</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <c:forEach var="v" items="${vouchers}">
-                                                <tr>
+                                                <tr
+                                                    class="${(!v.isActive or (v.maxUsageLimit - v.currentUsage le 0)) ? 'opacity-50 text-muted' : ''}">
                                                     <td class="ps-4 text-muted">${v.voucherId}</td>
                                                     <td class="fw-semibold text-dark">${v.voucherName}</td>
                                                     <td>
@@ -148,13 +159,35 @@
                                                                 </span>
                                                             </c:when>
                                                             <c:otherwise>
-                                                                <span class="text-muted">—</span>
+                                                                <span
+                                                                    class="badge bg-warning text-dark rounded-pill px-3">
+                                                                    <i class="fas fa-star me-1"></i>0 pt
+                                                                </span>
                                                             </c:otherwise>
                                                         </c:choose>
                                                     </td>
                                                     <td>${v.validDays} ngày</td>
+                                                    <td>
+                                                        <c:choose>
+                                                            <c:when test="${v.maxUsageLimit - v.currentUsage le 0}">
+                                                                <span class="badge bg-danger rounded-pill px-3">Hết
+                                                                    lượt</span>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <span class="badge bg-info text-dark rounded-pill px-3">
+                                                                    ${v.maxUsageLimit - v.currentUsage} /
+                                                                    ${v.maxUsageLimit}
+                                                                </span>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </td>
                                                     <td class="text-center">
                                                         <div class="btn-group btn-group-sm" role="group">
+                                                            <a href="${pageContext.request.contextPath}/admin/edit-voucher?id=${v.voucherId}"
+                                                                class="btn action-btn btn-edit" data-bs-toggle="tooltip"
+                                                                data-bs-placement="top" title="Chỉnh sửa">
+                                                                <i class="fas fa-pencil-alt"></i>
+                                                            </a>
                                                             <button type="button" class="btn action-btn btn-delete"
                                                                 data-bs-toggle="tooltip" data-bs-placement="top"
                                                                 title="Xóa"

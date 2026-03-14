@@ -749,6 +749,28 @@ ALTER TABLE showtimes
         cancelled_at DATETIME2 NULL;
 
 
+ALTER TABLE ticket_prices
+ADD branch_id int;
+
+
+ALTER TABLE ticket_prices
+ADD CONSTRAINT FK_ticket_prices_branch
+FOREIGN KEY (branch_id) REFERENCES cinema_branches(branch_id);
+
+
+-- Cập nhật lại index cho tối ưu
+CREATE INDEX idx_ticket_prices_branch
+ON ticket_prices (branch_id, is_active);
+
+
+-- Xóa constraint check của cột seat_type
+ALTER TABLE ticket_prices DROP CONSTRAINT CK_price_seat_type;
+
+
+-- Xóa cột seat_type khỏi bảng ticket_prices
+ALTER TABLE ticket_prices DROP COLUMN seat_type;
+
+ALTER TABLE screening_rooms ALTER COLUMN room_name NVARCHAR(100) NOT NULL;
 
 
 
@@ -854,3 +876,10 @@ INSERT INTO loyalty_configs (config_id, earn_rate_amount, earn_points, min_redee
 VALUES (1, 10000, 1, 100);
 GO
 
+-- 11/03/2026
+ALTER TABLE [MBCMS].[dbo].[concessions]
+ADD concession_name NVARCHAR(255);
+
+-- 14/03/2026
+ALTER TABLE vouchers
+Update current_usage INT DEFAULT 0;

@@ -17,6 +17,7 @@ public class Voucher {
     private Integer pointsCost;
     private BigDecimal discountAmount;
     private Integer maxUsageLimit;
+    private Integer currentUsage;
     private Integer validDays;
     private Boolean isActive;
     private LocalDateTime createdAt;
