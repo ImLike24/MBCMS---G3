@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class UserVouchers extends DBContext {
 
@@ -80,5 +81,103 @@ public class UserVouchers extends DBContext {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public boolean redeemVoucher(int userId, models.Voucher voucher) {
+        String updateUsageSql = "UPDATE vouchers SET current_usage = current_usage + 1, is_active = CASE WHEN current_usage + 1 >= max_usage_limit THEN 0 ELSE is_active END WHERE voucher_id = ? AND current_usage < max_usage_limit AND is_active = 1";
+        String updatePointsSql = "UPDATE users SET points = points - ? WHERE user_id = ? AND points >= ?";
+        String insertUserVoucherSql = "INSERT INTO user_vouchers (user_id, voucher_id, voucher_code, expires_at) VALUES (?, ?, ?, ?)";
+        String insertHistorySql = "INSERT INTO point_history (user_id, points_changed, transaction_type, description) VALUES (?, ?, 'REDEEM', ?)";
+
+        String prefix = "";
+        if(voucher.getVoucherCode() != null){
+            prefix = voucher.getVoucherCode() + "-";
+        }
+        String randomCode = prefix + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now().plusDays(voucher.getValidDays());
+
+        try {
+            // 1. Check and increment usage
+            try (PreparedStatement st = connection.prepareStatement(updateUsageSql)) {
+                st.setInt(1, voucher.getVoucherId());
+                if (st.executeUpdate() == 0) {
+                    return false;
+                }
+            }
+
+            // 2. Update Points
+            try (PreparedStatement st = connection.prepareStatement(updatePointsSql)) {
+                st.setInt(1, voucher.getPointsCost());
+                st.setInt(2, userId);
+                st.setInt(3, voucher.getPointsCost());
+                if (st.executeUpdate() == 0) {
+                    return false;
+                }
+            }
+
+            // 3. Insert User Voucher
+            try (PreparedStatement st = connection.prepareStatement(insertUserVoucherSql)) {
+                st.setInt(1, userId);
+                st.setInt(2, voucher.getVoucherId());
+                st.setString(3, randomCode);
+                st.setTimestamp(4, java.sql.Timestamp.valueOf(expiresAt));
+                st.executeUpdate();
+            }
+
+            // 4. Insert point history
+            try (PreparedStatement st = connection.prepareStatement(insertHistorySql)) {
+                st.setInt(1, userId);
+                st.setInt(2, -voucher.getPointsCost());
+                st.setString(3, "Đổi voucher: " + voucher.getVoucherName());
+                st.executeUpdate();
+            }
+
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean savePublicVoucher(int userId, models.Voucher voucher) {
+        String updateUsageSql = "UPDATE vouchers SET current_usage = current_usage + 1, is_active = CASE WHEN current_usage + 1 >= max_usage_limit THEN 0 ELSE is_active END WHERE voucher_id = ? AND current_usage < max_usage_limit AND is_active = 1";
+        String insertUserVoucherSql = "INSERT INTO user_vouchers (user_id, voucher_id, voucher_code, expires_at) VALUES (?, ?, ?, ?)";
+
+        // Check if user already has this specific public voucher (status AVAILABLE)
+        String checkSql = "SELECT count(*) FROM user_vouchers WHERE user_id = ? AND voucher_id = ? AND status = 'AVAILABLE'";
+
+        try (PreparedStatement stCheck = connection.prepareStatement(checkSql)) {
+            stCheck.setInt(1, userId);
+            stCheck.setInt(2, voucher.getVoucherId());
+            try (ResultSet rs = stCheck.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return false; // User already has this voucher
+                }
+            }
+
+            java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now().plusDays(voucher.getValidDays());
+
+            // 1. Check and increment usage
+            try (PreparedStatement st = connection.prepareStatement(updateUsageSql)) {
+                st.setInt(1, voucher.getVoucherId());
+                if (st.executeUpdate() == 0) {
+                    return false;
+                }
+            }
+
+            // 2. Insert User Voucher
+            try (PreparedStatement st = connection.prepareStatement(insertUserVoucherSql)) {
+                st.setInt(1, userId);
+                st.setInt(2, voucher.getVoucherId());
+                st.setString(3, voucher.getVoucherCode());
+                st.setTimestamp(4, java.sql.Timestamp.valueOf(expiresAt));
+                st.executeUpdate();
+            }
+
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

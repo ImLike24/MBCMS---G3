@@ -16,4 +16,9 @@ public class PointHistory {
     private String description;
     private Integer referenceId;
     private LocalDateTime createdAt;
+
+    public String getCreatedAtFormatted() {
+        if (createdAt == null) return "";
+        return createdAt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+    }
 }

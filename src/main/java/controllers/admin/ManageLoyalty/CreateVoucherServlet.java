@@ -35,7 +35,9 @@ public class CreateVoucherServlet extends HttpServlet {
             v.setVoucherCode(code != null ? code.trim() : "");
 
             v.setDiscountAmount(new BigDecimal(request.getParameter("discountAmount")));
+            
             v.setMaxUsageLimit(Integer.parseInt(request.getParameter("maxUsage")));
+            
             v.setValidDays(Integer.parseInt(request.getParameter("validDays")));
 
             if ("LOYALTY".equals(v.getVoucherType())) {
