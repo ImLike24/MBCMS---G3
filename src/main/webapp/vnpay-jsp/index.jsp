@@ -22,6 +22,9 @@
            <div class="header clearfix">
 
                 <h3 class="text-muted">VNPAY DEMO</h3>
+                <a href="${pageContext.request.contextPath}/" class="btn btn-primary">
+                    <i class="bi bi-house-door-fill"></i> Trở về trang chủ
+                </a>
             </div>
                 <div class="form-group">
                     <button onclick="pay()">Giao dịch thanh toán</button><br>

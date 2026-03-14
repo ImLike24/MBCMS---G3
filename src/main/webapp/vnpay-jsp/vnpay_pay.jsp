@@ -23,6 +23,9 @@
            <div class="header clearfix">
 
                 <h3 class="text-muted">VNPAY</h3>
+                <a href="${pageContext.request.contextPath}/" class="btn btn-primary">
+                    <i class="bi bi-house-door-fill"></i> Trở về trang chủ
+                </a>
             </div>
             <h3>Tạo mới đơn hàng</h3>
             <div class="table-responsive">
