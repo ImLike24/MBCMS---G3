@@ -98,7 +98,7 @@
                                     </div>
                                     <span class="badge bg-secondary">${m.ageRating}</span>
                                 </div>
-                                <a href="${pageContext.request.contextPath}/admin/movies/detail?id=${m.movieId}"
+                                <a href="${pageContext.request.contextPath}#"
                                    class="btn btn-sm btn-warning w-100 mt-3 fw-bold">
                                     Đặt Vé Ngay
                                 </a>

@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpSession;
 import models.Movie;
 import services.GenreService;
 import services.MovieService;
-
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -18,14 +17,13 @@ import models.Genre;
 
 @WebServlet("/admin/movies/edit")
 public class EditMovie extends HttpServlet {
-
+    
     private final MovieService movieService = new MovieService();
     private final GenreService genreService = new GenreService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         // Kiểm tra đăng nhập admin
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
@@ -46,13 +44,23 @@ public class EditMovie extends HttpServlet {
             return;
         }
 
-        // Load danh sách tên thể loại của phim để checked checkbox
-        List<Genre> movieGenres = genreService.getGenresByMovieId(id);
+        // Xử lý thông báo từ upload poster (nếu có)
+        String success = request.getParameter("success");
+        if ("poster_updated".equals(success)) {
+            request.setAttribute("message", "Cập nhật poster thành công!");
+        }
 
+        String error = request.getParameter("error");
+        if (error != null) {
+            request.setAttribute("errorMessage", "Lỗi upload poster: " + error);
+        }
+
+        List<Genre> movieGenres = genreService.getGenresByMovieId(id);
         request.setAttribute("movie", movie);
         request.setAttribute("movieGenres", movieGenres);
         request.setAttribute("allGenres", genreService.getAllActiveGenres());
         request.setAttribute("mode", "edit");
+
         request.getRequestDispatcher("/pages/admin/manage-movie/movie-form.jsp")
                 .forward(request, response);
     }
@@ -60,7 +68,6 @@ public class EditMovie extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             response.sendRedirect(request.getContextPath() + "/login");
@@ -71,12 +78,14 @@ public class EditMovie extends HttpServlet {
 
         Integer id = parseId(request.getParameter("id"));
         if (id == null) {
-            response.sendRedirect(request.getContextPath() + "/admin/movies?error=ID không hợp lệ");
+            request.setAttribute("errorMessage", "ID phim không hợp lệ");
+            forwardWithData(request, response);
             return;
         }
 
         Movie movie = readMovieFromRequest(request);
         movie.setMovieId(id);
+
         List<Integer> genreIds = readGenreIds(request);
 
         // Validation cơ bản
@@ -91,35 +100,50 @@ public class EditMovie extends HttpServlet {
             errors.append("Đánh giá phải từ 0.0 đến 5.0. ");
         }
 
+        // Log để debug posterUrl
+        System.out.println("Poster URL nhận được khi edit: " + movie.getPosterUrl());
+
         if (errors.length() > 0) {
             request.setAttribute("errorMessage", errors.toString());
-            request.setAttribute("movie", movie);
-            request.setAttribute("movieGenres", genreService.getGenresByMovieId(id));
-            request.setAttribute("allGenres", genreService.getAllActiveGenres());
-            request.setAttribute("mode", "edit");
-            request.getRequestDispatcher("/pages/admin/manage-movie/movie-form.jsp").forward(request, response);
+            forwardWithData(request, response);
             return;
         }
 
         try {
-            movieService.updateMovie(movie, genreIds);
-            response.sendRedirect(request.getContextPath() + "/admin/movies?message=success");
+            boolean updated = movieService.updateMovie(movie, genreIds);
+            if (updated) {
+                response.sendRedirect(request.getContextPath() + "/admin/movies?message=success");
+            } else {
+                request.setAttribute("errorMessage", "Cập nhật phim thất bại (không tìm thấy bản ghi hoặc lỗi DB)");
+                forwardWithData(request, response);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("errorMessage", "Cập nhật thất bại: " + e.getMessage());
-            request.setAttribute("movie", movie);
-            request.setAttribute("movieGenres", genreService.getGenresByMovieId(id));
-            request.setAttribute("allGenres", genreService.getAllActiveGenres());
-            request.setAttribute("mode", "edit");
-            request.getRequestDispatcher("/pages/admin/manage-movie/movie-form.jsp").forward(request, response);
+            forwardWithData(request, response);
         }
     }
 
-    // Helpers (giữ nguyên như code cũ của bạn)
+    // Helper: forward lại trang với dữ liệu hiện tại khi có lỗi
+    private void forwardWithData(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        Integer id = parseId(request.getParameter("id"));
+        if (id != null) {
+            Movie movie = movieService.getMovieById(id);
+            List<Genre> movieGenres = genreService.getGenresByMovieId(id);
+            request.setAttribute("movie", movie);
+            request.setAttribute("movieGenres", movieGenres);
+            request.setAttribute("allGenres", genreService.getAllActiveGenres());
+        }
+        request.setAttribute("mode", "edit");
+        request.getRequestDispatcher("/pages/admin/manage-movie/movie-form.jsp").forward(request, response);
+    }
+
+    // Helpers (đã được giữ nguyên và bổ sung)
     private Integer parseId(String idStr) {
         if (idStr == null || idStr.trim().isEmpty()) return null;
         try {
-            return Integer.parseInt(idStr);
+            return Integer.parseInt(idStr.trim());
         } catch (NumberFormatException e) {
             return null;
         }
@@ -134,7 +158,11 @@ public class EditMovie extends HttpServlet {
         m.setAgeRating(getParameterSafe(req, "ageRating"));
         m.setDirector(getParameterSafe(req, "director"));
         m.setCast(getParameterSafe(req, "cast"));
-        m.setPosterUrl(getParameterSafe(req, "posterUrl"));
+
+        // Quan trọng: Đọc posterUrl từ hidden field (đây là nơi nhận giá trị mới từ AJAX upload)
+        String posterUrl = getParameterSafe(req, "posterUrl");
+        m.setPosterUrl(posterUrl != null && !posterUrl.trim().isEmpty() ? posterUrl : null);
+
         m.setActive("on".equals(req.getParameter("active")));
 
         String releaseDateStr = req.getParameter("releaseDate");

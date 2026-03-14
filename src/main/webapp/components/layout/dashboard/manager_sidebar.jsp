@@ -79,13 +79,6 @@
             <ul class="nav nav-pills flex-column">
 
                 <li class="nav-item">
-                    <a href="#" class="nav-link text-white">
-                        <i class="fa fa-user me-2" style="width: 20px; text-align: center;"></i>
-                        Hồ sơ cá nhân
-                    </a>
-                </li>
-
-                <li class="nav-item">
                     <a href="${pageContext.request.contextPath}/logout" class="nav-link text-white">
                         <i class="fa fa-sign-out me-2" style="width: 20px; text-align: center;"></i>
                         Đăng xuất
