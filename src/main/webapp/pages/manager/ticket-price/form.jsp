@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <title>${isViewMode ? 'Chi tiết' : (priceObj != null ? 'Cập nhật' : 'Thêm')} Giá Vé</title>
+    <title>${isViewMode ? 'Chi tiết' : (not empty priceObj.priceId ? 'Cập nhật' : 'Thêm')} Giá Vé</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin-layout.css">
@@ -27,21 +27,24 @@
         </nav>
 
         <form action="ticket-prices" method="post">
-            <input type="hidden" name="action" value="${priceObj != null ? 'update' : 'create'}">
-            <c:if test="${priceObj != null}">
+            <input type="hidden" name="action" value="${not empty priceObj.priceId ? 'update' : 'create'}">
+            <c:if test="${not empty priceObj.priceId}">
                 <input type="hidden" name="priceId" value="${priceObj.priceId}">
             </c:if>
 
-            <div class="card card-custom">
-                <div class="card-header-custom">
-                    <h5 class="mb-0 fw-bold">
-                        <i class="fa ${isViewMode ? 'fa-eye' : (priceObj != null ? 'fa-edit' : 'fa-plus-circle')} me-2" style="color: #d96c2c;"></i>
-                        ${isViewMode ? 'Chi tiết Cấu hình' : (priceObj != null ? 'Cập nhật Cấu hình' : 'Thêm Cấu hình mới')}
-                    </h5>
-                </div>
+            <div class="card-header-custom">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fa ${isViewMode ? 'fa-eye' : (not empty priceObj.priceId ? 'fa-edit' : 'fa-plus-circle')} me-2" style="color: #d96c2c;"></i>
+                    ${isViewMode ? 'Chi tiết Cấu hình' : (not empty priceObj.priceId ? 'Cập nhật Cấu hình' : 'Thêm Cấu hình mới')}
+                </h5>
+            </div>
 
-                <div class="card-body p-4">
-                    <c:set var="disabledAttr" value="${isViewMode ? 'disabled' : ''}" />
+            <div class="card-body p-4">
+                <c:if test="${not empty errorMessage}">
+                    <div class="alert alert-danger mb-4 fw-bold">
+                        <i class="fa fa-exclamation-triangle me-2"></i>${errorMessage}
+                    </div>
+                </c:if>
 
                     <h6 class="fw-bold mb-3 text-secondary border-bottom pb-2">ĐIỀU KIỆN ÁP DỤNG</h6>
                     <div class="row g-3 mb-4">
@@ -99,7 +102,7 @@
 
                 <div class="card-footer bg-white p-4 d-flex justify-content-between align-items-center">
                     <div>
-                        <c:if test="${priceObj != null && !isViewMode}">
+                        <c:if test="${not empty priceObj.priceId && !isViewMode}">
                             <a href="ticket-prices?action=delete&id=${priceObj.priceId}"
                                class="btn btn-outline-danger px-4 fw-bold"
                                onclick="return confirm('Hành động này sẽ XÓA VĨNH VIỄN cấu hình giá. Bạn có chắc chắn không?');">

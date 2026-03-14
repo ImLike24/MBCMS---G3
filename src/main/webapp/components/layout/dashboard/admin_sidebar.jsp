@@ -38,7 +38,7 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="${pageContext.request.contextPath}/admin/concessions" class="nav-link">
                 <i class="fa fa-coffee me-3"></i>Quản lý đồ ăn & nước uống
             </a>
         </li>
@@ -63,10 +63,6 @@
     </ul>
 
     <div class="mt-auto pt-3 border-top border-secondary">
-
-        <a href="${pageContext.request.contextPath}/profile" class="nav-link text-white-50 hover-white">
-            <i class="fa fa-user me-2 text-danger"></i> Hồ sơ cá nhân
-        </a>
 
         <a href="${pageContext.request.contextPath}/logout" class="nav-link text-white-50 hover-white">
             <i class="fa fa-sign-out me-2 text-danger"></i> Đăng xuất

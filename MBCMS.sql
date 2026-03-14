@@ -849,6 +849,8 @@ CREATE TABLE user_vouchers (
     CONSTRAINT FK_uv_voucher FOREIGN KEY (voucher_id) REFERENCES vouchers(voucher_id),
     CONSTRAINT CK_uv_status CHECK (status IN ('AVAILABLE', 'USED', 'EXPIRED'))
 );
+GO
+
 -- 6. CẬP NHẬT BẢNG BOOKINGS
 ALTER TABLE bookings
 ADD applied_voucher_id INT NULL;

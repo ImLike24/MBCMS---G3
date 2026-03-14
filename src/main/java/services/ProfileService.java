@@ -59,4 +59,16 @@ public class ProfileService {
         }
     }
 
+    public boolean updateProfileInfo(User user) {
+        return userRepo.updateProfileInfo(user);
+    }
+
+    public boolean updatePassword(User user) {
+        return userRepo.updatePassword(user);
+    }
+
+    // Nếu cần thêm phương thức update avatar
+    public boolean updateAvatar(User user) {
+        return userRepo.updateAvatar(user);
+    }
 }

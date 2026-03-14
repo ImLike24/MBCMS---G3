@@ -164,24 +164,7 @@
                                         </div>
                                     </div>
 
-                                    <hr>
 
-                                    <!-- Pricing -->
-                                    <div class="mb-4">
-                                        <p class="section-label mb-2"><i class="fa-solid fa-tag me-1"></i>Giá vé</p>
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label for="basePrice" class="form-label fw-semibold required-star">Giá
-                                                    cơ bản (VNĐ)</label>
-                                                <div class="input-group">
-                                                    <input type="number" id="basePrice" name="basePrice"
-                                                        class="form-control" min="0" step="1000" required
-                                                        placeholder="70000" value="${prefPrice}">
-                                                    <span class="input-group-text">₫</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
 
                                     <!-- Submit -->
                                     <div class="d-flex gap-3 justify-content-end pt-2">
@@ -216,10 +199,7 @@
                                         <div class="small text-muted">Khung giờ</div>
                                         <div class="fw-semibold" id="previewTime">—</div>
                                     </div>
-                                    <div>
-                                        <div class="small text-muted">Giá cơ bản</div>
-                                        <div class="fw-semibold text-success" id="previewPrice">—</div>
-                                    </div>
+
                                 </div>
                             </div>
 
@@ -249,7 +229,7 @@
                 const startInput = document.getElementById('startTime');
                 const endInput = document.getElementById('endTime');
                 const showDate = document.getElementById('showDate');
-                const priceInput = document.getElementById('basePrice');
+
 
                 // Set min date to today
                 const today = new Date().toISOString().split('T')[0];
@@ -283,7 +263,6 @@
                     const dateVal = showDate.value ? new Date(showDate.value + 'T00:00:00').toLocaleDateString('vi-VN') : '—';
                     const startVal = startInput.value || '—';
                     const endVal = endInput.value || '—';
-                    const price = priceInput.value ? parseInt(priceInput.value).toLocaleString('vi-VN') + ' ₫' : '—';
                     const isOvernight = document.getElementById('overnightFlag').value === '1';
 
                     document.getElementById('previewMovie').textContent = movieText !== '-- Chọn phim --' ? movieText : '—';
@@ -320,7 +299,6 @@
                         alertEl.style.display = 'none';
                     }
 
-                    document.getElementById('previewPrice').textContent = price;
                 }
 
                 function onMovieChange() {
@@ -337,7 +315,6 @@
 
                 movieSelect.addEventListener('change', onMovieChange);
                 startInput.addEventListener('change', calcEndTime);
-                priceInput.addEventListener('input', updatePreview);
                 roomSelect.addEventListener('change', updatePreview);
                 showDate.addEventListener('change', updatePreview);
 
@@ -352,16 +329,10 @@
                     const date = showDate.value;
                     const start = startInput.value;
                     const end = endInput.value;
-                    const price = priceInput.value;
-
-                    if (!movie || !room || !date || !start || !end || !price) {
+                    if (!movie || !room || !date || !start || !end) {
                         e.preventDefault();
                         alert('Vui lòng điền đầy đủ thông tin bắt buộc.');
                         return;
-                    }
-                    if (parseFloat(price) < 0) {
-                        e.preventDefault();
-                        alert('Giá vé không được âm.');
                     }
                 });
             </script>

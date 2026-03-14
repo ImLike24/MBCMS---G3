@@ -122,26 +122,54 @@ public class Users extends DBContext {
         }
     }
 
-    public boolean updateProfile(User u) {
+    public boolean updateProfileInfo(User u) {
         String sql = """
-                    UPDATE users
-                    SET fullName = ?, email = ?, phone = ?, birthday = ?, password = ?, updated_at = SYSDATETIME()
-                    WHERE user_id = ?
-                """;
-
+            UPDATE users
+            SET fullName = ?, email = ?, phone = ?, birthday = ?, updated_at = SYSDATETIME()
+            WHERE user_id = ?
+        """;
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, u.getFullName());
             st.setString(2, u.getEmail());
             st.setString(3, u.getPhone());
-
-            if (u.getBirthday() != null)
+            if (u.getBirthday() != null) {
                 st.setTimestamp(4, Timestamp.valueOf(u.getBirthday()));
-            else
+            } else {
                 st.setNull(4, java.sql.Types.TIMESTAMP);
+            }
+            st.setInt(5, u.getUserId());
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    public boolean updatePassword(User u) {
+        String sql = """
+            UPDATE users
+            SET password = ?, updated_at = SYSDATETIME()
+            WHERE user_id = ?
+        """;
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, u.getPassword());
+            st.setInt(2, u.getUserId());
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
-            st.setString(5, u.getPassword());
-            st.setInt(6, u.getUserId());
-
+    public boolean updateAvatar(User u) {
+        String sql = """
+            UPDATE users
+            SET avatarUrl = ?, updated_at = SYSDATETIME()
+            WHERE user_id = ?
+        """;
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, u.getAvatarUrl());
+            st.setInt(2, u.getUserId());
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -379,6 +407,62 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, newPassword); // Lưu ý: Nên mã hóa password (MD5/BCrypt) trước khi truyền vào đây
             st.setString(2, email);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Cộng thêm điểm cho user: vừa cập nhật points hiện tại,
+     * vừa cập nhật total_accumulated_points.
+     *
+     * @param userId      ID user cần cộng điểm
+     * @param deltaPoints số điểm cộng (dương). Nếu <= 0 sẽ không làm gì.
+     * @return true nếu cập nhật thành công, ngược lại false.
+     */
+    public boolean addPoints(int userId, int deltaPoints) {
+        if (deltaPoints <= 0) {
+            return false;
+        }
+
+        String sql = """
+                UPDATE users
+                SET points = points + ?,
+                    total_accumulated_points = total_accumulated_points + ?
+                WHERE user_id = ?
+                """;
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, deltaPoints);
+            st.setInt(2, deltaPoints);
+            st.setInt(3, userId);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Trừ điểm hiện có của user (dùng khi quy đổi điểm).
+     * Không ảnh hưởng total_accumulated_points.
+     *
+     * @param userId          ID user
+     * @param pointsToRedeem  số điểm muốn trừ (dương)
+     * @return true nếu trừ thành công, false nếu không đủ điểm hoặc lỗi
+     */
+    public boolean redeemPoints(int userId, int pointsToRedeem) {
+        if (pointsToRedeem <= 0) {
+            return false;
+        }
+
+        String sql = "UPDATE users SET points = points - ? WHERE user_id = ? AND points >= ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, pointsToRedeem);
+            st.setInt(2, userId);
+            st.setInt(3, pointsToRedeem);
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

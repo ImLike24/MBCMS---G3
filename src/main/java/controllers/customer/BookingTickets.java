@@ -15,6 +15,8 @@ import java.util.Map;
 import models.Showtime;
 import repositories.SeatTypeSurcharges;
 import repositories.Showtimes;
+import services.TicketPriceService;
+import java.math.BigDecimal;
 
 @WebServlet(name = "TicketsOfChosenMovie", urlPatterns = { "/customer/booking-tickets" })
 public class BookingTickets extends HttpServlet {
@@ -89,7 +91,15 @@ public class BookingTickets extends HttpServlet {
                     request.setAttribute("formattedShowDate",
                             showtime.getShowDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
                 }
-                double basePrice = showtime.getBasePrice() != null ? showtime.getBasePrice().doubleValue() : 0.0;
+
+                // Dynamically fetch basePrice using TicketPriceService
+                TicketPriceService ticketPriceService = new TicketPriceService();
+                BigDecimal basePriceBD = BigDecimal.ZERO;
+                if (branchId != null && showtime.getShowDate() != null && showtime.getStartTime() != null) {
+                    basePriceBD = ticketPriceService.getBasePriceForShowtime(branchId, showtime.getShowDate(),
+                            showtime.getStartTime());
+                }
+                double basePrice = basePriceBD != null ? basePriceBD.doubleValue() : 0.0;
                 request.setAttribute("basePrice", basePrice);
             } else {
                 request.setAttribute("basePrice", 0.0);
