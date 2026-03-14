@@ -22,9 +22,9 @@ import jakarta.servlet.http.HttpServletRequest;
 public class Config {
 
     public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnp_ReturnUrl = "http://localhost:8080/vnpay_jsp/vnpay_return.jsp";
-    public static String vnp_TmnCode = "2NG6CEH9";
-    public static String secretKey = "QS3YMGNWO61UVE9WSHNA52M9GIN0Q1GN";
+    public static String vnp_ReturnUrl = "http://localhost:8080/MBCMS/vnpay-jsp/vnpay_return.jsp";
+    public static String vnp_TmnCode = "DMCDRJ3B";
+    public static String secretKey = "V4V7FW67GGRW8D20TGMKGJO0346K1W12";
     public static String vnp_ApiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
 
     public static String md5(String message) {

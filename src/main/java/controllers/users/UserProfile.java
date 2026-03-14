@@ -8,13 +8,12 @@ import utils.Password;
 
 import java.io.IOException;
 import services.ProfileService;
-@WebServlet(name = "UserProfile", urlPatterns = {"/customer/profile"})
-public class UserProfile extends HttpServlet {
 
 @WebServlet(name = "UserProfile", urlPatterns = {
         "/profile",
         "/profile/update-info",
-        "/profile/update-password"
+        "/profile/update-password",
+        "/customer/profile"
 })
 public class UserProfile extends HttpServlet {
     private final ProfileService userService = new ProfileService();

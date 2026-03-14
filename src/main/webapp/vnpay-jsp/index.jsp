@@ -10,10 +10,10 @@
         <meta name="author" content="">
         <title>Cổng thanh toán VNPAY DEMO</title>
         <!-- Bootstrap core CSS -->
-        <link href="/vnpay/assets/bootstrap.min.css" rel="stylesheet"/>
+        <link href="assets/bootstrap.min.css" rel="stylesheet"/>
         <!-- Custom styles for this template -->
-        <link href="/vnpay/assets/jumbotron-narrow.css" rel="stylesheet">      
-        <script src="/vnpay/assets/jquery-1.11.3.min.js"></script>
+        <link href="assets/jumbotron-narrow.css" rel="stylesheet">      
+        <script src="assets/jquery-1.11.3.min.js"></script>
     </head>
 
     <body>
@@ -41,13 +41,13 @@
         </div> 
         <script>
              function pay() {
-              window.location.href = "/vnpay/vnpay_pay.jsp";
+              window.location.href = "/MBCMS/vnpay-jsp/vnpay_pay.jsp";
             }
             function querydr() {
-              window.location.href = "/vnpay/vnpay_querydr.jsp";
+              window.location.href = "/MBCMS/vnpay-jsp/vnpay_querydr.jsp";
             }
              function refund() {
-              window.location.href = "/vnpay/vnpay_refund.jsp";
+              window.location.href = "/MBCMS/vnpay-jsp/vnpay_refund.jsp";
             }
         </script>
     </body>

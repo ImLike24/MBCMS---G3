@@ -10,9 +10,9 @@
         <meta name="author" content="">
         <title>qerydr</title>
         <!-- Bootstrap core CSS -->
-        <link href="/vnpay_jsp/assets/bootstrap.min.css" rel="stylesheet"/>
+        <link href="assets/bootstrap.min.css" rel="stylesheet"/>
         <!-- Custom styles for this template -->   
-        <script src="/vnpay_jsp/assets/jquery-1.11.3.min.js"></script>
+        <script src="assets/jquery-1.11.3.min.js"></script>
     </head>
 
     <body>
