@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package repositories;
 
 import java.sql.Connection;
@@ -26,10 +22,6 @@ public class Bookings {
         conn = new DBContext().getConnection();
     }
 
-    // ==============================
-    // Generate booking code
-    // Format: BK20260305123045XYZ
-    // ==============================
     public String generateBookingCode() {
         String timestamp = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
@@ -39,9 +31,6 @@ public class Bookings {
         return "BK" + timestamp + randomNumber;
     }
 
-    // ==========================================
-    // Create Online Booking (Initial PENDING)
-    // ==========================================
     public int createOnlineBooking(int userId,
                                    int showtimeId,
                                    String paymentMethod,
@@ -80,9 +69,6 @@ public class Bookings {
         return -1;
     }
 
-    // ==============================
-    // Close connection
-    // ==============================
     public void closeConnection() {
         try {
             if (conn != null && !conn.isClosed()) {
