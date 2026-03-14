@@ -31,12 +31,6 @@
                     <li><a href="${pageContext.request.contextPath}/logout" onclick="toggleSidebar()"><i
                                 class="fa fa-sign-out"></i> Đăng xuất</a></li>
                 </c:if>
-
-                <c:if test="${empty sessionScope.user}">
-                    <!-- Guest menu -->
-                    <li><a href="${pageContext.request.contextPath}/login" onclick="toggleSidebar()"><i
-                                class="fa fa-sign-in"></i> Đăng nhập tài khoản</a></li>
-                </c:if>
             </ul>
         </div>
 

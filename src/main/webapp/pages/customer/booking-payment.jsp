@@ -76,21 +76,7 @@
                         <span class="text-muted">Tổng tiền</span>
                         <span class="total-amount" id="totalAmountText">0 ₫</span>
                     </div>
-                </div>
-
-                <div class="mb-4">
-                    <h5 class="mb-3">Thông tin người nhận vé</h5>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-light">Họ tên</label>
-                            <input type="text" class="form-control" id="customerName" placeholder="Nguyễn Văn A">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-light">Email (nhận e-ticket)</label>
-                            <input type="email" class="form-control" id="customerEmail" placeholder="email@example.com">
-                        </div>
-                    </div>
-                </div>
+                </div> 
 
                 <div class="mb-4">
                     <h5 class="mb-3">Phương thức thanh toán</h5>
@@ -103,9 +89,15 @@
                 </div>
 
                 <div class="d-flex gap-3">
+<<<<<<< Updated upstream
                     <button type="button" class="btn btn-primary flex-fill" id="btnConfirmPay" disabled>
                         Xác nhận thanh toán
                     </button>
+=======
+                    <!-- ... phần HTML giữ nguyên ... -->
+
+                    <button type="button" class="btn btn-primary flex-fill" id="btnConfirmPay">Xác nhận & Thanh toán VNPay</button>
+>>>>>>> Stashed changes
                     <button type="button" class="btn btn-secondary flex-fill" id="btnPrint" disabled>
                         In vé
                     </button>

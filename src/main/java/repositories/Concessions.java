@@ -49,10 +49,10 @@ public class Concessions extends DBContext {
     // Thêm mới
     public boolean addConcession(Concession c) {
         String sql = """
-            INSERT INTO concessions
+            INSERT INTO concessions 
             (concession_type, quantity, price_base, concession_name)
             VALUES (?, ?, ?, ?, GETDATE(), ?)
-            """;
+        """;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, c.getConcessionType());
             ps.setObject(2, c.getQuantity(), Types.INTEGER); // hỗ trợ null

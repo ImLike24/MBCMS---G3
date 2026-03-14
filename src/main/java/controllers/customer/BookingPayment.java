@@ -19,6 +19,7 @@ import repositories.Bookings;
 import com.google.gson.JsonObject;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import jakarta.servlet.RequestDispatcher;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -109,26 +110,24 @@ public class BookingPayment extends HttpServlet {
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        
+        request.setCharacterEncoding("UTF-8");
+
         HttpSession session = request.getSession(false);
-        if(session == null || session.getAttribute("user") == null){
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"success\": false, \"message\": \"Not authenticated\"}");
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
-        
+
         String role = (String) session.getAttribute("role");
-        if(!"CUSTOMER".equals(role)) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.getWriter().write("{\"success\": false, \"message\": \"Access denied\"}");
+        if (!"CUSTOMER".equals(role)) {
+            response.sendRedirect(request.getContextPath() + "/access-denied");
             return;
         }
-        
+
         User currentUser = (User) session.getAttribute("user");
         int customerId = currentUser.getUserId();
-        
+
+        // Đọc JSON body
         StringBuilder jsonBuilder = new StringBuilder();
         try (BufferedReader reader = request.getReader()) {
             String line;
@@ -136,13 +135,31 @@ public class BookingPayment extends HttpServlet {
                 jsonBuilder.append(line);
             }
         }
-        
+
         Gson gson = new Gson();
+<<<<<<< Updated upstream
         JsonObject requestData = gson.fromJson(jsonBuilder.toString(), JsonObject.class);
         
+=======
+        String jsonBody = jsonBuilder.toString();
+        if (jsonBody.trim().isEmpty()) {
+            request.setAttribute("errorMessage", "Thiếu dữ liệu đặt vé.");
+            request.getRequestDispatcher("/pages/customer/booking-payment.jsp").forward(request, response);
+            return;
+        }
+
+        JsonObject requestData = gson.fromJson(jsonBody, JsonObject.class);
+        if (requestData == null) {
+            request.setAttribute("errorMessage", "Dữ liệu không hợp lệ.");
+            request.getRequestDispatcher("/pages/customer/booking-payment.jsp").forward(request, response);
+            return;
+        }
+
+>>>>>>> Stashed changes
         Showtimes showtimesRepo = null;
         OnlineTickets onlineTicketsRepo = null;
         Bookings bookingsRepo = null;
+
         try {
             int showtimeId = requestData.get("showtimeId").getAsInt();
             JsonArray seatsArray = requestData.has("seats") ? requestData.getAsJsonArray("seats") : new JsonArray();
@@ -151,44 +168,50 @@ public class BookingPayment extends HttpServlet {
                     : BigDecimal.ZERO;
 
             if (seatsArray.size() == 0) {
-                response.getWriter().write("{\"success\": false, \"message\": \"No seats selected\"}");
+                request.setAttribute("errorMessage", "Chưa chọn ghế.");
+                request.getRequestDispatcher("/pages/customer/booking-payment.jsp").forward(request, response);
                 return;
             }
 
             showtimesRepo = new Showtimes();
-
             Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
             if (showtimeDetails == null || showtimeDetails.isEmpty()) {
-                response.getWriter().write("{\"success\": false, \"message\": \"Showtime not found\"}");
+                request.setAttribute("errorMessage", "Suất chiếu không tồn tại.");
+                request.getRequestDispatcher("/pages/customer/booking-payment.jsp").forward(request, response);
                 return;
             }
 
-            // onlinePayment - customer
-            String paymentMethod = "BANKING";
-
-            bookingsRepo = new Bookings();
-            String bookingCode = bookingsRepo.generateBookingCode();
-            int bookingId = bookingsRepo.createOnlineBooking(customerId, showtimeId, paymentMethod, bookingCode);
-            if (bookingId <= 0) {
-                response.getWriter().write("{\"success\": false, \"message\": \"Failed to create booking\"}");
-                return;
-            }
-
-            onlineTicketsRepo = new OnlineTickets();
-
+            // Kiểm tra ghế còn trống
             for (int i = 0; i < seatsArray.size(); i++) {
                 JsonObject seatObj = seatsArray.get(i).getAsJsonObject();
+                int seatId = seatObj.get("seatId").getAsInt();
+                if (!showtimesRepo.isSeatAvailable(showtimeId, seatId)) {
+                    String seatCode = seatObj.has("seatCode") ? seatObj.get("seatCode").getAsString() : "unknown";
+                    request.setAttribute("errorMessage", "Ghế " + seatCode + " đã được đặt trước.");
+                    request.getRequestDispatcher("/pages/customer/booking-payment.jsp").forward(request, response);
+                    return;
+                }
+            }
 
+            // Tạo booking tạm thời (PENDING)
+            bookingsRepo = new Bookings();
+            String bookingCode = bookingsRepo.generateBookingCode();
+            String paymentMethod = "VNPAY_PENDING";
+            int bookingId = bookingsRepo.createOnlineBooking(customerId, showtimeId, paymentMethod, bookingCode);
+
+            if (bookingId <= 0) {
+                request.setAttribute("errorMessage", "Không thể tạo đơn đặt chỗ tạm thời.");
+                request.getRequestDispatcher("/pages/customer/booking-payment.jsp").forward(request, response);
+                return;
+            }
+
+            // Lưu vé tạm thời
+            onlineTicketsRepo = new OnlineTickets();
+            for (int i = 0; i < seatsArray.size(); i++) {
+                JsonObject seatObj = seatsArray.get(i).getAsJsonObject();
                 int seatId = seatObj.get("seatId").getAsInt();
                 String seatType = seatObj.get("seatType").getAsString();
                 String ticketType = seatObj.get("ticketType").getAsString();
-
-                if (!showtimesRepo.isSeatAvailable(showtimeId, seatId)) {
-                    response.getWriter().write("{\"success\": false, \"message\": \"Seat "
-                            + seatObj.get("seatCode").getAsString() + " đã được đặt trước\"}");
-                    return;
-                }
-
                 BigDecimal price = seatObj.has("price")
                         ? new BigDecimal(seatObj.get("price").getAsString())
                         : BigDecimal.ZERO;
@@ -196,29 +219,31 @@ public class BookingPayment extends HttpServlet {
                 onlineTicketsRepo.insertOnlineTicket(bookingId, showtimeId, seatId, ticketType, seatType, price);
             }
 
+<<<<<<< Updated upstream
             JsonObject respJson = new JsonObject();
             respJson.addProperty("success", true);
             respJson.addProperty("message", "Thanh toán thành công.");
             respJson.addProperty("eTicketCode", bookingCode);
             respJson.addProperty("totalAmount", totalAmount.toPlainString());
+=======
+            // Lưu thông tin cần cho trang VNPAY
+            request.setAttribute("vnpay_total_amount", totalAmount);
+            request.setAttribute("vnpay_booking_code", bookingCode);
+            // Nếu cần truyền thêm: phim, rạp, giờ chiếu... thì set thêm attribute
+>>>>>>> Stashed changes
 
-            response.getWriter().write(gson.toJson(respJson));
+            // Forward thẳng đến trang VNPAY
+            RequestDispatcher dispatcher = request.getRequestDispatcher("/pages/payment/vnpay_create_order.jsp");
+            dispatcher.forward(request, response);
 
         } catch (Exception e) {
             e.printStackTrace();
-            LOGGER.log(Level.SEVERE, "[OnlineBookingPayment] Payment error", e);
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write("{\"success\": false, \"message\": \"Payment error: " + e.getMessage().replace("\"", "\\\"") + "\"}");
+            request.setAttribute("errorMessage", "Lỗi hệ thống: " + e.getMessage());
+            request.getRequestDispatcher("/pages/customer/booking-payment.jsp").forward(request, response);
         } finally {
-            if (onlineTicketsRepo != null) {
-                onlineTicketsRepo.closeConnection();
-            }
-            if (bookingsRepo != null) {
-                bookingsRepo.closeConnection();
-            }
-            if (showtimesRepo != null) {
-                showtimesRepo.closeConnection();
-            }
+            if (onlineTicketsRepo != null) onlineTicketsRepo.closeConnection();
+            if (bookingsRepo != null) bookingsRepo.closeConnection();
+            if (showtimesRepo != null) showtimesRepo.closeConnection();
         }
     }
     
