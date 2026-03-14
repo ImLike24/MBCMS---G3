@@ -9,7 +9,6 @@ import java.io.PrintWriter;
 
 import models.User;
 import models.Showtime;
-import models.OnlineTicket;
 
 // repositories
 import repositories.Showtimes;
@@ -76,7 +75,7 @@ public class BookingPayment extends HttpServlet {
             
             Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
             
-            if(showtimeDetails.isEmpty()) {
+            if(showtimeDetails == null || showtimeDetails.isEmpty()) {
                 request.setAttribute("error", "Showtime not found");
                 response.sendRedirect(request.getContextPath() + "/customer/booking-tickets");
                 return;
@@ -138,7 +137,16 @@ public class BookingPayment extends HttpServlet {
         }
         
         Gson gson = new Gson();
-        JsonObject requestData = gson.fromJson(jsonBuilder.toString(), JsonObject.class);
+        String jsonBody = jsonBuilder.toString();
+        if (jsonBody == null || jsonBody.trim().isEmpty()) {
+            response.getWriter().write("{\"success\": false, \"message\": \"Thiếu dữ liệu đặt vé. Vui lòng quay lại chọn ghế và thử lại.\"}");
+            return;
+        }
+        JsonObject requestData = gson.fromJson(jsonBody, JsonObject.class);
+        if (requestData == null) {
+            response.getWriter().write("{\"success\": false, \"message\": \"Dữ liệu không hợp lệ. Vui lòng thử lại.\"}");
+            return;
+        }
         
         Showtimes showtimesRepo = null;
         OnlineTickets onlineTicketsRepo = null;
@@ -199,7 +207,7 @@ public class BookingPayment extends HttpServlet {
             JsonObject respJson = new JsonObject();
             respJson.addProperty("success", true);
             respJson.addProperty("message", "Thanh toán thành công.");
-            respJson.addProperty("eTicketCode", bookingCode);
+            respJson.addProperty("bookingCode", bookingCode);
             respJson.addProperty("totalAmount", totalAmount.toPlainString());
 
             response.getWriter().write(gson.toJson(respJson));
