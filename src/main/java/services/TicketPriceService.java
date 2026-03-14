@@ -29,10 +29,10 @@ public class TicketPriceService {
     // ----------------------------------------------------
 
     public void createTicketPrice(TicketPrice p) throws Exception {
-        // 1. Chạy hàm Validate tổng hợp
+        // Chạy hàm Validate tổng hợp
         validateTicketPrice(p, true);
 
-        // 2. Check xung đột cấu hình (Trùng lặp thời gian)
+        // Check xung đột cấu hình (Trùng lặp thời gian)
         checkOverlapConfig(p);
 
         if (!priceDao.insert(p)) {

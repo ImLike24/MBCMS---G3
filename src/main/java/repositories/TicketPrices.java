@@ -39,17 +39,17 @@ public class TicketPrices extends DBContext {
     }
 
     public boolean insert(TicketPrice p) {
-        String sql = "INSERT INTO ticket_prices (branch_id, seat_type, ticket_type, day_type, time_slot, price, effective_from, effective_to, is_active) VALUES (?,?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO ticket_prices (branch_id, ticket_type, day_type, time_slot, price, effective_from, effective_to, is_active) VALUES (?,?,?,?,?,?,?,?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, p.getBranchId());
-            st.setString(3, p.getTicketType());
-            st.setString(4, p.getDayType());
-            st.setString(5, p.getTimeSlot());
-            st.setBigDecimal(6, p.getPrice());
-            st.setDate(7, Date.valueOf(p.getEffectiveFrom()));
-            if (p.getEffectiveTo() != null) st.setDate(8, Date.valueOf(p.getEffectiveTo()));
-            else st.setNull(8, Types.DATE);
-            st.setBoolean(9, p.isActive());
+            st.setString(2, p.getTicketType());
+            st.setString(3, p.getDayType());
+            st.setString(4, p.getTimeSlot());
+            st.setBigDecimal(5, p.getPrice());
+            st.setDate(6, Date.valueOf(p.getEffectiveFrom()));
+            if (p.getEffectiveTo() != null) st.setDate(7, Date.valueOf(p.getEffectiveTo()));
+            else st.setNull(7, Types.DATE);
+            st.setBoolean(8, p.isActive());
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

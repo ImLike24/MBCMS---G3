@@ -29,6 +29,15 @@ public class AddMovie extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        String success = request.getParameter("success");
+        if ("poster_updated".equals(success)) {
+            request.setAttribute("message", "Cập nhật poster thành công!");
+        }
+        
+        String error = request.getParameter("error");
+        if (error != null) {
+            request.setAttribute("errorMessage", "Lỗi upload poster: " + error);
+        }
 
         request.setAttribute("allGenres", genreService.getAllActiveGenres());
         request.setAttribute("mode", "add");

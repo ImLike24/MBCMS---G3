@@ -71,19 +71,28 @@
                 </a>
             </li>
 
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/manager/report/revenue"
+                   class="nav-link text-white ${param.page == 'revenue' ? 'active' : ''}">
+                    <i class="fa fa-bar-chart me-2" style="width: 20px; text-align: center;"></i>
+                    Báo cáo Doanh thu
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/manager/report/performance"
+                   class="nav-link text-white ${param.page == 'performance' ? 'active' : ''}">
+                    <i class="fa fa-line-chart me-2" style="width: 20px; text-align: center;"></i>
+                    Báo cáo Hiệu suất
+                </a>
+            </li>
+
         </ul>
 
         <!-- Footer Menu (luôn nằm dưới) -->
         <div class="pt-3 border-top">
 
             <ul class="nav nav-pills flex-column">
-
-                <li class="nav-item">
-                    <a href="#" class="nav-link text-white">
-                        <i class="fa fa-user me-2" style="width: 20px; text-align: center;"></i>
-                        Hồ sơ cá nhân
-                    </a>
-                </li>
 
                 <li class="nav-item">
                     <a href="${pageContext.request.contextPath}/logout" class="nav-link text-white">
