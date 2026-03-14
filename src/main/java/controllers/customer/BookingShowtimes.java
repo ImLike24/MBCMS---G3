@@ -13,6 +13,7 @@ import repositories.Showtimes;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,40 +50,9 @@ public class BookingShowtimes extends HttpServlet {
                     ? LocalDate.parse(dateParam)
                     : today;
 
-            // Trường hợp TEST: movieId = 999 -> tạo dữ liệu giả, không cần DB
-            if (movieId == 999) {
-                Movie fakeMovie = new Movie();
-                fakeMovie.setMovieId(999);
-                fakeMovie.setTitle("Phim Thử Nghiệm");
-                fakeMovie.setDescription("Phim mẫu dùng để test luồng chọn suất chiếu.");
-                fakeMovie.setDuration(120);
-                fakeMovie.setAgeRating("T13");
-                fakeMovie.setDirector("Demo Director");
-                fakeMovie.setPosterUrl("https://via.placeholder.com/400x300?text=Sample+Movie");
-
-                // Danh sách thể loại thử nghiệm
-                List<String> genres = new ArrayList<>();
-                genres.add("Hành động");
-                genres.add("Viễn tưởng");
-                fakeMovie.setGenres(genres);
-
-                // Không có suất chiếu thật -> để showtimes rỗng để JSP hiển thị các giờ test
-                List<Showtime> showtimes = new ArrayList<>();
-
-                // Tạo danh sách 7 ngày (hôm nay + 6 ngày tới)
-                List<LocalDate> dateList = new ArrayList<>();
-                for (int i = 0; i < 7; i++) {
-                    dateList.add(today.plusDays(i));
-                }
-
-                request.setAttribute("movie", fakeMovie);
-                request.setAttribute("showtimes", showtimes);
-                request.setAttribute("selectedDate", selectedDate);
-                request.setAttribute("today", today);
-                request.setAttribute("dateList", dateList);
-
-                request.getRequestDispatcher("/pages/customer/booking-showtimes.jsp")
-                        .forward(request, response);
+            // movieId không hợp lệ hoặc phim thử nghiệm -> quay lại danh sách phim
+            if (movieId <= 0 || movieId == 999) {
+                response.sendRedirect(request.getContextPath() + "/movies");
                 return;
             }
 
@@ -98,6 +68,16 @@ public class BookingShowtimes extends HttpServlet {
 
             // Lấy danh sách suất chiếu theo ngày đã chọn
             List<Showtime> showtimes = showtimesRepo.getShowtimesForMovieOnDate(movieId, selectedDate);
+
+            // Lọc bỏ suất chiếu đã qua thời gian (server-side, không dùng JavaScript)
+            LocalDateTime now = LocalDateTime.now();
+            showtimes = showtimes.stream()
+                    .filter(st -> {
+                        if (st.getShowDate() == null || st.getStartTime() == null) return true;
+                        LocalDateTime start = LocalDateTime.of(st.getShowDate(), st.getStartTime());
+                        return start.isAfter(now);
+                    })
+                    .toList();
 
             // Giống CounterBooking: tính số ghế còn lại / tổng ghế cho từng suất chiếu
             Map<Integer, Integer> availableSeatsMap = new HashMap<>();
@@ -132,14 +112,10 @@ public class BookingShowtimes extends HttpServlet {
                     .forward(request, response);
 
         } catch (NumberFormatException e) {
-            // movieId không hợp lệ
             response.sendRedirect(request.getContextPath() + "/movies");
         } catch (Exception e) {
-            // Lỗi bất ngờ khác
             e.printStackTrace();
-            request.setAttribute("error", "Có lỗi xảy ra khi tải danh sách suất chiếu.");
-            request.getRequestDispatcher("/pages/customer/booking-showtimes.jsp")
-                    .forward(request, response);
+            response.sendRedirect(request.getContextPath() + "/movies?error=load");
         }
     }
 }
