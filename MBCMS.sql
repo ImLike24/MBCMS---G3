@@ -827,3 +827,30 @@ CREATE TABLE user_vouchers (
     CONSTRAINT FK_uv_voucher FOREIGN KEY (voucher_id) REFERENCES vouchers(voucher_id),
     CONSTRAINT CK_uv_status CHECK (status IN ('AVAILABLE', 'USED', 'EXPIRED'))
 );
+GO
+
+-- 6. CẬP NHẬT BẢNG BOOKINGS
+ALTER TABLE bookings
+ADD applied_voucher_id INT NULL;
+GO
+
+ALTER TABLE bookings
+ADD CONSTRAINT FK_booking_voucher FOREIGN KEY (applied_voucher_id) REFERENCES user_vouchers(id);
+GO
+
+-- 7. BẢNG CẤU HÌNH TÍCH ĐIỂM
+CREATE TABLE loyalty_configs (
+    config_id INT PRIMARY KEY CHECK (config_id = 1),
+    earn_rate_amount DECIMAL(10,2) NOT NULL DEFAULT 10000,
+    earn_points INT NOT NULL DEFAULT 1,          
+    min_redeem_points INT NOT NULL DEFAULT 100,
+    updated_at DATETIME2 DEFAULT SYSDATETIME(),
+    updated_by INT NULL,
+    CONSTRAINT FK_loyalty_config_admin FOREIGN KEY (updated_by) REFERENCES users(user_id)
+);
+GO
+
+INSERT INTO loyalty_configs (config_id, earn_rate_amount, earn_points, min_redeem_points) 
+VALUES (1, 10000, 1, 100);
+GO
+
