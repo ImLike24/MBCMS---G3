@@ -98,8 +98,8 @@
                         <!-- Lượt dùng tối đa -->
                         <div class="col-md-4">
                             <label class="form-label">Lượt dùng tối đa</label>
-                            <input type="number" class="form-control" name="maxUsage" min="0" value="100">
-                            <div class="form-text">Nhập 0 nếu không giới hạn số lượng.</div>
+                            <input type="number" class="form-control" name="maxUsage" id="maxUsage" min="1" value="1">
+                            <div class="form-text" id="usageHint">Nhập số lượt dùng tối đa.</div>
                         </div>
 
                         <!-- Hạn sử dụng -->
@@ -160,6 +160,9 @@
                         pointsCost.required = false;
                         pointsCost.disabled = true;
                         pointsCost.value = 0;
+
+                        document.getElementById('maxUsage').readOnly = false;
+                        document.getElementById('usageHint').innerText = 'Nhập số lượt dùng tối đa.';
                     } else {
                         codeLabel.innerHTML = 'Tiền tố Mã (Prefix) — Không bắt buộc';
                         codeHint.innerText = 'Hệ thống sẽ tự ghép prefix + chuỗi ngẫu nhiên khi khách đổi.';
@@ -170,6 +173,9 @@
                         pointsCost.required = true;
                         pointsCost.disabled = false;
                         if (parseInt(pointsCost.value) === 0) pointsCost.value = 100;
+
+                        document.getElementById('maxUsage').readOnly = false;
+                        document.getElementById('usageHint').innerText = 'Nhập số lượt dùng tối đa.';
                     }
                 }
 

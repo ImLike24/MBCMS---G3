@@ -28,54 +28,32 @@
             min-width: 60px;
             text-align: center;
         }
-        /* Cải tiến phần hành động */
         .action-btn {
             width: 38px;
             height: 38px;
             padding: 0;
             font-size: 1.1rem;
-            border-radius: 50% !important;          /* bo tròn hoàn toàn */
+            border-radius: 50% !important;
             transition: all 0.25s ease;
             box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-            color: white !important;                 /* chữ/icon luôn trắng */
-            border: none !important;                 /* bỏ viền outline mặc định */
+            color: white !important;
+            border: none !important;
         }
-
         .action-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 14px rgba(0,0,0,0.2);
-            filter: brightness(1.1);                 /* sáng hơn một chút khi hover */
+            filter: brightness(1.1);
         }
-
         .action-btn:focus {
             outline: none;
             box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
         }
-
-        /* Màu nền cụ thể cho từng nút */
-        .btn-view {
-            background-color: #0d6efd;              /* xanh dương Bootstrap primary */
-        }
-        .btn-view:hover {
-            background-color: #0b5ed7;
-        }
-
-        .btn-edit {
-            background-color: #ffc107;              /* vàng Bootstrap warning */
-            color: #212529 !important;              /* giữ chữ đen cho vàng vì trắng khó đọc */
-        }
-        .btn-edit:hover {
-            background-color: #e0a800;
-        }
-
-        .btn-delete {
-            background-color: #dc3545;              /* đỏ Bootstrap danger */
-        }
-        .btn-delete:hover {
-            background-color: #bb2d3b;
-        }
-
-        /* Khoảng cách giữa các nút */
+        .btn-view { background-color: #0d6efd; }
+        .btn-view:hover { background-color: #0b5ed7; }
+        .btn-edit { background-color: #ffc107; color: #212529 !important; }
+        .btn-edit:hover { background-color: #e0a800; }
+        .btn-delete { background-color: #dc3545; }
+        .btn-delete:hover { background-color: #bb2d3b; }
         .btn-group-sm .action-btn + .action-btn {
             margin-left: 8px;
         }
@@ -100,7 +78,7 @@
                     </ol>
                 </nav>
             </div>
-            <a href="${pageContext.request.contextPath}/admin/movies/add" 
+            <a href="${pageContext.request.contextPath}/admin/movies/add"
                class="btn btn-orange shadow-sm px-4">
                 <i class="fa fa-plus me-2"></i>Thêm Phim mới
             </a>
@@ -129,11 +107,10 @@
                                 for (Movie m : movies) {
                         %>
                         <tr>
-                            <!-- Poster -->
                             <td class="ps-4">
                                 <% if (m.getPosterUrl() != null && !m.getPosterUrl().isEmpty()) { %>
-                                <img src="<%= m.getPosterUrl() %>" 
-                                     alt="<%= m.getTitle() %>" 
+                                <img src="<%= m.getPosterUrl() %>"
+                                     alt="<%= m.getTitle() %>"
                                      class="movie-poster">
                                 <% } else { %>
                                 <div class="movie-poster bg-light d-flex align-items-center justify-content-center text-muted">
@@ -141,28 +118,22 @@
                                 </div>
                                 <% } %>
                             </td>
-                            <!-- Tên Phim -->
                             <td class="fw-semibold text-dark"><%= m.getTitle() %></td>
-                            <!-- Thời lượng -->
                             <td><%= m.getDuration() %> phút</td>
-                            <!-- Đánh giá -->
                             <td>
-                                <span class="badge rating-badge <%= m.getRating() >= 4.0 ? "bg-success" : 
+                                <span class="badge rating-badge <%= m.getRating() >= 4.0 ? "bg-success" :
                                       m.getRating() >= 3.0 ? "bg-warning text-dark" : "bg-danger" %>">
                                     <%= String.format("%.1f", m.getRating()) %> ★
                                 </span>
                             </td>
-                            <!-- Độ tuổi -->
                             <td>
-                                <%= m.getAgeRating() != null && !m.getAgeRating().trim().isEmpty() 
+                                <%= m.getAgeRating() != null && !m.getAgeRating().trim().isEmpty()
                                     ? m.getAgeRating() : "-" %>
                             </td>
-                            <!-- Đạo diễn -->
                             <td>
-                                <%= m.getDirector() != null && !m.getDirector().trim().isEmpty() 
+                                <%= m.getDirector() != null && !m.getDirector().trim().isEmpty()
                                     ? m.getDirector() : "<i class='text-muted'>Chưa cập nhật</i>" %>
                             </td>
-                            <!-- Trạng thái -->
                             <td>
                                 <% if (m.isActive()) { %>
                                 <span class="badge bg-success rounded-pill px-3">HOẠT ĐỘNG</span>
@@ -170,7 +141,6 @@
                                 <span class="badge bg-secondary rounded-pill px-3">TẮT</span>
                                 <% } %>
                             </td>
-                            <!-- Hành động - Phiên bản đẹp mắt -->
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <button type="button"
@@ -209,7 +179,7 @@
                                 <i class="fas fa-film fa-4x mb-3 opacity-50"></i>
                                 <h5>Chưa có phim nào trong hệ thống</h5>
                                 <p>Bạn có thể thêm phim mới ngay bây giờ.</p>
-                                <a href="${pageContext.request.contextPath}/admin/movies/add" 
+                                <a href="${pageContext.request.contextPath}/admin/movies/add"
                                    class="btn btn-orange mt-3">
                                     <i class="fa fa-plus me-2"></i>Thêm Phim ngay
                                 </a>
@@ -221,15 +191,80 @@
                 </div>
             </div>
         </div>
+
+        <!-- Phần phân trang -->
+        <%
+            Integer currentPage = (Integer) request.getAttribute("currentPage");
+            Integer totalPages = (Integer) request.getAttribute("totalPages");
+            Integer totalMovies = (Integer) request.getAttribute("totalMovies");
+
+            if (totalPages != null && totalPages > 1) {
+                int pageSize = 5;
+                int startItem = (currentPage - 1) * pageSize + 1;
+                int endItem = Math.min(currentPage * pageSize, totalMovies);
+        %>
+        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-3">
+            <div class="text-muted">
+                Hiển thị <strong><%= startItem %> - <%= endItem %></strong>
+                trong tổng số <strong><%= totalMovies %></strong> phim
+            </div>
+
+            <nav aria-label="Phân trang phim">
+                <ul class="pagination mb-0">
+                    <!-- Trang đầu -->
+                    <li class="page-item <%= currentPage <= 1 ? "disabled" : "" %>">
+                        <a class="page-link" href="?page=1" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+
+                    <!-- Trang trước -->
+                    <li class="page-item <%= currentPage <= 1 ? "disabled" : "" %>">
+                        <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+
+                    <!-- Các trang số -->
+                    <%
+                        int startPage = Math.max(1, currentPage - 2);
+                        int endPage = Math.min(totalPages, currentPage + 2);
+
+                        for (int i = startPage; i <= endPage; i++) {
+                    %>
+                    <li class="page-item <%= i == currentPage ? "active" : "" %>">
+                        <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                    </li>
+                    <% } %>
+
+                    <!-- Trang sau -->
+                    <li class="page-item <%= currentPage >= totalPages ? "disabled" : "" %>">
+                        <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+
+                    <!-- Trang cuối -->
+                    <li class="page-item <%= currentPage >= totalPages ? "disabled" : "" %>">
+                        <a class="page-link" href="?page=<%= totalPages %>" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <% } %>
+
     </div>
 </main>
 
-<!-- Kích hoạt tooltip của Bootstrap -->
+<!-- Bootstrap JS + Tooltip -->
 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Khởi tạo tất cả tooltip
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    // Khởi tạo tooltip
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 </script>
+
 </body>
 </html>

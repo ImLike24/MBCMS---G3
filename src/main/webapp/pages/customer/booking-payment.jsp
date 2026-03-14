@@ -70,11 +70,24 @@
                     <hr>
                     <h5 class="mb-2">Ghế đã chọn</h5>
                     <div id="selectedSeatsDisplay">
-                        <span class="text-muted">Đang tải dữ liệu ghế...</span>
+                        <c:forEach var="seat" items="${selectedSeats}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class = "seat-tag">${seat.seatCode}</span>
+                                    <span class="badge bg-secondary me-1">${seat.seatType}</span>
+                                    <span class="badge bg-info">${seat.ticketType}</span>
+                                </div>
+                                <div class = "text-end text-light">
+                                    <fmt:formatNumber value="${seat.price}" type="currency" currencySymbol="₫"/>
+                                </div>
+                            </div>
+                        </c:forEach>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <span class="text-muted">Tổng tiền</span>
-                        <span class="total-amount" id="totalAmountText">0 ₫</span>
+                        <span class="total-amount" id="totalAmountText">
+                            <fmt:formatNumber value="${totalAmount != null ? totalAmount : 0}" type="currency" currencySymbol="₫"/>
+                        </span>
                     </div>
                 </div>
 
@@ -103,9 +116,7 @@
                 </div>
 
                 <div class="d-flex gap-3">
-                    <button type="button" class="btn btn-primary flex-fill" id="btnConfirmPay" disabled>
-                        Xác nhận thanh toán
-                    </button>
+                    <button type="button" class="btn btn-primary flex-fill" id="btnConfirmPay">Xác nhận thanh toán</button>
                     <button type="button" class="btn btn-secondary flex-fill" id="btnPrint" disabled>
                         In vé
                     </button>
@@ -114,7 +125,7 @@
                 <div id="paymentMessage" class="mt-3 text-success fw-semibold" style="display:none;"></div>
 
                 <div id="receiptArea" class="receipt-box mt-4" style="display:none;">
-                    <h5 class="mb-2">E-ticket</h5>
+                    <h5 class="mb-2">Hóa đơn thanh toán</h5>
                     <p class="mb-1"><strong>Mã vé:</strong> <span id="receiptCode"></span></p>
                     <p class="mb-1"><strong>Phim:</strong> ${movieTitle}</p>
                     <p class="mb-1"><strong>Rạp:</strong> ${showtimeDetails.branchName}</p>
@@ -153,10 +164,11 @@
     function renderBookingSummary() {
         const container = document.getElementById('selectedSeatsDisplay');
         const totalEl = document.getElementById('totalAmountText');
+        const btnConfirm = document.getElementById('btnConfirmPay');
         if (!bookingData || !bookingData.seats || bookingData.seats.length === 0) {
-            container.innerHTML = '<span class="text-muted">Không tìm thấy dữ liệu ghế. Vui lòng quay lại chọn ghế.</span>';
-            totalEl.textContent = formatCurrency(0);
-            document.getElementById('btnConfirmPay').disabled = true;
+            if (container) container.innerHTML = '<span class="text-muted">Không tìm thấy dữ liệu ghế. Vui lòng quay lại chọn ghế.</span>';
+            if (totalEl) totalEl.textContent = formatCurrency(0);
+            if (btnConfirm) btnConfirm.disabled = true;
             return;
         }
 
@@ -185,8 +197,8 @@
         });
         container.appendChild(frag);
 
-        totalEl.textContent = formatCurrency(bookingData.totalAmount);
-        document.getElementById('btnConfirmPay').disabled = false;
+        if (totalEl) totalEl.textContent = formatCurrency(bookingData.totalAmount);
+        if (btnConfirm) btnConfirm.disabled = false;
     }
 
     async function submitPayment() {
@@ -222,18 +234,18 @@
                 return;
             }
 
-            bookingData.eTicketCode = data.eTicketCode;
+            bookingData.bookingCode = data.bookingCode;
             try {
                 sessionStorage.setItem('customerBookingData', JSON.stringify(bookingData));
             } catch (e) {}
 
-            msgEl.textContent = 'Thanh toán thành công. Mã vé: ' + data.eTicketCode;
+            msgEl.textContent = 'Thanh toán thành công. Mã đặt vé: ' + data.bookingCode;
             msgEl.classList.remove('text-danger');
             msgEl.style.display = 'block';
 
             const receipt = document.getElementById('receiptArea');
             const ticketLabel = (t) => (t === 'CHILD' ? 'Trẻ em' : 'Người lớn');
-            document.getElementById('receiptCode').textContent = data.eTicketCode;
+            document.getElementById('receiptCode').textContent = data.bookingCode;
             document.getElementById('receiptSeats').textContent = bookingData.seats
                 .map(s => s.seatCode + ' (' + ticketLabel(s.ticketType || 'ADULT') + ')').join(', ');
             document.getElementById('receiptTotal').textContent = formatCurrency(bookingData.totalAmount);
