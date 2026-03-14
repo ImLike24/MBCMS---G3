@@ -1,21 +1,13 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controllers.manager.report.performance;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-/**
- *
- * @author Admin
- */
 @WebServlet(name = "ScreeningRoomPerformance", urlPatterns = {"/manager/report/performance/screening-room"})
 public class ScreeningRoomPerformance extends HttpServlet {
 
