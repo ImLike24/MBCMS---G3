@@ -80,11 +80,43 @@ public class BookingTickets extends HttpServlet {
                 seatsByRow.computeIfAbsent(row, k -> new ArrayList<>()).add(sws);
             }
 
+            // Map seatId -> seatInfo để tra cứu ghế đã chọn từ GET
+            Map<Integer, Map<String, Object>> seatIdToInfo = new java.util.HashMap<>();
+            for (Map<String, Object> sws : seatsWithStatus) {
+                Seat s = (Seat) sws.get("seat");
+                if (s != null) {
+                    seatIdToInfo.put(s.getSeatId(), sws);
+                }
+            }
+
+            String[] seatIdsParam = request.getParameterValues("seatIds");
+            List<Integer> selectedSeatIds = new ArrayList<>();
+            List<Map<String, Object>> selectedSeatsInfo = new ArrayList<>();
+            if (seatIdsParam != null && seatIdsParam.length > 0) {
+                for (String sid : seatIdsParam) {
+                    try {
+                        int seatId = Integer.parseInt(sid.trim());
+                        Map<String, Object> sws = seatIdToInfo.get(seatId);
+                        if (sws != null && "AVAILABLE".equals(sws.get("bookingStatus"))) {
+                            Seat seat = (Seat) sws.get("seat");
+                            selectedSeatIds.add(seatId);
+                            Map<String, Object> info = new java.util.HashMap<>();
+                            info.put("seatId", seat.getSeatId());
+                            info.put("seatCode", seat.getSeatCode());
+                            selectedSeatsInfo.add(info);
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+
             request.setAttribute("seatsByRow", seatsByRow);
             request.setAttribute("showtimeDetails", showtimeDetails);
             request.setAttribute("seatsWithStatus", seatsWithStatus);
             request.setAttribute("availableSeats", availableSeats);
             request.setAttribute("showtimeId", showtimeId);
+            request.setAttribute("selectedSeatIds", selectedSeatIds);
+            request.setAttribute("selectedSeatsInfo", selectedSeatsInfo);
 
             Showtime showtime = (Showtime) showtimeDetails.get("showtime");
             request.setAttribute("showtime", showtime);
@@ -144,19 +176,11 @@ public class BookingTickets extends HttpServlet {
         }
 
         String[] seatIdsParam = request.getParameterValues("seatIds");
-        String ticketType = request.getParameter("ticketType");
         String showtimeIdParam = request.getParameter("showtimeId");
 
         if (showtimeIdParam == null || showtimeIdParam.isEmpty() || seatIdsParam == null || seatIdsParam.length == 0) {
             response.sendRedirect(request.getContextPath() + "/movies");
             return;
-        }
-
-        if (ticketType == null || ticketType.isEmpty()) {
-            ticketType = "ADULT";
-        }
-        if (!"ADULT".equals(ticketType) && !"CHILD".equals(ticketType)) {
-            ticketType = "ADULT";
         }
 
         int showtimeId;
@@ -223,6 +247,14 @@ public class BookingTickets extends HttpServlet {
                     request.getSession().setAttribute("bookingError", "Ghế đã được đặt trước. Vui lòng chọn ghế khác.");
                     response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeId);
                     return;
+                }
+
+                String ticketType = request.getParameter("ticketType_" + seatId);
+                if (ticketType == null || ticketType.isEmpty()) {
+                    ticketType = "ADULT";
+                }
+                if (!"ADULT".equals(ticketType) && !"CHILD".equals(ticketType)) {
+                    ticketType = "ADULT";
                 }
 
                 Seat seat = (Seat) sws.get("seat");
