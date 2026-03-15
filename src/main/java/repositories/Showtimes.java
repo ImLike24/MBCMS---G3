@@ -355,19 +355,19 @@ public class Showtimes extends DBContext {
     }
 
     /**
-     * Create a new showtime
+     * Create a new showtime. base_price is set to 0 by default;
+     * actual ticket pricing is managed via the ticket price configuration screen.
      */
     public int createShowtime(Showtime showtime) {
         String sql = "INSERT INTO showtimes (movie_id, room_id, show_date, start_time, end_time, base_price, status) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?) ";
+                "VALUES (?, ?, ?, ?, ?, 0, ?) ";
         try (PreparedStatement ps = connection.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, showtime.getMovieId());
             ps.setInt(2, showtime.getRoomId());
             ps.setDate(3, java.sql.Date.valueOf(showtime.getShowDate()));
             ps.setTime(4, java.sql.Time.valueOf(showtime.getStartTime()));
             ps.setTime(5, java.sql.Time.valueOf(showtime.getEndTime()));
-            ps.setBigDecimal(6, showtime.getBasePrice());
-            ps.setString(7, showtime.getStatus() != null ? showtime.getStatus() : "SCHEDULED");
+            ps.setString(6, showtime.getStatus() != null ? showtime.getStatus() : "SCHEDULED");
             ps.executeUpdate();
             try (java.sql.ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next())
@@ -571,14 +571,13 @@ public class Showtimes extends DBContext {
      */
     public boolean updateShowtime(int showtimeId, java.time.LocalDate newDate,
             java.time.LocalTime newStart, java.time.LocalTime newEnd, java.math.BigDecimal newPrice) {
-        String sql = "UPDATE showtimes SET show_date = ?, start_time = ?, end_time = ?, base_price = ? "
+        String sql = "UPDATE showtimes SET show_date = ?, start_time = ?, end_time = ? "
                 + "WHERE showtime_id = ? AND status = 'SCHEDULED'";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setDate(1, java.sql.Date.valueOf(newDate));
             ps.setTime(2, java.sql.Time.valueOf(newStart));
             ps.setTime(3, java.sql.Time.valueOf(newEnd));
-            ps.setBigDecimal(4, newPrice);
-            ps.setInt(5, showtimeId);
+            ps.setInt(4, showtimeId);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

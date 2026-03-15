@@ -19,6 +19,7 @@ public class Vouchers extends DBContext {
         v.setPointsCost(rs.getInt("points_cost"));
         v.setDiscountAmount(rs.getBigDecimal("discount_amount"));
         v.setMaxUsageLimit(rs.getInt("max_usage_limit"));
+        v.setCurrentUsage(rs.getInt("current_usage"));
         v.setValidDays(rs.getInt("valid_days"));
         v.setIsActive(rs.getBoolean("is_active"));
         if (rs.getTimestamp("created_at") != null) {
@@ -27,9 +28,6 @@ public class Vouchers extends DBContext {
         return v;
     }
 
-    /**
-     * Lấy voucher còn hoạt động theo mã code (không phân biệt hoa thường).
-     */
     public Voucher getActiveVoucherByCode(String code) {
         if (code == null || code.trim().isEmpty()) {
             return null;
@@ -49,9 +47,51 @@ public class Vouchers extends DBContext {
         return null;
     }
 
+    public List<Voucher> getAllVouchers() {
+        List<Voucher> lists = new ArrayList<>();
+        String sql = "SELECT * FROM vouchers ORDER BY created_at DESC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+             ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                lists.add(mapResultSetToVoucher(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return lists;
+    }
+
     public List<Voucher> getAllActiveVouchers() {
         List<Voucher> lists = new ArrayList<>();
         String sql = "SELECT * FROM vouchers WHERE is_active = 1 ORDER BY created_at DESC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+             ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                lists.add(mapResultSetToVoucher(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return lists;
+    }
+
+    public List<Voucher> getLoyaltyVouchers() {
+        List<Voucher> lists = new ArrayList<>();
+        String sql = "SELECT * FROM vouchers WHERE is_active = 1 AND voucher_type = 'LOYALTY' AND current_usage < max_usage_limit ORDER BY points_cost ASC";
+        try (PreparedStatement st = connection.prepareStatement(sql);
+             ResultSet rs = st.executeQuery()) {
+            while (rs.next()) {
+                lists.add(mapResultSetToVoucher(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return lists;
+    }
+
+    public List<Voucher> getPublicVouchers() {
+        List<Voucher> lists = new ArrayList<>();
+        String sql = "SELECT * FROM vouchers WHERE is_active = 1 AND voucher_type = 'PUBLIC' AND current_usage < max_usage_limit ORDER BY created_at DESC";
         try (PreparedStatement st = connection.prepareStatement(sql);
              ResultSet rs = st.executeQuery()) {
             while (rs.next()) {
@@ -79,7 +119,7 @@ public class Vouchers extends DBContext {
     }
 
     public boolean insert(Voucher v) {
-        String sql = "INSERT INTO vouchers (voucher_name, voucher_type, voucher_code, points_cost, discount_amount, max_usage_limit, valid_days) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO vouchers (voucher_name, voucher_type, voucher_code, points_cost, discount_amount, max_usage_limit, current_usage, valid_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, v.getVoucherName());
             st.setString(2, v.getVoucherType());
@@ -87,7 +127,8 @@ public class Vouchers extends DBContext {
             st.setInt(4, v.getPointsCost());
             st.setBigDecimal(5, v.getDiscountAmount());
             st.setInt(6, v.getMaxUsageLimit());
-            st.setInt(7, v.getValidDays());
+            st.setInt(7, v.getCurrentUsage() != null ? v.getCurrentUsage() : 0);
+            st.setInt(8, v.getValidDays());
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -96,7 +137,7 @@ public class Vouchers extends DBContext {
     }
 
     public boolean update(Voucher v) {
-        String sql = "UPDATE vouchers SET voucher_name = ?, voucher_type = ?, voucher_code = ?, points_cost = ?, discount_amount = ?, max_usage_limit = ?, valid_days = ?, is_active = ? WHERE voucher_id = ?";
+        String sql = "UPDATE vouchers SET voucher_name = ?, voucher_type = ?, voucher_code = ?, points_cost = ?, discount_amount = ?, max_usage_limit = ?, current_usage = ?, valid_days = ?, is_active = ? WHERE voucher_id = ?";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, v.getVoucherName());
             st.setString(2, v.getVoucherType());
@@ -104,9 +145,10 @@ public class Vouchers extends DBContext {
             st.setInt(4, v.getPointsCost());
             st.setBigDecimal(5, v.getDiscountAmount());
             st.setInt(6, v.getMaxUsageLimit());
-            st.setInt(7, v.getValidDays());
-            st.setBoolean(8, v.getIsActive());
-            st.setInt(9, v.getVoucherId());
+            st.setInt(7, v.getCurrentUsage());
+            st.setInt(8, v.getValidDays());
+            st.setBoolean(9, v.getIsActive());
+            st.setInt(10, v.getVoucherId());
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

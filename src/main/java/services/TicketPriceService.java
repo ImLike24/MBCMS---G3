@@ -4,7 +4,9 @@ import models.TicketPrice;
 import repositories.TicketPrices;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -16,7 +18,8 @@ public class TicketPriceService {
         return priceDao.findById(priceId);
     }
 
-    public List<TicketPrice> getPricesWithFilterAndPagination(int branchId, String search, String dayType, String status, int page, int pageSize) {
+    public List<TicketPrice> getPricesWithFilterAndPagination(int branchId, String search, String dayType,
+            String status, int page, int pageSize) {
         return priceDao.getPricesWithFilterAndPagination(branchId, search, dayType, status, page, pageSize);
     }
 
@@ -76,12 +79,16 @@ public class TicketPriceService {
         List<String> validDayTypes = Arrays.asList("WEEKDAY", "WEEKEND", "HOLIDAY");
         List<String> validTimeSlots = Arrays.asList("MORNING", "AFTERNOON", "EVENING", "NIGHT");
 
-        if (!validTicketTypes.contains(p.getTicketType())) throw new Exception("Loại khách không hợp lệ.");
-        if (!validDayTypes.contains(p.getDayType())) throw new Exception("Loại ngày không hợp lệ.");
-        if (!validTimeSlots.contains(p.getTimeSlot())) throw new Exception("Khung giờ không hợp lệ.");
+        if (!validTicketTypes.contains(p.getTicketType()))
+            throw new Exception("Loại khách không hợp lệ.");
+        if (!validDayTypes.contains(p.getDayType()))
+            throw new Exception("Loại ngày không hợp lệ.");
+        if (!validTimeSlots.contains(p.getTimeSlot()))
+            throw new Exception("Khung giờ không hợp lệ.");
 
         // Validate Giá tiền
-        if (p.getPrice() == null) throw new Exception("Giá vé không được để trống.");
+        if (p.getPrice() == null)
+            throw new Exception("Giá vé không được để trống.");
 
         BigDecimal minPrice = new BigDecimal("10000");
         BigDecimal maxPrice = new BigDecimal("500000");
@@ -116,16 +123,19 @@ public class TicketPriceService {
     // Validate Chống xung đột (Overlap)
     private void checkOverlapConfig(TicketPrice newConfig) throws Exception {
         // Nếu cấu hình đang lưu là INACTIVE thì không cần check xung đột
-        if (!newConfig.isActive()) return;
+        if (!newConfig.isActive())
+            return;
 
         List<TicketPrice> existingPrices = priceDao.findByBranchId(newConfig.getBranchId());
 
         for (TicketPrice existing : existingPrices) {
             // Bỏ qua chính nó (khi đang update)
-            if (newConfig.getPriceId() != null && newConfig.getPriceId().equals(existing.getPriceId())) continue;
+            if (newConfig.getPriceId() != null && newConfig.getPriceId().equals(existing.getPriceId()))
+                continue;
 
             // Chỉ xét các cấu hình đang Active
-            if (!existing.isActive()) continue;
+            if (!existing.isActive())
+                continue;
 
             // Bị trùng lặp Cùng đối tượng, ngày, giờ
             boolean isSameTarget = existing.getTicketType().equals(newConfig.getTicketType())
@@ -134,7 +144,8 @@ public class TicketPriceService {
 
             if (isSameTarget) {
                 // Kiểm tra xem thời gian có đè lên nhau không (Overlap Dates)
-                // Công thức 2 đoạn [A, B] và [C, D] giao nhau: (Start1 <= End2) AND (Start2 <= End1)
+                // Công thức 2 đoạn [A, B] và [C, D] giao nhau: (Start1 <= End2) AND (Start2 <=
+                // End1)
 
                 LocalDate start1 = newConfig.getEffectiveFrom();
                 LocalDate end1 = newConfig.getEffectiveTo() != null ? newConfig.getEffectiveTo() : LocalDate.MAX;
@@ -144,10 +155,62 @@ public class TicketPriceService {
 
                 if (!start1.isAfter(end2) && !start2.isAfter(end1)) {
                     throw new Exception("XUNG ĐỘT GIÁ: Đã có mức giá đang hoạt động cho tổ hợp ["
-                            + newConfig.getTicketType() + " - " + newConfig.getDayType() + " - " + newConfig.getTimeSlot()
+                            + newConfig.getTicketType() + " - " + newConfig.getDayType() + " - "
+                            + newConfig.getTimeSlot()
                             + "] trong khoảng thời gian này. Vui lòng vô hiệu hóa giá cũ trước khi tạo giá mới.");
                 }
             }
         }
+    }
+
+    // ----------------------------------------------------
+    // HELPER METHODS FOR SHOWTIME PRICING
+    // ----------------------------------------------------
+
+    public String getDayType(LocalDate date) {
+        // Simple logic: Saturday and Sunday are WEEKEND, others are WEEKDAY.
+        // HOLIDAY logic could be added here if there was a table of holidays.
+        DayOfWeek day = date.getDayOfWeek();
+        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            return "WEEKEND";
+        }
+        return "WEEKDAY";
+    }
+
+    public String getTimeSlot(LocalTime time) {
+        int hour = time.getHour();
+        if (hour >= 0 && hour < 12) {
+            return "MORNING";
+        } else if (hour >= 12 && hour < 17) {
+            return "AFTERNOON";
+        } else if (hour >= 17 && hour < 21) {
+            return "EVENING";
+        } else {
+            return "NIGHT";
+        }
+    }
+
+    public BigDecimal getBasePriceForShowtime(int branchId, LocalDate date, LocalTime time) {
+        String dayType = getDayType(date);
+        String timeSlot = getTimeSlot(time);
+
+        List<TicketPrice> prices = priceDao.findByBranchId(branchId);
+        for (TicketPrice p : prices) {
+            if (p.isActive()
+                    && "ADULT".equals(p.getTicketType())
+                    && p.getDayType().equals(dayType)
+                    && p.getTimeSlot().equals(timeSlot)) {
+
+                // Check date constraints
+                LocalDate start = p.getEffectiveFrom();
+                LocalDate end = p.getEffectiveTo() != null ? p.getEffectiveTo() : LocalDate.MAX;
+                if (!date.isBefore(start) && !date.isAfter(end)) {
+                    return p.getPrice(); // Returns the valid configured price
+                }
+            }
+        }
+
+        // Fallback standard price if no configuration is found
+        return BigDecimal.ZERO;
     }
 }

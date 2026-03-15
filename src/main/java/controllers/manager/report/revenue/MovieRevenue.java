@@ -1,5 +1,10 @@
 package controllers.manager.report.revenue;
 
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -9,11 +14,6 @@ import models.CinemaBranch;
 import models.User;
 import repositories.CinemaBranches;
 import repositories.RevenueReportRepository;
-
-import java.io.IOException;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 @WebServlet(name = "MovieRevenue", urlPatterns = {"/manager/report/revenue/movie-report"})
 public class MovieRevenue extends HttpServlet {

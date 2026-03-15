@@ -12,10 +12,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-/**
- *
- * @author Admin
- */
 @WebServlet(name = "StaffList", urlPatterns = {"/manager/report/humanresource/staff-list-on-one-branch"})
 public class StaffList extends HttpServlet {
 

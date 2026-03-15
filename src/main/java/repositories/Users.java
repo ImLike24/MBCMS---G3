@@ -28,7 +28,6 @@ public class Users extends DBContext {
         u.setStatus(rs.getString("status"));
         u.setPoints(rs.getInt("points"));
         
-        // Loyalty additions
         u.setTotalAccumulatedPoints(rs.getInt("total_accumulated_points"));
         u.setTierId(rs.getInt("tier_id"));
 
