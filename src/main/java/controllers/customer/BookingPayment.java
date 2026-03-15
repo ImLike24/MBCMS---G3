@@ -137,25 +137,8 @@ public class BookingPayment extends HttpServlet {
         }
 
         Gson gson = new Gson();
-<<<<<<< Updated upstream
         JsonObject requestData = gson.fromJson(jsonBuilder.toString(), JsonObject.class);
         
-=======
-        String jsonBody = jsonBuilder.toString();
-        if (jsonBody.trim().isEmpty()) {
-            request.setAttribute("errorMessage", "Thiếu dữ liệu đặt vé.");
-            request.getRequestDispatcher("/pages/customer/booking-payment.jsp").forward(request, response);
-            return;
-        }
-
-        JsonObject requestData = gson.fromJson(jsonBody, JsonObject.class);
-        if (requestData == null) {
-            request.setAttribute("errorMessage", "Dữ liệu không hợp lệ.");
-            request.getRequestDispatcher("/pages/customer/booking-payment.jsp").forward(request, response);
-            return;
-        }
-
->>>>>>> Stashed changes
         Showtimes showtimesRepo = null;
         OnlineTickets onlineTicketsRepo = null;
         Bookings bookingsRepo = null;
