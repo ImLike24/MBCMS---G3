@@ -59,7 +59,7 @@ public class ShowtimesServlet extends HttpServlet {
             List<CinemaBranch> branches = cinemaBranches.getActiveBranches();
             request.setAttribute("branches", branches);
 
-            request.getRequestDispatcher("/pages/showtimes.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/customer/showtimes.jsp").forward(request, response);
             return;
         }
 

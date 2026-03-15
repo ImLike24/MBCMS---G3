@@ -1,87 +1,80 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controllers.customer;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import models.User;
+import repositories.Invoices;
 
-/**
- *
- * @author Admin
- */
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @WebServlet(name = "BookingHistory", urlPatterns = {"/customer/booking-history"})
 public class BookingHistory extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet BookingHistory</title>");            
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet BookingHistory at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
-    }
+    private static final int PAGE_SIZE = 5;
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        User user = (User) session.getAttribute("user");
+        int userId = user.getUserId();
+
+        int page = 1;
+        String pageParam = request.getParameter("page");
+        if (pageParam != null && !pageParam.trim().isEmpty()) {
+            try {
+                page = Integer.parseInt(pageParam.trim());
+                if (page < 1) page = 1;
+            } catch (NumberFormatException ignored) { }
+        }
+
+        Invoices invoicesRepo = new Invoices();
+        try {
+            int totalCount = invoicesRepo.countInvoicesByUserId(userId);
+            int totalPages = (int) Math.ceil((double) totalCount / PAGE_SIZE);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            int offset = (page - 1) * PAGE_SIZE;
+            List<Map<String, Object>> invoices = invoicesRepo.getInvoicesByUserId(userId, offset, PAGE_SIZE);
+
+            List<Integer> invoiceIds = invoices.stream()
+                    .map(m -> (Integer) m.get("invoiceId"))
+                    .collect(Collectors.toList());
+            Map<Integer, List<Map<String, Object>>> itemsByInvoice = invoicesRepo.getInvoiceItemsByInvoiceIds(invoiceIds);
+
+            for (Map<String, Object> inv : invoices) {
+                int invId = (Integer) inv.get("invoiceId");
+                inv.put("items", itemsByInvoice.getOrDefault(invId, List.of()));
+            }
+
+            request.setAttribute("invoices", invoices);
+            request.setAttribute("totalCount", totalCount);
+            request.setAttribute("page", page);
+            request.setAttribute("pageSize", PAGE_SIZE);
+            request.setAttribute("totalPages", totalPages);
+
+            request.getRequestDispatcher("/pages/customer/booking-history.jsp").forward(request, response);
+        } finally {
+            invoicesRepo.closeConnection();
+        }
     }
 
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        doGet(request, response);
     }
-
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
-
 }

@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh Sách Phim - MyCinema</title>
+    <title>Phim đang chiếu / Sắp chiếu - MyCinema</title>
     <link href="${pageContext.request.contextPath}/css/bootstrap.min.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/css/font-awesome.min.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/css/global.css" rel="stylesheet">
@@ -166,9 +166,9 @@
 
 <div class="container mt-4 mb-5">
     <div class="movies-hero">
-        <h1><i class="fa fa-film col_oran"></i> Danh Sách Phim</h1>
+        <h1><i class="fa fa-film col_oran"></i> Phim đang chiếu / Sắp chiếu</h1>
         <p class="lead text-white-50 mb-0 mt-2">
-            Phim đã lên lịch, đang chiếu theo ngày trong tuần
+            Phim có suất chiếu trong tuần — chọn ngày và đặt vé
             <span class="text-white">(từ ${fromDateStr} đến ${toDateStr})</span>
         </p>
     </div>
