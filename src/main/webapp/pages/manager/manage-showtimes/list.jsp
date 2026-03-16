@@ -86,7 +86,7 @@
                     <div class="container-fluid">
 
                         <!-- Page Header -->
-                        <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="d-flex justify-content-between align-items-end mb-4">
                             <div>
                                 <h3 class="fw-bold text-dark mb-1">
                                     <i class="fa-solid fa-film me-2" style="color:#d96c2c;"></i>Quản lý Suất Chiếu
@@ -99,12 +99,29 @@
                                     </ol>
                                 </nav>
                             </div>
-                            <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=create"
-                                class="btn btn-orange shadow-sm px-4">
-                                <i class="fa-solid fa-plus me-2"></i>Lên lịch suất chiếu
-                            </a>
-                        </div>
+                            
+                            <div class="d-flex gap-3 align-items-center">
+                                <form action="${pageContext.request.contextPath}/branch-manager/manage-showtimes" method="get" id="branchSelectForm" class="mb-0">
+                                    <div class="input-group shadow-sm">
+                                        <span class="input-group-text bg-dark text-white border-dark"><i class="fa-solid fa-building"></i></span>
+                                        <select class="form-select border-dark" name="branchId" onchange="document.getElementById('branchSelectForm').submit()" style="min-width: 200px; font-weight: 500;">
+                                            <c:forEach var="b" items="${managedBranches}">
+                                                <option value="${b.branchId}" ${b.branchId == selectedBranchId ? 'selected' : ''}>
+                                                        ${b.branchName}
+                                                </option>
+                                            </c:forEach>
+                                        </select>
+                                    </div>
+                                </form>
 
+                                <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=create&branchId=${selectedBranchId}"
+                                    class="btn btn-orange shadow-sm px-4 h-100 d-flex align-items-center">
+                                    <i class="fa-solid fa-plus me-2"></i>Lên lịch suất chiếu
+                                </a>
+                            </div>
+                        </div>
+                        
+                        
                         <!-- Alerts -->
                         <c:if test="${param.message == 'created'}">
                             <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert"
@@ -214,6 +231,7 @@
                             <form method="get"
                                 action="${pageContext.request.contextPath}/branch-manager/manage-showtimes"
                                 class="row g-2 align-items-end">
+                                <input type="hidden" name="branchId" value="${selectedBranchId}">
                                 <div class="col-md-3">
                                     <label class="form-label small fw-semibold mb-1">Ngày chiếu</label>
                                     <input type="date" name="filterDate" class="form-control form-control-sm"
@@ -386,21 +404,21 @@
                                         <ul class="pagination pagination-sm mb-0">
                                             <li class="page-item ${currentPage <= 1 ? 'disabled' : ''}">
                                                 <a class="page-link"
-                                                    href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${currentPage - 1}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}">
+                                                    href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${currentPage - 1}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}&branchId=${selectedBranchId}">
                                                     &laquo;
                                                 </a>
                                             </li>
                                             <c:forEach begin="1" end="${totalPages}" var="p">
                                                 <li class="page-item ${p == currentPage ? 'active' : ''}">
                                                     <a class="page-link"
-                                                        href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${p}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}">
+                                                        href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${p}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}&branchId=${selectedBranchId}">
                                                         ${p}
                                                     </a>
                                                 </li>
                                             </c:forEach>
                                             <li class="page-item ${currentPage >= totalPages ? 'disabled' : ''}">
                                                 <a class="page-link"
-                                                    href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${currentPage + 1}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}">
+                                                    href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${currentPage + 1}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}&branchId=${selectedBranchId}">
                                                     &raquo;
                                                 </a>
                                             </li>

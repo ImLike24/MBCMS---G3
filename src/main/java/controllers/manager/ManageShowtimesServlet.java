@@ -41,11 +41,47 @@ public class ManageShowtimesServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        CinemaBranch branch = getBranchOfCurrentUser(request);
-        if (branch == null) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không phải Branch Manager.");
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+
+        List<CinemaBranch> managedBranches = branchDao.findListByManagerId(user.getUserId());
+        if (managedBranches == null || managedBranches.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không quản lý chi nhánh nào.");
+            return;
+        }
+
+        Integer selectedBranchId = null;
+        String branchIdParam = request.getParameter("branchId");
+
+        if (branchIdParam != null && !branchIdParam.isEmpty()) {
+            selectedBranchId = Integer.parseInt(branchIdParam);
+        } else if (session.getAttribute("selectedBranchId") != null) {
+            selectedBranchId = (Integer) session.getAttribute("selectedBranchId");
+        } else {
+            selectedBranchId = managedBranches.get(0).getBranchId();
+        }
+
+        // Validate branch belongs to the manager
+        final Integer finalSelectedId = selectedBranchId;
+        boolean isValidBranch = managedBranches.stream().anyMatch(b -> b.getBranchId().equals(finalSelectedId));
+        if (!isValidBranch) {
+            selectedBranchId = managedBranches.get(0).getBranchId();
+        }
+
+        session.setAttribute("selectedBranchId", selectedBranchId);
+        request.setAttribute("managedBranches", managedBranches);
+        request.setAttribute("selectedBranchId", selectedBranchId);
+
+        String branchName = managedBranches.stream().filter(b -> b.getBranchId() == finalSelectedId).findFirst().map(CinemaBranch::getBranchName).orElse("N/A");
+        request.setAttribute("currentBranchName", branchName);
 
         String action = request.getParameter("action");
         if (action == null)
@@ -53,22 +89,22 @@ public class ManageShowtimesServlet extends HttpServlet {
 
         switch (action) {
             case "view-detail":
-                showActiveDetail(request, response, branch.getBranchId());
+                showActiveDetail(request, response, selectedBranchId);
                 break;
             case "create":
-                showScheduleForm(request, response, branch.getBranchId());
+                showScheduleForm(request, response, selectedBranchId);
                 break;
             case "edit":
-                showEditForm(request, response, branch.getBranchId());
+                showEditForm(request, response, selectedBranchId);
                 break;
             case "cancel-preview":
-                showCancelPreview(request, response, branch.getBranchId());
+                showCancelPreview(request, response, selectedBranchId);
                 break;
             case "view-cancelled":
-                showCancelledDetail(request, response, branch.getBranchId());
+                showCancelledDetail(request, response, selectedBranchId);
                 break;
             default:
-                listShowtimes(request, response, branch.getBranchId());
+                listShowtimes(request, response, selectedBranchId);
                 break;
         }
     }
@@ -82,22 +118,28 @@ public class ManageShowtimesServlet extends HttpServlet {
 
         request.setCharacterEncoding("UTF-8");
 
-        CinemaBranch branch = getBranchOfCurrentUser(request);
-        if (branch == null) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+
+        Integer selectedBranchId = (Integer) session.getAttribute("selectedBranchId");
+        if (selectedBranchId == null) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
             return;
         }
 
         String action = request.getParameter("action");
 
         if ("create".equals(action)) {
-            handleCreate(request, response, branch.getBranchId());
+            handleCreate(request, response, selectedBranchId);
         } else if ("update".equals(action)) {
-            handleUpdate(request, response, branch.getBranchId());
+            handleUpdate(request, response, selectedBranchId);
         } else if ("cancel".equals(action)) {
-            handleCancelWithRefund(request, response, branch.getBranchId());
+            handleCancelWithRefund(request, response, selectedBranchId);
         } else if ("delete".equals(action)) {
-            handleDelete(request, response, branch.getBranchId());
+            handleDelete(request, response, selectedBranchId);
         } else {
             response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
         }
@@ -645,15 +687,6 @@ public class ManageShowtimesServlet extends HttpServlet {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Helper: get branch of logged-in manager
+    // Removed: getBranchOfCurrentUser method is no longer used since branchId is taken from session attribute
     // ─────────────────────────────────────────────────────────────────────────
-    private CinemaBranch getBranchOfCurrentUser(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session == null)
-            return null;
-        User user = (User) session.getAttribute("user");
-        if (user == null)
-            return null;
-        return branchDao.findByManagerId(user.getUserId());
-    }
 }

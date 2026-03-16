@@ -72,9 +72,10 @@
                                 <i class="fa-solid fa-arrow-left me-1"></i>Quay lại
                             </a>
                             <div>
-                                <h3 class="fw-bold text-dark mb-0">
-                                    <i class="fa-solid fa-calendar-days me-2" style="color:#d96c2c;"></i>
-                                    Chỉnh sửa Suất Chiếu <span class="text-muted fs-5">#${showtime.showtimeId}</span>
+                                <h3 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-calendar-days" style="color:#d96c2c;"></i>
+                                    <span>Chỉnh sửa Suất Chiếu <span class="text-muted fs-5">#${showtime.showtimeId}</span></span>
+                                    <span class="badge bg-dark fs-6 rounded-pill px-3 py-2 ms-2"><i class="fa-solid fa-building me-1"></i> ${currentBranchName}</span>
                                 </h3>
                                 <nav aria-label="breadcrumb">
                                     <ol class="breadcrumb mb-0 mt-1">
