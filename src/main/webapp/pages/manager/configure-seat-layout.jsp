@@ -571,6 +571,21 @@
                         <div class="card-title"><i class="fa fa-building"></i> Chọn phòng chiếu</div>
                         <form method="get"
                             action="${pageContext.request.contextPath}/branch-manager/configure-seat-layout">
+
+                            <!-- Branch selector: only visible when manager has multiple branches -->
+                            <c:if test="${not empty managedBranches and managedBranches.size() > 1}">
+                                <div class="mb-3">
+                                    <label class="form-label"><i class="fa fa-map-marker me-1" style="color:var(--orange)"></i>Chi nhánh</label>
+                                    <select class="form-select" name="branchId" onchange="this.form.submit()">
+                                        <c:forEach var="b" items="${managedBranches}">
+                                            <option value="${b.branchId}" ${branch.branchId == b.branchId ? 'selected' : ''}>
+                                                ${b.branchName}
+                                            </option>
+                                        </c:forEach>
+                                    </select>
+                                </div>
+                            </c:if>
+
                             <div class="mb-1">
                                 <label class="form-label">Phòng chiếu</label>
                                 <select class="form-select" name="roomId" onchange="this.form.submit()">
@@ -584,6 +599,10 @@
                                     </c:forEach>
                                 </select>
                             </div>
+                            <!-- Pass branchId through if only 1 branch (as hidden) -->
+                            <c:if test="${empty managedBranches or managedBranches.size() <= 1}">
+                                <input type="hidden" name="branchId" value="${branch.branchId}">
+                            </c:if>
                         </form>
                     </div>
 
@@ -609,7 +628,7 @@
                                 id="generateForm" onsubmit="return confirmGenerate()">
                                 <input type="hidden" name="action" value="generate">
                                 <input type="hidden" name="roomId" value="${selectedRoom.roomId}">
-
+                                <input type="hidden" name="branchId" value="${branch.branchId}">
                                 <div class="dim-row">
                                     <!-- Rows -->
                                     <div class="dim-group">
@@ -755,6 +774,7 @@
                 action="${pageContext.request.contextPath}/branch-manager/configure-seat-layout" style="display:none;">
                 <input type="hidden" name="action" value="clear">
                 <input type="hidden" name="roomId" id="clearRoomId">
+                <input type="hidden" name="branchId" value="${branch.branchId}">
             </form>
 
             <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>

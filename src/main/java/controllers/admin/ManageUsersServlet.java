@@ -190,6 +190,20 @@ public class ManageUsersServlet extends HttpServlet {
             int userId = Integer.parseInt(userIdStr);
             usersDbContext = new DBContext();
             Users usersRepo = new Users();
+            Roles rolesRepo = new Roles();
+
+            // Prevent lock/delete on admin accounts (server-side guard)
+            if ("lock".equals(action) || "delete".equals(action) || "deactivate".equals(action)) {
+                User targetUser = usersRepo.getUserById(userId);
+                if (targetUser != null) {
+                    Role targetRole = rolesRepo.getRoleById(targetUser.getRoleId());
+                    if (targetRole != null && "ADMIN".equals(targetRole.getRoleName())) {
+                        response.sendRedirect(request.getContextPath()
+                                + "/admin/manage-users?error=Không thể khóa hoặc xóa tài khoản Admin");
+                        return;
+                    }
+                }
+            }
 
             boolean success = false;
             String message = "";

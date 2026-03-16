@@ -561,6 +561,23 @@
                         <form method="get"
                             action="${pageContext.request.contextPath}/branch-manager/manage-seat-status">
                             <div class="row g-3">
+                                <!-- Branch selector: only visible when manager has multiple branches -->
+                                <c:if test="${not empty managedBranches and managedBranches.size() > 1}">
+                                    <div class="col-md-6">
+                                        <label class="form-label"><i class="fa fa-map-marker me-1" style="color:var(--orange)"></i>Chi nhánh</label>
+                                        <select class="form-select" name="branchId" onchange="this.form.submit()">
+                                            <c:forEach var="b" items="${managedBranches}">
+                                                <option value="${b.branchId}" ${branch.branchId == b.branchId ? 'selected' : ''}>
+                                                    ${b.branchName}
+                                                </option>
+                                            </c:forEach>
+                                        </select>
+                                    </div>
+                                </c:if>
+                                <c:if test="${empty managedBranches or managedBranches.size() <= 1}">
+                                    <input type="hidden" name="branchId" value="${branch.branchId}">
+                                </c:if>
+
                                 <div class="col-md-6">
                                     <label class="form-label">Phòng chiếu</label>
                                     <select class="form-select" name="roomId" onchange="this.form.submit()">
@@ -753,6 +770,7 @@
                 action="${pageContext.request.contextPath}/branch-manager/manage-seat-status" style="display:none;">
                 <input type="hidden" name="action" value="updateBulk">
                 <input type="hidden" name="roomId" value="${selectedRoom != null ? selectedRoom.roomId : ''}">
+                <input type="hidden" name="branchId" value="${branch.branchId}">
                 <input type="hidden" name="status" id="bulkStatus">
                 <div id="seatIdsContainer"></div>
             </form>

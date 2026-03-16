@@ -51,29 +51,33 @@ public class ManageSeatStatusServlet extends HttpServlet {
             }
         }
 
-        // Get branch manager's assigned branch
-        DBContext branchDbContext = null;
-        DBContext roomsDbContext = null;
-        DBContext seatsDbContext = null;
+        // Get all branches managed by this manager
         try {
-            branchDbContext = new DBContext();
-            roomsDbContext = new DBContext();
-            seatsDbContext = new DBContext();
-
             CinemaBranches branchesRepo = new CinemaBranches();
             ScreeningRooms roomsRepo = new ScreeningRooms();
             Seats seatsRepo = new Seats();
 
-            // Get branch where this user is the manager
-            CinemaBranch branch = branchesRepo.getBranchByManagerId(currentUser.getUserId());
+            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
 
-            if (branch == null) {
+            if (managedBranches == null || managedBranches.isEmpty()) {
                 request.setAttribute("error", "You are not assigned to any branch");
                 request.getRequestDispatcher("/pages/manager/manage-seat-status.jsp").forward(request, response);
                 return;
             }
 
-            // Get all screening rooms for this branch
+            // Determine selected branch
+            String branchIdParam = request.getParameter("branchId");
+            CinemaBranch branch = managedBranches.get(0);
+            if (branchIdParam != null && !branchIdParam.isEmpty()) {
+                try {
+                    int bId = Integer.parseInt(branchIdParam);
+                    for (CinemaBranch b : managedBranches) {
+                        if (b.getBranchId() == bId) { branch = b; break; }
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+
+            // Get all screening rooms for selected branch
             List<ScreeningRoom> rooms = roomsRepo.getAllRoomsByBranch(branch.getBranchId());
 
             // Get selected room if any
@@ -103,6 +107,7 @@ public class ManageSeatStatusServlet extends HttpServlet {
             }
 
             // Set attributes for JSP
+            request.setAttribute("managedBranches", managedBranches);
             request.setAttribute("branch", branch);
             request.setAttribute("rooms", rooms);
             request.setAttribute("selectedRoom", selectedRoom);
@@ -115,16 +120,6 @@ public class ManageSeatStatusServlet extends HttpServlet {
             e.printStackTrace();
             request.setAttribute("error", "Error loading seat status: " + e.getMessage());
             request.getRequestDispatcher("/pages/manager/manage-seat-status.jsp").forward(request, response);
-        } finally {
-            if (branchDbContext != null) {
-                branchDbContext.closeConnection();
-            }
-            if (roomsDbContext != null) {
-                roomsDbContext.closeConnection();
-            }
-            if (seatsDbContext != null) {
-                seatsDbContext.closeConnection();
-            }
         }
     }
 
@@ -172,27 +167,29 @@ public class ManageSeatStatusServlet extends HttpServlet {
             return;
         }
 
-        DBContext branchDbContext = null;
-        DBContext roomsDbContext = null;
-        DBContext seatsDbContext = null;
-
         try {
-            branchDbContext = new DBContext();
-            roomsDbContext = new DBContext();
-            seatsDbContext = new DBContext();
-
             CinemaBranches branchesRepo = new CinemaBranches();
             ScreeningRooms roomsRepo = new ScreeningRooms();
             Seats seatsRepo = new Seats();
 
-            // Get branch where this user is the manager
-            CinemaBranch branch = branchesRepo.getBranchByManagerId(currentUser.getUserId());
-
-            if (branch == null) {
+            // Resolve target branch from POST param, verified against managed list
+            String branchIdStr = request.getParameter("branchId");
+            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
+            if (managedBranches == null || managedBranches.isEmpty()) {
                 response.sendRedirect(request.getContextPath()
                         + "/branch-manager/manage-seat-status?error=You are not assigned to any branch");
                 return;
             }
+            CinemaBranch branch = managedBranches.get(0);
+            if (branchIdStr != null && !branchIdStr.isEmpty()) {
+                try {
+                    int bId = Integer.parseInt(branchIdStr);
+                    for (CinemaBranch b : managedBranches) {
+                        if (b.getBranchId() == bId) { branch = b; break; }
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+            final int selectedBranchId = branch.getBranchId();
 
             int roomId = Integer.parseInt(roomIdStr);
             ScreeningRoom room = roomsRepo.getRoomById(roomId);
@@ -262,11 +259,11 @@ public class ManageSeatStatusServlet extends HttpServlet {
             }
 
             if (success) {
-                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-seat-status?roomId=" + roomId
-                        + "&success=" + message);
+                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-seat-status?branchId=" + selectedBranchId
+                        + "&roomId=" + roomId + "&success=" + message);
             } else {
-                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-seat-status?roomId=" + roomId
-                        + "&error=" + message);
+                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-seat-status?branchId=" + selectedBranchId
+                        + "&roomId=" + roomId + "&error=" + message);
             }
 
         } catch (NumberFormatException e) {
@@ -276,16 +273,6 @@ public class ManageSeatStatusServlet extends HttpServlet {
             e.printStackTrace();
             response.sendRedirect(
                     request.getContextPath() + "/branch-manager/manage-seat-status?error=" + e.getMessage());
-        } finally {
-            if (branchDbContext != null) {
-                branchDbContext.closeConnection();
-            }
-            if (roomsDbContext != null) {
-                roomsDbContext.closeConnection();
-            }
-            if (seatsDbContext != null) {
-                seatsDbContext.closeConnection();
-            }
         }
     }
 }

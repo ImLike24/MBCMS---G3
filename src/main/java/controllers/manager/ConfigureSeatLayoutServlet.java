@@ -51,29 +51,33 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
             }
         }
 
-        // Get branch manager's assigned branch
-        DBContext branchDbContext = null;
-        DBContext roomsDbContext = null;
-        DBContext seatsDbContext = null;
+        // Get all branches managed by this manager
         try {
-            branchDbContext = new DBContext();
-            roomsDbContext = new DBContext();
-            seatsDbContext = new DBContext();
-
             CinemaBranches branchesRepo = new CinemaBranches();
             ScreeningRooms roomsRepo = new ScreeningRooms();
             Seats seatsRepo = new Seats();
 
-            // Get branch where this user is the manager
-            CinemaBranch branch = branchesRepo.getBranchByManagerId(currentUser.getUserId());
+            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
 
-            if (branch == null) {
+            if (managedBranches == null || managedBranches.isEmpty()) {
                 request.setAttribute("error", "You are not assigned to any branch");
                 request.getRequestDispatcher("/pages/manager/configure-seat-layout.jsp").forward(request, response);
                 return;
             }
 
-            // Get all screening rooms for this branch
+            // Determine selected branch (from param or default to first)
+            String branchIdParam = request.getParameter("branchId");
+            CinemaBranch branch = managedBranches.get(0);
+            if (branchIdParam != null && !branchIdParam.isEmpty()) {
+                try {
+                    int bId = Integer.parseInt(branchIdParam);
+                    for (CinemaBranch b : managedBranches) {
+                        if (b.getBranchId() == bId) { branch = b; break; }
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+
+            // Get all screening rooms for selected branch
             List<ScreeningRoom> rooms = roomsRepo.getAllRoomsByBranch(branch.getBranchId());
 
             // Get selected room if any
@@ -98,6 +102,7 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
             }
 
             // Set attributes for JSP
+            request.setAttribute("managedBranches", managedBranches);
             request.setAttribute("branch", branch);
             request.setAttribute("rooms", rooms);
             request.setAttribute("selectedRoom", selectedRoom);
@@ -109,16 +114,6 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
             e.printStackTrace();
             request.setAttribute("error", "Error loading seat layout: " + e.getMessage());
             request.getRequestDispatcher("/pages/manager/configure-seat-layout.jsp").forward(request, response);
-        } finally {
-            if (branchDbContext != null) {
-                branchDbContext.closeConnection();
-            }
-            if (roomsDbContext != null) {
-                roomsDbContext.closeConnection();
-            }
-            if (seatsDbContext != null) {
-                seatsDbContext.closeConnection();
-            }
         }
     }
 
@@ -165,27 +160,29 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
             return;
         }
 
-        DBContext branchDbContext = null;
-        DBContext roomsDbContext = null;
-        DBContext seatsDbContext = null;
-
         try {
-            branchDbContext = new DBContext();
-            roomsDbContext = new DBContext();
-            seatsDbContext = new DBContext();
-
             CinemaBranches branchesRepo = new CinemaBranches();
             ScreeningRooms roomsRepo = new ScreeningRooms();
             Seats seatsRepo = new Seats();
 
-            // Get branch where this user is the manager
-            CinemaBranch branch = branchesRepo.getBranchByManagerId(currentUser.getUserId());
-
-            if (branch == null) {
+            // Resolve the target branch from POST param, verified against managed list
+            String branchIdStr = request.getParameter("branchId");
+            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
+            if (managedBranches == null || managedBranches.isEmpty()) {
                 response.sendRedirect(request.getContextPath()
                         + "/branch-manager/configure-seat-layout?error=You are not assigned to any branch");
                 return;
             }
+            CinemaBranch branch = managedBranches.get(0);
+            if (branchIdStr != null && !branchIdStr.isEmpty()) {
+                try {
+                    int bId = Integer.parseInt(branchIdStr);
+                    for (CinemaBranch b : managedBranches) {
+                        if (b.getBranchId() == bId) { branch = b; break; }
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+            final int selectedBranchId = branch.getBranchId();
 
             boolean success = false;
             String message = "";
@@ -251,11 +248,11 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
                 }
 
                 if (success) {
-                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?roomId="
-                            + request.getParameter("roomId") + "&success=" + message);
+                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?branchId="
+                            + selectedBranchId + "&roomId=" + request.getParameter("roomId") + "&success=" + message);
                 } else {
-                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?roomId="
-                            + request.getParameter("roomId") + "&error=" + message);
+                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?branchId="
+                            + selectedBranchId + "&roomId=" + request.getParameter("roomId") + "&error=" + message);
                 }
             } else if ("clear".equals(action)) {
                 String roomIdStr = request.getParameter("roomId");
@@ -288,31 +285,21 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
                 }
 
                 if (success) {
-                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?roomId="
-                            + request.getParameter("roomId") + "&success=" + message);
+                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?branchId="
+                            + selectedBranchId + "&roomId=" + request.getParameter("roomId") + "&success=" + message);
                 } else {
-                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?roomId="
-                            + request.getParameter("roomId") + "&error=" + message);
+                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?branchId="
+                            + selectedBranchId + "&roomId=" + request.getParameter("roomId") + "&error=" + message);
                 }
             } else {
                 response.sendRedirect(
-                        request.getContextPath() + "/branch-manager/configure-seat-layout?error=Invalid action");
+                        request.getContextPath() + "/branch-manager/configure-seat-layout?branchId=" + selectedBranchId + "&error=Invalid action");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
             response.sendRedirect(
                     request.getContextPath() + "/branch-manager/configure-seat-layout?error=" + e.getMessage());
-        } finally {
-            if (branchDbContext != null) {
-                branchDbContext.closeConnection();
-            }
-            if (roomsDbContext != null) {
-                roomsDbContext.closeConnection();
-            }
-            if (seatsDbContext != null) {
-                seatsDbContext.closeConnection();
-            }
         }
     }
 }

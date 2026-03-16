@@ -151,48 +151,58 @@
                                                                 'Chưa từng'}
                                                             </td>
                                                             <td class="text-end pe-4">
-                                                                <div class="btn-group">
-                                                                    <c:if test="${user.status == 'ACTIVE'}">
-                                                                        <form method="post"
-                                                                            onsubmit="return confirm('Khóa tài khoản này?');">
-                                                                            <input type="hidden" name="action"
-                                                                                value="lock">
-                                                                            <input type="hidden" name="userId"
-                                                                                value="${user.userId}">
-                                                                            <button
-                                                                                class="btn btn-outline-warning btn-sm"
-                                                                                title="Khóa">
-                                                                                <i class="fa fa-lock"></i>
-                                                                            </button>
-                                                                        </form>
-                                                                    </c:if>
-                                                                    <c:if test="${user.status == 'LOCKED'}">
-                                                                        <form method="post"
-                                                                            onsubmit="return confirm('Mở khóa tài khoản này?');">
-                                                                            <input type="hidden" name="action"
-                                                                                value="unlock">
-                                                                            <input type="hidden" name="userId"
-                                                                                value="${user.userId}">
-                                                                            <button
-                                                                                class="btn btn-outline-success btn-sm"
-                                                                                title="Mở khóa">
-                                                                                <i class="fa fa-unlock"></i>
-                                                                            </button>
-                                                                        </form>
-                                                                    </c:if>
+                                                                <c:choose>
+                                                                    <c:when test="${roleMap[user.roleId] == 'ADMIN'}">
+                                                                        <span class="badge bg-secondary text-white px-2 py-1"
+                                                                            title="Tài khoản Admin không thể bị khóa hoặc xóa">
+                                                                            <i class="fa fa-shield-halved me-1"></i>Protected
+                                                                        </span>
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <div class="btn-group">
+                                                                            <c:if test="${user.status == 'ACTIVE'}">
+                                                                                <form method="post"
+                                                                                    onsubmit="return confirm('Khóa tài khoản này?');">
+                                                                                    <input type="hidden" name="action"
+                                                                                        value="lock">
+                                                                                    <input type="hidden" name="userId"
+                                                                                        value="${user.userId}">
+                                                                                    <button
+                                                                                        class="btn btn-outline-warning btn-sm"
+                                                                                        title="Khóa">
+                                                                                        <i class="fa fa-lock"></i>
+                                                                                    </button>
+                                                                                </form>
+                                                                            </c:if>
+                                                                            <c:if test="${user.status == 'LOCKED'}">
+                                                                                <form method="post"
+                                                                                    onsubmit="return confirm('Mở khóa tài khoản này?');">
+                                                                                    <input type="hidden" name="action"
+                                                                                        value="unlock">
+                                                                                    <input type="hidden" name="userId"
+                                                                                        value="${user.userId}">
+                                                                                    <button
+                                                                                        class="btn btn-outline-success btn-sm"
+                                                                                        title="Mở khóa">
+                                                                                        <i class="fa fa-unlock"></i>
+                                                                                    </button>
+                                                                                </form>
+                                                                            </c:if>
 
-                                                                    <form method="post" class="ms-1"
-                                                                        onsubmit="return confirm('Xóa vĩnh viễn user này?');">
-                                                                        <input type="hidden" name="action"
-                                                                            value="delete">
-                                                                        <input type="hidden" name="userId"
-                                                                            value="${user.userId}">
-                                                                        <button class="btn btn-outline-danger btn-sm"
-                                                                            title="Xóa">
-                                                                            <i class="fa fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
-                                                                </div>
+                                                                            <form method="post" class="ms-1"
+                                                                                onsubmit="return confirm('Xóa vĩnh viễn user này?');">
+                                                                                <input type="hidden" name="action"
+                                                                                    value="delete">
+                                                                                <input type="hidden" name="userId"
+                                                                                    value="${user.userId}">
+                                                                                <button class="btn btn-outline-danger btn-sm"
+                                                                                    title="Xóa">
+                                                                                    <i class="fa fa-trash"></i>
+                                                                                </button>
+                                                                            </form>
+                                                                        </div>
+                                                                    </c:otherwise>
+                                                                </c:choose>
                                                             </td>
                                                         </tr>
                                                     </c:forEach>
