@@ -22,7 +22,7 @@ public class CounterBookingShowtimesService {
         public LocalDate selectedDate;
     }
 
-    public ShowtimesResult getShowtimesForMovie(int movieId, LocalDate selectedDate) throws Exception {
+    public ShowtimesResult getShowtimesForMovie(int movieId, LocalDate selectedDate, Integer branchId) throws Exception {
         Movies moviesRepo = null;
         Showtimes showtimesRepo = null;
 
@@ -35,7 +35,12 @@ public class CounterBookingShowtimesService {
                 return null;
             }
 
-            List<Showtime> showtimes = showtimesRepo.getShowtimesForMovieOnDate(movieId, selectedDate);
+            List<Showtime> showtimes;
+            if (branchId != null) {
+                showtimes = showtimesRepo.getShowtimesForMovieOnDateAndBranch(movieId, branchId, selectedDate);
+            } else {
+                showtimes = showtimesRepo.getShowtimesForMovieOnDate(movieId, selectedDate);
+            }
 
             Map<Integer, Integer> availableSeatsMap = new HashMap<>();
             Map<Integer, Integer> totalSeatsMap = new HashMap<>();

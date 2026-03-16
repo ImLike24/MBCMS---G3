@@ -1,6 +1,7 @@
 package controllers.staff;
 
 import models.Movie;
+import models.User;
 import services.CounterBookingMoviesService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -77,8 +78,12 @@ public class CounterBookingMovies extends HttpServlet {
             }
 
             CounterBookingMoviesService service = new CounterBookingMoviesService();
+
+            // Lấy chi nhánh của staff (nếu có)
+            User currentUser = (User) session.getAttribute("user");
+            Integer branchId = currentUser != null ? currentUser.getBranchId() : null;
             CounterBookingMoviesService.MoviesPage moviesPage = service.getMoviesForCounter(
-                    selectedDate, showAllMovies, search, genre, ageRating, page);
+                    selectedDate, showAllMovies, search, genre, ageRating, page, branchId);
 
             List<Movie> movies = moviesPage.movies;
             int totalMovies = moviesPage.totalMovies;

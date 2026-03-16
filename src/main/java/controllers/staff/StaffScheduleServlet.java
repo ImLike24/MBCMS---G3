@@ -13,6 +13,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import models.CinemaBranch;
+import models.User;
 import services.StaffScheduleService;
 
 /**
@@ -54,7 +55,9 @@ public class StaffScheduleServlet extends HttpServlet {
 
         try {
             StaffScheduleService service = new StaffScheduleService();
-            StaffScheduleService.ScheduleResult result = service.buildSchedule(referenceDate);
+            User currentUser = (User) session.getAttribute("user");
+            Integer branchId = currentUser != null ? currentUser.getBranchId() : null;
+            StaffScheduleService.ScheduleResult result = service.buildSchedule(referenceDate, branchId);
 
             List<CinemaBranch> branches = result.branches;
             List<Map<String, String>> weekDays = result.weekDays;

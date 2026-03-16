@@ -29,7 +29,8 @@ public class CounterBookingMoviesService {
                                           String search,
                                           String genre,
                                           String ageRating,
-                                          int page) throws Exception {
+                                          int page,
+                                          Integer branchId) throws Exception {
             Movies moviesRepo = null;
             GenreService genreService = new GenreService();
         try {
@@ -74,9 +75,9 @@ public class CounterBookingMoviesService {
                 ageRatings = moviesRepo.getAgeRatingsFromActiveMovies();
             } else {
                 movies = moviesRepo.getMoviesShowingOnDateWithFilter(
-                        selectedDate, search, genre, ageRating, page, PAGE_SIZE);
+                        selectedDate, search, genre, ageRating, branchId, page, PAGE_SIZE);
                 totalMovies = moviesRepo.countMoviesShowingOnDateWithFilter(
-                        selectedDate, search, genre, ageRating);
+                        selectedDate, search, genre, ageRating, branchId);
                 ageRatings = moviesRepo.getAgeRatingsShowingOnDate(selectedDate);
             }
 

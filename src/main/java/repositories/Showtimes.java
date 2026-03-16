@@ -36,6 +36,31 @@ public class Showtimes extends DBContext {
         return showtimes;
     }
 
+    public List<Showtime> getShowtimesForMovieOnDateAndBranch(int movieId, int branchId, LocalDate date) {
+        List<Showtime> showtimes = new ArrayList<>();
+        String sql = "SELECT s.* FROM showtimes s " +
+                "INNER JOIN screening_rooms sr ON s.room_id = sr.room_id " +
+                "WHERE s.movie_id = ? AND s.show_date = ? " +
+                "AND s.status IN ('SCHEDULED', 'ONGOING') " +
+                "AND sr.branch_id = ? " +
+                "ORDER BY s.start_time";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, movieId);
+            pstmt.setDate(2, java.sql.Date.valueOf(date));
+            pstmt.setInt(3, branchId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    showtimes.add(mapResultSetToShowtime(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return showtimes;
+    }
+
     public Showtime getShowtimeById(int showtimeId) {
         String sql = "SELECT * FROM showtimes WHERE showtime_id = ?";
 

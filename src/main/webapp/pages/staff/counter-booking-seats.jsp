@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select Seats - Counter Booking</title>
+    <title>Chọn ghế - Bán vé quầy</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff.css">
 </head>
@@ -21,26 +21,26 @@
             <div class="logo-icon">
                 <i class="fas fa-film"></i>
             </div>
-            <h3>Cinema Staff</h3>
+            <h3>Nhân viên rạp</h3>
         </div>
 
         <ul class="sidebar-menu">
             <li>
                 <a href="${pageContext.request.contextPath}/staff/dashboard">
                     <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
+                    <span>Trang tổng quan</span>
                 </a>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/staff/counter-booking" class="active">
                     <i class="fas fa-ticket-alt"></i>
-                    <span>Counter Booking</span>
+                    <span>Bán vé quầy</span>
                 </a>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/staff/schedule">
                     <i class="fas fa-calendar-alt"></i>
-                    <span>View Working Schedule</span>
+                    <span>Lịch làm việc</span>
                 </a>
             </li>
         </ul>
@@ -63,12 +63,12 @@
                             <c:when test="${not empty sessionScope.user.fullName}">
                                 ${sessionScope.user.fullName}
                             </c:when>
-                            <c:otherwise>
-                                Staff User
+                                <c:otherwise>
+                                Nhân viên
                             </c:otherwise>
                         </c:choose>
                     </div>
-                    <div class="user-role">Cinema Staff</div>
+                    <div class="user-role">Nhân viên rạp</div>
                 </div>
             </div>
         </div>
@@ -78,10 +78,10 @@
     <div class="main-content">
         <!-- Top Bar -->
         <div class="top-bar">
-            <h1><i class="fas fa-couch"></i> Select Seats</h1>
+            <h1><i class="fas fa-couch"></i> Chọn ghế</h1>
             <div class="top-bar-actions">
                 <a href="javascript:history.back()" class="btn-back">
-                    <i class="fas fa-arrow-left"></i> Back to Showtimes
+                    <i class="fas fa-arrow-left"></i> Quay lại chọn suất chiếu
                 </a>
             </div>
         </div>
@@ -120,9 +120,9 @@
             <!-- Seat Map Section -->
             <div class="seat-map-section">
                 <div class="section-header">
-                    <h3><i class="fas fa-couch"></i> Cinema Hall</h3>
+                    <h3><i class="fas fa-couch"></i> Phòng chiếu</h3>
                     <span style="color: #ccc; font-size: 14px;">
-                        <i class="fas fa-info-circle"></i> Available: ${availableSeats} / ${totalSeats} seats
+                        <i class="fas fa-info-circle"></i> Ghế trống: ${availableSeats} / ${totalSeats}
                     </span>
                 </div>
 
@@ -159,68 +159,68 @@
                 <div class="seat-legend">
                     <div class="legend-item">
                         <div class="legend-box available"></div>
-                        <span>Available</span>
+                        <span>Còn trống</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-box selected"></div>
-                        <span>Selected</span>
+                        <span>Đang chọn</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-box booked"></div>
-                        <span>Booked</span>
+                        <span>Đã bán</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-box vip"></div>
-                        <span>VIP</span>
+                        <span>Ghế VIP</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-box couple"></div>
-                        <span>Couple</span>
+                        <span>Ghế đôi</span>
                     </div>
                 </div>
             </div>
 
             <!-- Booking Summary Panel -->
             <div class="booking-summary">
-                <h3><i class="fas fa-shopping-cart"></i> Booking Summary</h3>
+                <h3><i class="fas fa-shopping-cart"></i> Tóm tắt đặt ghế</h3>
 
                 <div class="info-box">
                     <p>
                         <i class="fas fa-info-circle"></i>
-                        Click on available seats to select. Choose ticket type for each seat.
+                        Nhấn vào ghế còn trống để chọn, sau đó chọn loại vé cho từng ghế.
                     </p>
                 </div>
 
                 <div id="selectedSeatsList" class="selected-seats-list">
                     <div class="empty-selection">
                         <i class="fas fa-hand-pointer"></i>
-                        <p>No seats selected yet.<br>Click on available seats to begin.</p>
+                        <p>Chưa chọn ghế nào.<br>Hãy bấm vào một ghế còn trống để bắt đầu.</p>
                     </div>
                 </div>
 
                 <div id="priceSummary" class="price-summary" style="display: none;">
                     <div class="price-row">
-                        <span>Adult Tickets:</span>
+                        <span>Vé người lớn:</span>
                         <span class="price-amount" id="adultCount">0</span>
                     </div>
                     <div class="price-row">
-                        <span>Child Tickets:</span>
+                        <span>Vé trẻ em:</span>
                         <span class="price-amount" id="childCount">0</span>
                     </div>
                     <div class="price-row total">
-                        <span>Total Amount:</span>
-                        <span class="price-amount" id="totalAmount">0 VND</span>
+                        <span>Tổng tiền:</span>
+                        <span class="price-amount" id="totalAmount">0&nbsp;₫</span>
                     </div>
                 </div>
 
                 <div class="action-buttons">
                     <button class="btn-proceed" id="btnProceed" disabled onclick="proceedToPayment()">
                         <i class="fas fa-arrow-right"></i>
-                        Proceed to Payment
+                        Tiếp tục thanh toán
                     </button>
                     <button class="btn-clear" onclick="clearAllSeats()">
                         <i class="fas fa-times"></i>
-                        Clear Selection
+                        Xóa lựa chọn
                     </button>
                 </div>
             </div>
@@ -261,6 +261,13 @@
 
         // Render seat map
         function renderSeatMap() {
+            const adultPriceJs = parseFloat(ticketPrices['ADULT']);
+            const childPriceJs = parseFloat(ticketPrices['CHILD']);
+            if (isNaN(adultPriceJs) || isNaN(childPriceJs)) {
+                console.error('Ticket prices not loaded correctly from backend:', ticketPrices);
+                alert('Không lấy được giá vé động cho suất chiếu này. Vui lòng kiểm tra cấu hình ticket_prices trong database.');
+                return;
+            }
             const seatMap = document.getElementById('seatMap');
             seatMap.innerHTML = '';
             
@@ -406,7 +413,7 @@
                 listContainer.innerHTML = `
                     <div class="empty-selection">
                         <i class="fas fa-hand-pointer"></i>
-                        <p>No seats selected yet.<br>Click on available seats to begin.</p>
+                        <p>Chưa chọn ghế nào.<br>Hãy bấm vào một ghế còn trống để bắt đầu.</p>
                     </div>
                 `;
                 priceSummary.style.display = 'none';
@@ -436,11 +443,11 @@
                     <div class="ticket-type-selector">
                         <button class="ticket-type-btn ` + adultActiveClass + `" 
                                 onclick="setTicketType(` + seat.seatId + `, 'ADULT')">
-                            <i class="fas fa-user"></i> Adult
+                            <i class="fas fa-user"></i> Người lớn
                         </button>
                         <button class="ticket-type-btn ` + childActiveClass + `" 
                                 onclick="setTicketType(` + seat.seatId + `, 'CHILD')">
-                            <i class="fas fa-child"></i> Child
+                            <i class="fas fa-child"></i> Trẻ em
                         </button>
                     </div>
                 `;
@@ -498,11 +505,11 @@
         async function clearAllSeats() {
             if (selectedSeats.length === 0) return;
 
-            const confirmed = await showConfirmModal({
-                title:       'Clear Selection',
-                message:     'Are you sure you want to remove all selected seats?',
-                confirmText: 'Clear All',
-                cancelText:  'Keep Selection'
+                    const confirmed = await showConfirmModal({
+                title:       'Xóa lựa chọn ghế',
+                message:     'Bạn có chắc chắn muốn xóa toàn bộ ghế đang chọn không?',
+                confirmText: 'Xóa tất cả',
+                cancelText:  'Giữ lại'
             });
 
             if (confirmed) {
@@ -520,7 +527,7 @@
         // Proceed to payment
         function proceedToPayment() {
             if (selectedSeats.length === 0) {
-                alert('Please select at least one seat.');
+                alert('Vui lòng chọn ít nhất một ghế.');
                 return;
             }
 
