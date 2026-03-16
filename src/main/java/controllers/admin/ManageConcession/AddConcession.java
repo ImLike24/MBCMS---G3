@@ -56,8 +56,8 @@ public class AddConcession extends HttpServlet {
 
         try {
             double price = (priceStr != null && !priceStr.trim().isEmpty()) 
-                           ? Double.parseDouble(priceStr.trim()) : 0.0;
-            c.setPriceBase(price >= 0 ? price : 0.0);
+                        ? Double.parseDouble(priceStr.trim()) : 0;
+            c.setPriceBase(price / 1000);
         } catch (NumberFormatException e) {
             request.setAttribute("error", "Giá cơ bản không hợp lệ.");
             forwardWithConcession(request, response, concessionName, type, qtyStr, priceStr);
