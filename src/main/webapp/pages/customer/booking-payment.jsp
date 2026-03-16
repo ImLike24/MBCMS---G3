@@ -78,28 +78,9 @@
                     </div>
                 </div> 
 
-                <div class="mb-4">
-                    <h5 class="mb-3">Phương thức thanh toán</h5>
-                    <p class="text-muted small mb-2">Khách hàng chỉ được thanh toán online.</p>
-                    <div class="d-flex gap-3">
-                        <button type="button" class="btn btn-primary flex-fill" id="btnOnline" disabled>
-                            <i class="fa fa-credit-card"></i> Thanh toán online
-                        </button>
-                    </div>
-                </div>
-
                 <div class="d-flex gap-3">
-<<<<<<< Updated upstream
-                    <button type="button" class="btn btn-primary flex-fill" id="btnConfirmPay" disabled>
-                        Xác nhận thanh toán
-                    </button>
-=======
-                    <!-- ... phần HTML giữ nguyên ... -->
-
-                    <button type="button" class="btn btn-primary flex-fill" id="btnConfirmPay">Xác nhận & Thanh toán VNPay</button>
->>>>>>> Stashed changes
-                    <button type="button" class="btn btn-secondary flex-fill" id="btnPrint" disabled>
-                        In vé
+                    <button type="button" class="btn btn-primary flex-fill" id="btnConfirmPay">
+                        Xác nhận & Thanh toán VNPay
                     </button>
                 </div>
 
@@ -181,59 +162,70 @@
         document.getElementById('btnConfirmPay').disabled = false;
     }
 
-    async function submitPayment() {
-        if (!bookingData) return;
-        const name = document.getElementById('customerName').value.trim();
-        const email = document.getElementById('customerEmail').value.trim();
+    async function redirectToVnpayPayment() {
+        if (!bookingData) {
+            alert("Không tìm thấy thông tin đặt chỗ. Vui lòng chọn ghế lại.");
+            return;
+        }
+
         const msgEl = document.getElementById('paymentMessage');
 
-        msgEl.style.display = 'none';
-        msgEl.classList.remove('text-danger');
-
         try {
+            // 1️⃣ Gọi VNPay ajax để tạo paymentUrl
+            const vnpRes = await fetch(ctx + '/payment/vnpayajax', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body:
+                    "amount=" + bookingData.totalAmount
+            });
+
+            const vnpData = await vnpRes.json();
+
+            if (vnpData.code !== "00") {
+                alert("Không tạo được thanh toán VNPay");
+                return;
+            }
+
+            const paymentUrl = vnpData.data;
+
+            // 2️⃣ Lấy TxnRef từ URL
+            const txnRef = new URL(paymentUrl).searchParams.get("vnp_TxnRef");
+
+            // 3️⃣ Gửi BookingPayment để insert PENDING
             const payload = {
                 showtimeId: bookingData.showtimeId,
                 seats: bookingData.seats,
                 totalAmount: bookingData.totalAmount,
-                customerName: name,
-                customerEmail: email,
-                paymentMethod: 'BANKING'
+                txnRef: txnRef
             };
 
             const res = await fetch(ctx + '/customer/booking-payment', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(payload)
             });
 
             const data = await res.json();
+
             if (!data.success) {
-                msgEl.textContent = data.message || 'Thanh toán thất bại.';
-                msgEl.classList.add('text-danger');
-                msgEl.style.display = 'block';
+                alert("Không thể tạo booking.");
                 return;
             }
 
-            bookingData.eTicketCode = data.eTicketCode;
-            try {
-                sessionStorage.setItem('customerBookingData', JSON.stringify(bookingData));
-            } catch (e) {}
+            // 4️⃣ Lưu bookingCode
+            sessionStorage.setItem('lastBookingCode', txnRef);
 
-            msgEl.textContent = 'Thanh toán thành công. Mã vé: ' + data.eTicketCode;
-            msgEl.classList.remove('text-danger');
-            msgEl.style.display = 'block';
+            // 5️⃣ Redirect VNPay
+            window.location.href = paymentUrl;
 
-            const receipt = document.getElementById('receiptArea');
-            const ticketLabel = (t) => (t === 'CHILD' ? 'Trẻ em' : 'Người lớn');
-            document.getElementById('receiptCode').textContent = data.eTicketCode;
-            document.getElementById('receiptSeats').textContent = bookingData.seats
-                .map(s => s.seatCode + ' (' + ticketLabel(s.ticketType || 'ADULT') + ')').join(', ');
-            document.getElementById('receiptTotal').textContent = formatCurrency(bookingData.totalAmount);
-            receipt.style.display = 'block';
-            document.getElementById('btnPrint').disabled = false;
+        } catch (err) {
 
-        } catch (e) {
-            msgEl.textContent = 'Lỗi hệ thống, vui lòng thử lại.';
+            console.error(err);
+            msgEl.textContent = 'Lỗi kết nối, vui lòng thử lại.';
             msgEl.classList.add('text-danger');
             msgEl.style.display = 'block';
         }
@@ -241,14 +233,10 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         loadBookingFromStorage();
-        // Customer chỉ thanh toán online
         selectedPaymentMethod = 'BANKING';
         renderBookingSummary();
 
-        document.getElementById('btnConfirmPay').addEventListener('click', submitPayment);
-        document.getElementById('btnPrint').addEventListener('click', function () {
-            window.print();
-        });
+        document.getElementById('btnConfirmPay').addEventListener('click', redirectToVnpayPayment);
     });
 </script>
 
