@@ -158,7 +158,14 @@ public class Invoices extends DBContext {
             if (i > 0) placeholders.append(",");
             placeholders.append("?");
         }
-        String sql = "SELECT invoice_id, item_description, movie_title, showtime_date, showtime_time, room_name, seat_code, ticket_type, seat_type, quantity, unit_price, amount FROM invoice_items WHERE invoice_id IN (" + placeholders + ") ORDER BY invoice_id, item_id";
+        String sql = """
+                SELECT ii.invoice_id, ii.item_description, ii.movie_title, ii.showtime_date, ii.showtime_time,
+                       ii.room_name, ii.seat_code, ii.ticket_type, ii.seat_type, ii.quantity, ii.unit_price, ii.amount,
+                       s.row_number AS seat_row, s.seat_number AS seat_col
+                FROM invoice_items ii
+                LEFT JOIN online_tickets ot ON ii.online_ticket_id = ot.ticket_id
+                LEFT JOIN seats s ON ot.seat_id = s.seat_id
+                WHERE ii.invoice_id IN (""" + placeholders + ") ORDER BY ii.invoice_id, ii.item_id";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             for (int i = 0; i < invoiceIds.size(); i++) {
                 ps.setInt(i + 1, invoiceIds.get(i));
@@ -175,6 +182,10 @@ public class Invoices extends DBContext {
                     item.put("seatCode", rs.getString("seat_code"));
                     item.put("ticketType", rs.getString("ticket_type"));
                     item.put("seatType", rs.getString("seat_type"));
+                    String rowNum = rs.getString("seat_row");
+                    Integer colNum = rs.getObject("seat_col") != null ? rs.getInt("seat_col") : null;
+                    item.put("seatRow", rowNum);
+                    item.put("seatCol", colNum);
                     item.put("quantity", rs.getInt("quantity"));
                     item.put("unitPrice", rs.getBigDecimal("unit_price"));
                     item.put("amount", rs.getBigDecimal("amount"));

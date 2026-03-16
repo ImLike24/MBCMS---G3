@@ -35,17 +35,27 @@
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            cursor: pointer;
+            user-select: none;
         }
+        .invoice-header:focus { outline: none; }
+        .invoice-card:not(.expanded) .invoice-header { border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .invoice-header .invoice-toggle { transition: transform 0.2s; color: #888; }
+        .invoice-card.expanded .invoice-header .invoice-toggle { transform: rotate(180deg); color: var(--orange); }
         .invoice-header-left { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
         .invoice-code { font-weight: 700; font-size: 1.1rem; color: var(--orange); }
         .invoice-meta { font-size: 0.9rem; color: #aaa; }
         .invoice-total { font-size: 1.25rem; font-weight: 600; color: var(--orange); }
+        .invoice-detail { display: none; padding: 0 24px 24px; }
+        .invoice-card.expanded .invoice-detail { display: block; }
+        .detail-section { margin-top: 20px; }
+        .detail-section h6 { color: var(--orange); margin-bottom: 12px; font-weight: 600; }
         .ticket-table { width: 100%; margin: 0; }
         .ticket-table th, .ticket-table td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
         .ticket-table th { color: #888; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
         .ticket-table tr:last-child td { border-bottom: none; }
         .ticket-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+        .seat-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; margin-right: 6px; margin-bottom: 4px; font-size: 0.85rem; }
         .pagination-wrap { margin-top: 32px; margin-bottom: 48px; }
         .pagination .page-link { background: var(--dark); border-color: #444; color: #fff; }
         .pagination .page-link:hover { background: var(--orange); border-color: var(--orange); color: #fff; }
@@ -66,9 +76,9 @@
 
     <c:choose>
         <c:when test="${not empty invoices}">
-            <c:forEach var="inv" items="${invoices}">
-                <div class="invoice-card">
-                    <div class="invoice-header">
+            <c:forEach var="inv" items="${invoices}" varStatus="st">
+                <div class="invoice-card" data-invoice-index="${st.index}">
+                    <div class="invoice-header" role="button" tabindex="0" aria-expanded="false" aria-controls="invoice-detail-${st.index}" id="invoice-header-${st.index}">
                         <div class="invoice-header-left">
                             <span class="invoice-code">#${inv.invoiceCode}</span>
                             <span class="invoice-meta">
@@ -82,41 +92,78 @@
                                 <span class="invoice-meta"><i class="fa fa-ticket me-1"></i>${inv.bookingCode}</span>
                             </c:if>
                             <span class="badge bg-secondary badge-method">${inv.paymentMethod}</span>
+                            <span class="invoice-meta ms-2 text-white-50">(Ấn để xem chi tiết vé & ghế)</span>
                         </div>
-                        <div class="invoice-total">
-                            <fmt:formatNumber value="${inv.finalAmount}" type="currency" currencyCode="VND" currencySymbol="₫"/>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="invoice-total">
+                                <fmt:formatNumber value="${inv.finalAmount}" type="currency" currencyCode="VND" currencySymbol="₫"/>
+                            </span>
+                            <i class="fa fa-chevron-down invoice-toggle"></i>
                         </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="ticket-table">
-                            <thead>
-                                <tr>
-                                    <th>Phim</th>
-                                    <th>Suất chiếu</th>
-                                    <th>Phòng</th>
-                                    <th>Ghế</th>
-                                    <th>Loại vé</th>
-                                    <th class="text-end">Đơn giá</th>
-                                    <th class="text-end">Thành tiền</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <c:forEach var="item" items="${inv.items}">
-                                    <tr>
-                                        <td><c:out value="${item.movieTitle}"/></td>
-                                        <td>
-                                            <fmt:formatDate value="${item.showtimeDate}" pattern="dd/MM/yyyy"/>
-                                            <c:if test="${not empty item.showtimeTime}"> <fmt:formatDate value="${item.showtimeTime}" type="time" timeStyle="short"/></c:if>
-                                        </td>
-                                        <td><c:out value="${item.roomName}"/></td>
-                                        <td><span class="badge bg-dark">${item.seatCode}</span> ${item.seatType}</td>
-                                        <td>${item.ticketType == 'ADULT' ? 'Người lớn' : 'Trẻ em'}</td>
-                                        <td class="text-end"><fmt:formatNumber value="${item.unitPrice}" type="currency" currencyCode="VND" currencySymbol="₫"/></td>
-                                        <td class="text-end"><fmt:formatNumber value="${item.amount}" type="currency" currencyCode="VND" currencySymbol="₫"/></td>
-                                    </tr>
-                                </c:forEach>
-                            </tbody>
-                        </table>
+                    <div class="invoice-detail" id="invoice-detail-${st.index}" aria-hidden="true">
+                        <div class="detail-section">
+                            <h6><i class="fa fa-film me-2"></i>Chi tiết vé</h6>
+                            <div class="table-responsive">
+                                <table class="ticket-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Tên phim</th>
+                                            <th>Giờ suất chiếu</th>
+                                            <th>Phòng</th>
+                                            <th class="text-end">Đơn giá</th>
+                                            <th class="text-end">Thành tiền</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <c:forEach var="item" items="${inv.items}">
+                                            <tr>
+                                                <td><c:out value="${item.movieTitle}"/></td>
+                                                <td>
+                                                    <fmt:formatDate value="${item.showtimeDate}" pattern="dd/MM/yyyy"/>
+                                                    <c:if test="${not empty item.showtimeTime}"> — <fmt:formatDate value="${item.showtimeTime}" type="time" timeStyle="short"/></c:if>
+                                                </td>
+                                                <td><c:out value="${item.roomName}"/></td>
+                                                <td class="text-end"><fmt:formatNumber value="${item.unitPrice}" type="currency" currencyCode="VND" currencySymbol="₫"/></td>
+                                                <td class="text-end"><fmt:formatNumber value="${item.amount}" type="currency" currencyCode="VND" currencySymbol="₫"/></td>
+                                            </tr>
+                                        </c:forEach>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <h6><i class="fa fa-chair me-2"></i>Ghế đã đặt</h6>
+                            <div class="table-responsive">
+                                <table class="ticket-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã ghế</th>
+                                            <th>Vị trí ghế</th>
+                                            <th>Loại ghế</th>
+                                            <th>Loại vé</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <c:forEach var="item" items="${inv.items}">
+                                            <tr>
+                                                <td><span class="badge bg-dark">${item.seatCode}</span></td>
+                                                <td>
+                                                    <c:choose>
+                                                        <c:when test="${not empty item.seatRow || item.seatCol != null}">
+                                                            Hàng <c:out value="${item.seatRow}"/><c:if test="${item.seatCol != null}">, Số ${item.seatCol}</c:if>
+                                                        </c:when>
+                                                        <c:otherwise>${item.seatCode}</c:otherwise>
+                                                    </c:choose>
+                                                </td>
+                                                <td>${item.seatType}</td>
+                                                <td>${item.ticketType == 'ADULT' ? 'Người lớn' : 'Trẻ em'}</td>
+                                            </tr>
+                                        </c:forEach>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </c:forEach>
@@ -159,5 +206,24 @@
 <jsp:include page="/components/layout/Footer.jsp"/>
 
 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+<script>
+(function() {
+    document.querySelectorAll('.invoice-header').forEach(function(header) {
+        header.addEventListener('click', function() {
+            var card = this.closest('.invoice-card');
+            var detail = card.querySelector('.invoice-detail');
+            var expanded = card.classList.toggle('expanded');
+            header.setAttribute('aria-expanded', expanded);
+            if (detail) detail.setAttribute('aria-hidden', !expanded);
+        });
+        header.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
+        });
+    });
+})();
+</script>
 </body>
 </html>
