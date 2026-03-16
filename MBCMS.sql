@@ -898,11 +898,28 @@ IF COL_LENGTH('vouchers', 'current_usage') IS NULL
 BEGIN
     ALTER TABLE vouchers
         ADD current_usage INT DEFAULT 0;
-
---16/03/2026
-ALTER TABLE bookings DROP CONSTRAINT FK_booking_voucher;
-
-ALTER TABLE bookings DROP COLUMN applied_voucher_id;
-
-ALTER TABLE bookings ADD applied_voucher_code VARCHAR(50) NULL;
 END;
+GO
+
+--16/03/2026: Chuyển bookings.applied_voucher_id -> applied_voucher_code (an toàn khi chạy nhiều lần)
+IF COL_LENGTH('bookings', 'applied_voucher_id') IS NOT NULL
+BEGIN
+    -- Xóa FK nếu tồn tại
+    IF EXISTS (
+        SELECT 1
+        FROM sys.foreign_keys
+        WHERE name = 'FK_booking_voucher'
+          AND parent_object_id = OBJECT_ID('bookings')
+    )
+    BEGIN
+        ALTER TABLE bookings DROP CONSTRAINT FK_booking_voucher;
+    END;
+
+    ALTER TABLE bookings DROP COLUMN applied_voucher_id;
+END;
+
+IF COL_LENGTH('bookings', 'applied_voucher_code') IS NULL
+BEGIN
+    ALTER TABLE bookings ADD applied_voucher_code VARCHAR(50) NULL;
+END;
+GO

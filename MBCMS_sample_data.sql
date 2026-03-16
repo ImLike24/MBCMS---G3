@@ -64,11 +64,16 @@ GO
 
 -- ========== 1. ROLES ==========
 -- Theo app: Login redirect và guard dùng CINEMA_STAFF, BRANCH_MANAGER
-INSERT INTO roles (role_name) VALUES
-('ADMIN'),
-('BRANCH_MANAGER'),
-('CINEMA_STAFF'),
-('CUSTOMER');
+-- Đảm bảo role_id cố định 1..4 để không lỗi FK_users_role
+SET IDENTITY_INSERT roles ON;
+
+INSERT INTO roles (role_id, role_name) VALUES
+(1, 'ADMIN'),
+(2, 'BRANCH_MANAGER'),
+(3, 'CINEMA_STAFF'),
+(4, 'CUSTOMER');
+
+SET IDENTITY_INSERT roles OFF;
 GO
 
 -- ========== 2. USERS ==========
