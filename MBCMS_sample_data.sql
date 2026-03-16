@@ -8,8 +8,13 @@ USE MBCMS;
 GO
 
 -- ========== XÓA DỮ LIỆU MẪU (chạy block này trước khi INSERT lại) ==========
--- Bỏ comment đoạn dưới nếu cần chạy lại script từ đầu.
-/*
+-- Thứ tự xóa phải tôn trọng FK, và cần phá vòng FK users <-> cinema_branches <-> roles
+
+-- 1) Phá vòng FK giữa users và cinema_branches
+UPDATE cinema_branches SET manager_id = NULL;
+UPDATE users SET branch_id = NULL;
+
+-- 2) Xóa dữ liệu từ bảng con lên bảng cha theo FK
 DELETE FROM reported_comments;
 DELETE FROM invoice_items;
 DELETE FROM invoices;
@@ -33,7 +38,10 @@ DELETE FROM user_vouchers;
 DELETE FROM vouchers;
 DELETE FROM users;
 DELETE FROM roles;
--- Reset identity (tùy chọn, để ID bắt đầu lại từ 1)
+GO
+
+-- Reset identity về 0 cho các bảng có IDENTITY
+-- (sau khi DELETE xong, reseed = 0 => lần INSERT tiếp theo sẽ bắt đầu từ 1)
 DBCC CHECKIDENT ('roles', RESEED, 0);
 DBCC CHECKIDENT ('users', RESEED, 0);
 DBCC CHECKIDENT ('cinema_branches', RESEED, 0);
@@ -43,13 +51,14 @@ DBCC CHECKIDENT ('genres', RESEED, 0);
 DBCC CHECKIDENT ('movies', RESEED, 0);
 DBCC CHECKIDENT ('showtimes', RESEED, 0);
 DBCC CHECKIDENT ('bookings', RESEED, 0);
+DBCC CHECKIDENT ('invoices', RESEED, 0);
 DBCC CHECKIDENT ('online_tickets', RESEED, 0);
 DBCC CHECKIDENT ('counter_tickets', RESEED, 0);
 DBCC CHECKIDENT ('vouchers', RESEED, 0);
 DBCC CHECKIDENT ('user_vouchers', RESEED, 0);
 DBCC CHECKIDENT ('point_history', RESEED, 0);
+DBCC CHECKIDENT ('reviews', RESEED, 0);
 GO
-*/
 
 -- Mật khẩu mẫu cho tất cả user: 123456 (bcrypt hash bên dưới)
 
@@ -70,13 +79,13 @@ INSERT INTO users (
     role_id, username, email, password, fullName, birthday, phone,
     status, points, total_accumulated_points, tier_id, branch_id
 ) VALUES
-(1, 'admin',    'admin@mbcms.vn',   '$2a$10$mh8Fp4/foMfbsFsNQGbSRe.cjIQMY93BU25EjB09ygcc8uLbQkrI.', N'Quản trị viên',             '1990-01-15', '0901234567', 'ACTIVE', 0, 0, 1, NULL),
-(3, 'staff1',   'staff1@mbcms.vn',  '$2a$10$mh8Fp4/foMfbsFsNQGbSRe.cjIQMY93BU25EjB09ygcc8uLbQkrI.', N'Nguyễn Văn A',             '1995-03-20', '0912345678', 'ACTIVE', 0, 0, 1, 1),
-(3, 'staff2',   'staff2@mbcms.vn',  '$2a$10$mh8Fp4/foMfbsFsNQGbSRe.cjIQMY93BU25EjB09ygcc8uLbQkrI.', N'Trần Thị B',               '1998-07-10', '0923456789', 'ACTIVE', 0, 0, 1, 1),
-(2, 'manager1', 'manager@mbcms.vn', '$2a$10$mh8Fp4/foMfbsFsNQGbSRe.cjIQMY93BU25EjB09ygcc8uLbQkrI.', N'Lê Quản lý Chi nhánh',     '1988-11-05', '0934567890', 'ACTIVE', 0, 0, 1, 1),
-(4, 'customer1','customer1@gmail.com','$2a$10$mh8Fp4/foMfbsFsNQGbSRe.cjIQMY93BU25EjB09ygcc8uLbQkrI.',N'Phạm Văn Khách',         '2000-05-22', '0945678901', 'ACTIVE',150,150,2, NULL),
-(4, 'customer2','customer2@gmail.com','$2a$10$mh8Fp4/foMfbsFsNQGbSRe.cjIQMY93BU25EjB09ygcc8uLbQkrI.',N'Hoàng Thị Lan',          '1999-12-01', '0956789012', 'ACTIVE', 80, 80,1, NULL),
-(4, 'customer3','customer3@gmail.com','$2a$10$mh8Fp4/foMfbsFsNQGbSRe.cjIQMY93BU25EjB09ygcc8uLbQkrI.',N'Võ Minh Tuấn',           '2001-08-14', '0967890123', 'ACTIVE', 0,  0, 1, NULL);
+(1, 'admin',    'admin@mbcms.vn',   '123456', N'Quản trị viên',             '1990-01-15', '0901234567', 'ACTIVE', 0, 0, 1, NULL),
+(3, 'staff1',   'staff1@mbcms.vn',  '123456', N'Nguyễn Văn A',             '1995-03-20', '0912345678', 'ACTIVE', 0, 0, 1, NULL),
+(3, 'staff2',   'staff2@mbcms.vn',  '123456', N'Trần Thị B',               '1998-07-10', '0923456789', 'ACTIVE', 0, 0, 1, NULL),
+(2, 'manager1', 'manager@mbcms.vn', '123456', N'Lê Quản lý Chi nhánh',     '1988-11-05', '0934567890', 'ACTIVE', 0, 0, 1, NULL),
+(4, 'customer1','customer1@gmail.com','123456',N'Phạm Văn Khách',         '2000-05-22', '0945678901', 'ACTIVE',150,150,2, NULL),
+(4, 'customer2','customer2@gmail.com','123456',N'Hoàng Thị Lan',          '1999-12-01', '0956789012', 'ACTIVE', 80, 80,1, NULL),
+(4, 'customer3','customer3@gmail.com','123456',N'Võ Minh Tuấn',           '2001-08-14', '0967890123', 'ACTIVE', 0,  0, 1, NULL);
 GO
 
 -- ========== 3. CINEMA BRANCHES ==========
@@ -84,6 +93,10 @@ GO
 INSERT INTO cinema_branches (branch_name, address, phone, email, manager_id, is_active) VALUES
 (N'MB Cinema Quận 1', N'123 Nguyễn Huệ, Quận 1, TP.HCM', '028-38251234', 'q1@mbcinema.vn', 4, 1),
 (N'MB Cinema Thủ Đức', N'456 Võ Văn Ngân, Thủ Đức, TP.HCM', '028-38901234', 'thuduc@mbcinema.vn', 4, 1);
+GO
+
+-- Cập nhật branch_id cho staff và manager sau khi cinema_branches đã được tạo
+UPDATE users SET branch_id = 1 WHERE user_id IN (2, 3, 4); -- staff1, staff2, manager1 thuộc chi nhánh 1
 GO
 
 -- ========== 4. SCREENING ROOMS ==========
@@ -206,7 +219,7 @@ GO
 -- Showtime 1: room 1. Use seats 3,4 (A3,A4) - not sold online. Sold by staff user_id 2.
 INSERT INTO counter_tickets (showtime_id, seat_id, ticket_type, seat_type, price, ticket_code, sold_by, payment_method, customer_name, customer_phone, sold_at) VALUES
 (1, 3, 'ADULT', 'NORMAL', 75000, 'CT-20250222-001', 2, 'CASH', N'Nguyễn Văn X', '0978123456', '2025-02-22 08:30:00'),
-(1, 4, 'CHILD', 'NORMAL', 55000, 'CT-20250222-002', 2, 'BANKING', N'Trần Thị Y', '0987654321', '2025-02-22 08:35:00');
+(1, 4, 'CHILD', 'NORMAL', 55000, 'CT-20250222-002', 2, 'CASH', N'Trần Thị Y', '0987654321', '2025-02-22 08:35:00');
 GO
 
 -- ========== 14. SEAT TYPE SURCHARGES (per branch) ==========

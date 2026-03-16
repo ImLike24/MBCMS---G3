@@ -32,20 +32,6 @@ CREATE TABLE users (
 );
 GO
 
-IF COL_LENGTH('users', 'branch_id') IS NULL
-BEGIN
-    ALTER TABLE users
-        ADD branch_id INT NULL;
-
-    ALTER TABLE users
-        ADD CONSTRAINT FK_users_branch
-            FOREIGN KEY (branch_id) REFERENCES cinema_branches(branch_id);
-
-    CREATE INDEX idx_users_branch
-        ON users(branch_id);
-END;
-GO
-
 CREATE TABLE cinema_branches (
     branch_id INT IDENTITY(1,1) PRIMARY KEY,
     branch_name NVARCHAR(100) NOT NULL,
@@ -58,6 +44,20 @@ CREATE TABLE cinema_branches (
     updated_at DATETIME2 DEFAULT SYSDATETIME(),
     CONSTRAINT FK_branch_manager FOREIGN KEY (manager_id) REFERENCES users(user_id)
 );
+GO
+
+IF COL_LENGTH('users', 'branch_id') IS NULL
+BEGIN
+    ALTER TABLE users
+        ADD branch_id INT NULL;
+
+    ALTER TABLE users
+        ADD CONSTRAINT FK_users_branch
+            FOREIGN KEY (branch_id) REFERENCES cinema_branches(branch_id);
+
+    CREATE INDEX idx_users_branch
+        ON users(branch_id);
+END;
 GO
 
 CREATE TABLE screening_rooms (
@@ -891,9 +891,12 @@ VALUES (1, 10000, 1, 100);
 GO
 
 -- 11/03/2026
-ALTER TABLE [MBCMS].[dbo].[concessions]
-ADD concession_name NVARCHAR(255);
+-- ALTER TABLE [MBCMS].[dbo].[concessions]
+-- ADD concession_name NVARCHAR(255);
 
 -- 14/03/2026
-ALTER TABLE vouchers
-Update current_usage INT DEFAULT 0;
+IF COL_LENGTH('vouchers', 'current_usage') IS NULL
+BEGIN
+    ALTER TABLE vouchers
+        ADD current_usage INT DEFAULT 0;
+END;
