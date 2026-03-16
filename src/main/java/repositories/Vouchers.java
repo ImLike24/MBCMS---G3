@@ -166,4 +166,31 @@ public class Vouchers extends DBContext {
         }
         return false;
     }
+
+    public boolean incrementVoucherUsage(String code) {
+        if (code == null || code.trim().isEmpty()) return false;
+        
+        // 1. Try to increment directly (for PUBLIC codes)
+        String directSql = "UPDATE vouchers SET current_usage = current_usage + 1 WHERE UPPER(voucher_code) = UPPER(?)";
+        try (PreparedStatement st = connection.prepareStatement(directSql)) {
+            st.setString(1, code.trim());
+            if (st.executeUpdate() > 0) {
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // 2. If not found, try to find the voucher_id from user_vouchers (for UNIQUE codes)
+        String lookupSql = "UPDATE vouchers SET current_usage = current_usage + 1 " +
+                           "WHERE voucher_id = (SELECT voucher_id FROM user_vouchers WHERE voucher_code = ?)";
+        try (PreparedStatement st = connection.prepareStatement(lookupSql)) {
+            st.setString(1, code.trim());
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return false;
+    }
 }

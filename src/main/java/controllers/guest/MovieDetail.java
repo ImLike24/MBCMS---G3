@@ -45,9 +45,11 @@ public class MovieDetail extends HttpServlet {
             List<Review> reviews = reviewDao.getReviewsByMovieId(movieId, limit, 0);
 
             request.setAttribute("movie", movie);
+            double avgRating = reviewDao.getAverageRating(movieId);
+            request.setAttribute("avgRating", avgRating);
             request.setAttribute("reviews", reviews);
 
-            request.getRequestDispatcher("/pages/movie_detail.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/customer/movie_detail.jsp").forward(request, response);
 
         } catch (NumberFormatException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid Movie ID");

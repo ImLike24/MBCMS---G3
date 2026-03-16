@@ -853,11 +853,10 @@ GO
 
 -- 6. CẬP NHẬT BẢNG BOOKINGS
 ALTER TABLE bookings
-ADD applied_voucher_id INT NULL;
+ADD applied_voucher_code VARCHAR(50) NULL;
 GO
 
-ALTER TABLE bookings
-ADD CONSTRAINT FK_booking_voucher FOREIGN KEY (applied_voucher_id) REFERENCES user_vouchers(id);
+CREATE INDEX idx_booking_voucher_code ON bookings(applied_voucher_code);
 GO
 
 -- 7. BẢNG CẤU HÌNH TÍCH ĐIỂM
@@ -883,3 +882,10 @@ ADD concession_name NVARCHAR(255);
 -- 14/03/2026
 ALTER TABLE vouchers
 Update current_usage INT DEFAULT 0;
+
+--16/03/2026
+ALTER TABLE bookings DROP CONSTRAINT FK_booking_voucher;
+
+ALTER TABLE bookings DROP COLUMN applied_voucher_id;
+
+ALTER TABLE bookings ADD applied_voucher_code VARCHAR(50) NULL;
