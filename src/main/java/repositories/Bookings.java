@@ -18,86 +18,29 @@ public class Bookings {
     }
     
     public void closeConnection() {
-
         try {
-
             if (conn != null && !conn.isClosed()) {
                 conn.close();
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    
-    // Update booking PAID
-    public boolean updateBookingPaid(String bookingCode, BigDecimal amount) {
 
-        String sql = """
-            UPDATE bookings
-            SET payment_status='PAID',
-                status='CONFIRMED',
-                total_amount=?,
-                final_amount=?,
-                payment_time=SYSDATETIME()
-            WHERE booking_code=?
-        """;
-
-        try {
-
-            PreparedStatement ps = conn.prepareStatement(sql);
-
-            ps.setBigDecimal(1, amount);
-            ps.setBigDecimal(2, amount);
-            ps.setString(3, bookingCode);
-
-            return ps.executeUpdate() > 0;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return false;
-    }
-
-    // Get bookingId
-    public int getBookingId(String bookingCode) {
-
-        String sql = "SELECT booking_id FROM bookings WHERE booking_code=?";
-
-        try {
-
-            PreparedStatement ps = conn.prepareStatement(sql);
-
-            ps.setString(1, bookingCode);
-
-            ResultSet rs = ps.executeQuery();
-
-            if (rs.next()) {
-                return rs.getInt("booking_id");
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return -1;
-    }
-
-    // Insert online ticket
-    public void insertOnlineTicket(int bookingId,int showtimeId,int seatId) throws Exception {
-
+    public void insertOnlineTicket(int bookingId, int showtimeId, int seatId, String ticketType, String seatType, BigDecimal price) throws Exception {
         String sql = """
         INSERT INTO online_tickets
-        (booking_id,showtime_id,seat_id)
-        VALUES (?,?,?)
+        (booking_id, showtime_id, seat_id, ticket_type, seat_type, price)
+        VALUES (?, ?, ?, ?, ?, ?)
         """;
 
         PreparedStatement ps = conn.prepareStatement(sql);
-
-        ps.setInt(1,bookingId);
-        ps.setInt(2,showtimeId);
-        ps.setInt(3,seatId);
+        ps.setInt(1, bookingId);
+        ps.setInt(2, showtimeId);
+        ps.setInt(3, seatId);
+        ps.setString(4, ticketType);
+        ps.setString(5, seatType);
+        ps.setBigDecimal(6, price);
 
         ps.executeUpdate();
     }
@@ -210,18 +153,19 @@ public class Bookings {
         }
         return 0;
     }
-    
+
     public void confirmBooking(String bookingCode) throws Exception {
-        String sql1 = """
+        String sql = """
         UPDATE bookings
         SET payment_status='PAID',
             status='CONFIRMED',
+            payment_method='BANKING',
             payment_time=SYSDATETIME()
         WHERE booking_code=?
         """;
 
-        PreparedStatement ps1 = conn.prepareStatement(sql1);
-        ps1.setString(1,bookingCode);
-        ps1.executeUpdate();
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1,bookingCode);
+        ps.executeUpdate();
     }
 }

@@ -3,6 +3,7 @@ package repositories;
 import config.DBContext;
 import models.TicketPrice;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -184,5 +185,33 @@ public class TicketPrices extends DBContext {
             }
         } catch (SQLException e) { e.printStackTrace(); }
         return 0;
+    }
+
+    // Lấy giá vé chính xác dựa trên tổ hợp điều kiện và ngày chiếu phim
+    public BigDecimal getTicketPrice(int branchId, String ticketType, String dayType, String timeSlot, java.time.LocalDate showDate) {
+        String sql = "SELECT TOP 1 price FROM ticket_prices " +
+                "WHERE branch_id = ? AND ticket_type = ? AND day_type = ? AND time_slot = ? " +
+                "AND is_active = 1 " +
+                "AND effective_from <= ? " +
+                "AND (effective_to IS NULL OR effective_to >= ?) " +
+                "ORDER BY effective_from DESC";
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, branchId);
+            st.setString(2, ticketType);
+            st.setString(3, dayType);
+            st.setString(4, timeSlot);
+            st.setDate(5, java.sql.Date.valueOf(showDate));
+            st.setDate(6, java.sql.Date.valueOf(showDate));
+
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBigDecimal("price");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

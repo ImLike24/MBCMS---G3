@@ -21,11 +21,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-/**
- *
- * @author CTT VNPAY
- */
-
 @WebServlet("/payment/vnpayquery/*")
 public class vnpayQuery extends HttpServlet {
 

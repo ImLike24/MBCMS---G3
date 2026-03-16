@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/font-awesome.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/global.css">
-    <!-- Tái sử dụng CSS sơ đồ ghế từ khu vực staff/counter -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff.css">
 </head>
 <body>
@@ -86,13 +85,9 @@
                 <h3><i class="fa fa-ticket"></i> Thông tin đặt vé</h3>
 
                 <div class="info-box mb-3">
-                    <p class="mb-2">
-                        <strong><i class="fa fa-money"></i> Giá vé cơ bản:</strong>
-                        <fmt:formatNumber value="${basePrice}" type="number" maxFractionDigits="0"/> ₫
-                    </p>
                     <p class="mb-0 small text-muted">
                         <i class="fa fa-info-circle"></i>
-                        Chọn ghế ở bên trái, sau đó nhấn <strong>Tiếp tục</strong> để sang bước thanh toán.
+                        Chọn loại khách và ghế ở bên trái, sau đó nhấn <strong>Tiếp tục</strong> để sang bước thanh toán.
                     </p>
                 </div>
 
@@ -142,7 +137,10 @@
 
     const ctx = '${pageContext.request.contextPath}';
     const showtimeId = ${showtimeId};
-    const basePrice = ${basePrice};
+    const ticketPrices = {
+        'ADULT': ${adultPrice != null ? adultPrice : basePrice},
+        'CHILD': ${childPrice != null ? childPrice : basePrice}
+    };
     const surchargeRates = {
         <c:forEach var="s" items="${surchargeList}" varStatus="vs">'${s.seatType}': ${s.surchargeRate}<c:if test="${!vs.last}">,</c:if></c:forEach>
     };
@@ -279,11 +277,11 @@
 
         let total = 0;
         selectedSeats.forEach(seat => {
-            let price = basePrice || 0;
+            let price = ticketPrices[seat.ticketType] || ticketPrices['ADULT'] || 0;
+
             const rate = surchargeRates[seat.seatType];
-            if (rate != null && rate > 0) price *= (1 + rate / 100);
-            if (seat.ticketType === 'CHILD') {
-                price *= 0.7; // giam 30% ve cho CHILD
+            if (rate != null && rate > 0) {
+                price *= (1 + rate / 100);
             }
             seat.price = price;
             total += price;

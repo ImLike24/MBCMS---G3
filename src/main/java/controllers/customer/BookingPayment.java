@@ -172,15 +172,25 @@ public class BookingPayment extends HttpServlet {
                     txnRef,
                     totalAmount
             );
-            
-            List<Integer> seatIds = new ArrayList<>();
-            for(Integer seatId : seatIds){
+
+            for (int i = 0; i < seatsArray.size(); i++) {
+                JsonObject seatObj = seatsArray.get(i).getAsJsonObject();
+                int seatId = seatObj.get("seatId").getAsInt();
+
+                String ticketType = seatObj.has("ticketType") ? seatObj.get("ticketType").getAsString() : "ADULT";
+                String seatType = seatObj.has("seatType") ? seatObj.get("seatType").getAsString() : "NORMAL";
+                BigDecimal price = seatObj.has("price") ? new BigDecimal(seatObj.get("price").getAsString()) : BigDecimal.ZERO;
+
                 bookingRepo.insertOnlineTicket(
                         bookingId,
                         showtimeId,
-                        seatId
+                        seatId,
+                        ticketType,
+                        seatType,
+                        price
                 );
             }
+
             JsonObject respJson = new JsonObject();
 
             respJson.addProperty("success", true);

@@ -12,42 +12,29 @@ public class FinalizeBooking extends HttpServlet {
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         try {
-            
             Bookings bookingRepo = new Bookings();
-            
+
             String bookingCode = request.getParameter("vnp_TxnRef");
             String transactionStatus = request.getParameter("vnp_TransactionStatus");
-            String seatIds = bookingRepo.getSeatIdsByBookingCode(bookingCode);
-            
+
             if ("00".equals(transactionStatus)) {
-                
+                //Call confirmBooking
                 bookingRepo.confirmBooking(bookingCode);
 
-                int bookingId = bookingRepo.getBookingIdByCode(bookingCode);
-                int showtimeId = bookingRepo.getShowtimeIdByCode(bookingCode);
-
-                for(String seat : seatIds.split(",")){
-                    if(seat == null || seat.trim().isEmpty()){
-                        continue;
-                    }
-                    int seatId = Integer.parseInt(seat.trim());
-                    bookingRepo.insertOnlineTicket(
-                        bookingId,
-                        showtimeId,
-                        seatId
-                    );
-                }
+                // Gửi phản hồi về cho VNPay biết là đã xử lý xong
+                response.getWriter().write("{\"RspCode\":\"00\",\"Message\":\"Confirm Success\"}");
             } else {
-
+                // Nếu thanh toán thất bại/hủy -> Xóa Booking và giải phóng ghế
                 bookingRepo.deleteBooking(bookingCode);
-                System.out.println("TransactionStatus: " + transactionStatus);
+                System.out.println("TransactionStatus Failed: " + transactionStatus);
                 response.getWriter().write("FAILED");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 }

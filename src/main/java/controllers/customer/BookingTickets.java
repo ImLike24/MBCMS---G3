@@ -92,15 +92,37 @@ public class BookingTickets extends HttpServlet {
                             showtime.getShowDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
                 }
 
-                // Dynamically fetch basePrice using TicketPriceService
-                TicketPriceService ticketPriceService = new TicketPriceService();
-                BigDecimal basePriceBD = BigDecimal.ZERO;
+                // TÍNH TOÁN GIÁ VÉ LINH HOẠT THEO CẤU HÌNH MANAGER
+                repositories.TicketPrices ticketPricesDao = new repositories.TicketPrices();
+                BigDecimal adultPriceBD = null;
+                BigDecimal childPriceBD = null;
+
                 if (branchId != null && showtime.getShowDate() != null && showtime.getStartTime() != null) {
-                    basePriceBD = ticketPriceService.getBasePriceForShowtime(branchId, showtime.getShowDate(),
-                            showtime.getStartTime());
+                    // Xác định Loại ngày (WEEKDAY / WEEKEND)
+                    java.time.DayOfWeek dayOfWeek = showtime.getShowDate().getDayOfWeek();
+                    String dayType = (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY)
+                            ? "WEEKEND" : "WEEKDAY";
+
+                    // Xác định Khung giờ (MORNING, AFTERNOON, EVENING, NIGHT)
+                    int hour = showtime.getStartTime().getHour();
+                    String timeSlot;
+                    if (hour >= 6 && hour < 12) timeSlot = "MORNING";
+                    else if (hour >= 12 && hour < 17) timeSlot = "AFTERNOON";
+                    else if (hour >= 17 && hour < 22) timeSlot = "EVENING";
+                    else timeSlot = "NIGHT";
+
+                    // Query Database lấy giá chuẩn
+                    adultPriceBD = ticketPricesDao.getTicketPrice(branchId, "ADULT", dayType, timeSlot, showtime.getShowDate());
+                    childPriceBD = ticketPricesDao.getTicketPrice(branchId, "CHILD", dayType, timeSlot, showtime.getShowDate());
                 }
-                double basePrice = basePriceBD != null ? basePriceBD.doubleValue() : 0.0;
-                request.setAttribute("basePrice", basePrice);
+
+                // Trả dữ liệu sang Frontend (JSP)
+                double adultPrice = (adultPriceBD != null) ? adultPriceBD.doubleValue() : 0.0;
+                double childPrice = (childPriceBD != null) ? childPriceBD.doubleValue() : 0.0;
+
+                request.setAttribute("adultPrice", adultPrice);
+                request.setAttribute("childPrice", childPrice);
+                request.setAttribute("basePrice", adultPrice);
             } else {
                 request.setAttribute("basePrice", 0.0);
             }

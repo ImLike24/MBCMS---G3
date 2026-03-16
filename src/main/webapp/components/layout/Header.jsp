@@ -134,7 +134,7 @@
                 </button>
                 <a class="navbar-brand fw-bold fs-4 d-flex align-items-center" href="${pageContext.request.contextPath}/home">
                     <i class="fa fa-modx text-warning me-2 fs-3"></i>
-                    <span class="d-none d-md-inline">Cinema Booking</span>
+                    <span class="d-none d-md-inline">My Cinema</span>
                 </a>
             </div>
 
