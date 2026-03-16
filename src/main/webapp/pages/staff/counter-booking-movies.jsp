@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Counter Booking - Select Movie</title>
+    <title>Bán vé quầy - Chọn phim</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff.css">
@@ -22,26 +22,26 @@
             <div class="logo-icon">
                 <i class="fas fa-film"></i>
             </div>
-            <h3>Cinema Staff</h3>
+            <h3>Nhân viên rạp</h3>
         </div>
 
         <ul class="sidebar-menu">
             <li>
                 <a href="${pageContext.request.contextPath}/staff/dashboard">
                     <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
+                    <span>Bảng điều khiển</span>
                 </a>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/staff/counter-booking" class="active">
                     <i class="fas fa-ticket-alt"></i>
-                    <span>Counter Booking</span>
+                    <span>Bán vé tại quầy</span>
                 </a>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/staff/schedule" class="schedule-link">
                     <i class="fas fa-calendar-alt"></i>
-                    <span>View Working Schedule</span>
+                    <span>Lịch làm việc</span>
                 </a>
             </li>
         </ul>
@@ -65,11 +65,11 @@
                                 ${sessionScope.user.fullName}
                             </c:when>
                             <c:otherwise>
-                                Staff User
+                            Nhân viên
                             </c:otherwise>
                         </c:choose>
                     </div>
-                    <div class="user-role">Cinema Staff</div>
+                    <div class="user-role">Nhân viên rạp</div>
                 </div>
             </div>
         </div>
@@ -79,20 +79,20 @@
     <div class="main-content">
         <!-- Top Bar -->
         <div class="top-bar">
-            <h1><i class="fas fa-film"></i> Counter Booking - Select Movie</h1>
+            <h1><i class="fas fa-film"></i> Bán vé quầy - Chọn phim</h1>
             <div class="top-bar-actions">
                 <a href="${pageContext.request.contextPath}/staff/dashboard" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    <i class="fas fa-arrow-left"></i> Về trang bảng điều khiển
                 </a>
             </div>
         </div>
 
         <!-- Select Date & Search and Filter Section -->
         <div class="search-filter-section">
-            <h3><i class="fas fa-calendar-day"></i> Select Date & Search & Filter Movies</h3>
+            <h3><i class="fas fa-calendar-day"></i> Chọn ngày & tìm kiếm & lọc phim</h3>
             <form class="search-filter-form" id="filterForm" method="get" action="${pageContext.request.contextPath}/staff/counter-booking">
                 <div class="form-group">
-                    <label for="dateSelect"><i class="fas fa-calendar-day"></i> Date</label>
+                    <label for="dateSelect"><i class="fas fa-calendar-day"></i> Ngày</label>
                     <input type="date" id="dateSelect" value="" 
                            min="${today}" onchange="changeDate(this.value)" name="date" autocomplete="off">
                     <c:choose>
@@ -110,26 +110,28 @@
                 </div>
                 
                 <div class="form-group" style="flex: 2;">
-                    <label for="search"><i class="fas fa-search"></i> Search</label>
+                    <label for="search"><i class="fas fa-search"></i> Tìm kiếm</label>
                     <input type="text" id="search" name="search" 
-                           placeholder="Search by title, director, cast..." 
+                           placeholder="Tìm theo tên phim, đạo diễn, diễn viên..." 
                            value="${searchQuery}">
                 </div>
                 
                 <div class="form-group">
-                    <label for="genre"><i class="fas fa-theater-masks"></i> Genre</label>
+                    <label for="genre"><i class="fas a-theater-masks"></i> Thể loại</label>
                     <select id="genre" name="genre">
-                        <option value="">All Genres</option>
+                        <option value="">Tất cả thể loại</option>
                         <c:forEach items="${genres}" var="g">
-                            <option value="${g}" ${selectedGenre == g ? 'selected' : ''}>${g}</option>
+                            <option value="${g.genreName}" ${selectedGenre == g.genreName ? 'selected' : ''}>
+                                ${g.genreName}
+                            </option>
                         </c:forEach>
                     </select>
                 </div>
                 
                 <div class="form-group">
-                    <label for="ageRating"><i class="fas fa-user-shield"></i> Age Rating</label>
+                    <label for="ageRating"><i class="fas fa-user-shield"></i> Giới hạn độ tuổi</label>
                     <select id="ageRating" name="ageRating">
-                        <option value="">All Ratings</option>
+                        <option value="">Tất cả</option>
                         <c:forEach items="${ageRatings}" var="ar">
                             <option value="${ar}" ${selectedAgeRating == ar ? 'selected' : ''}>${ar}</option>
                         </c:forEach>
@@ -137,10 +139,10 @@
                 </div>
                 
                 <button type="submit" class="search-btn">
-                    <i class="fas fa-search"></i> Search
+                    <i class="fas fa-search"></i> Tìm kiếm
                 </button>
                 <button type="button" class="reset-btn" onclick="resetFilters()">
-                    <i class="fas fa-redo"></i> Reset
+                    <i class="fas fa-redo"></i> Xóa lọc
                 </button>
             </form>
         </div>
@@ -149,20 +151,20 @@
         <c:if test="${not empty movies}">
             <div class="results-info">
                 <span>
-                    Showing <span class="count">${(currentPage - 1) * pageSize + 1}</span> - 
+                    Hiển thị <span class="count">${(currentPage - 1) * pageSize + 1}</span> - 
                     <span class="count">${(currentPage - 1) * pageSize + movies.size()}</span> 
-                    of <span class="count">${totalMovies}</span> movies
+                    trên <span class="count">${totalMovies}</span> phim
                     <c:if test="${not empty searchQuery}">
-                        for "<strong>${searchQuery}</strong>"
+                        cho từ khóa "<strong>${searchQuery}</strong>"
                     </c:if>
                     <c:if test="${showAllMovies}">
-                        <span style="color: #d96c2c;"> (All Movies)</span>
+                        <span style="color: #d96c2c;"> (Tất cả phim)</span>
                     </c:if>
                     <c:if test="${!showAllMovies && selectedDate != null}">
-                        <span style="color: #d96c2c;"> (Date: ${selectedDate})</span>
+                        <span style="color: #d96c2c;"> (Ngày: ${selectedDate})</span>
                     </c:if>
                 </span>
-                <span>Page ${currentPage} of ${totalPages}</span>
+                <span>Trang ${currentPage} / ${totalPages}</span>
             </div>
         </c:if>
 
@@ -183,7 +185,7 @@
                                 <div class="movie-meta">
                                     <span>
                                         <i class="fas fa-clock"></i>
-                                        ${movie.duration} min
+                                        ${movie.duration} phút
                                     </span>
                                     <span>
                                         <i class="fas fa-star"></i>
@@ -199,7 +201,7 @@
                                 <c:if test="${showAllMovies && !movie.hasShowtimesToday}">
                                     <span class="movie-badge">
                                         <i class="fas fa-info-circle"></i>
-                                        No showtimes today
+                                        Hôm nay không có suất chiếu
                                     </span>
                                 </c:if>
                                 
@@ -208,12 +210,12 @@
                                         <c:when test="${selectedDate != null}">
                                             <a href="${pageContext.request.contextPath}/staff/counter-booking-showtimes?movieId=${movie.movieId}&date=${selectedDate}" 
                                                class="btn-select-movie">
-                                                <i class="fas fa-arrow-right"></i> Select Showtime
+                                                <i class="fas fa-arrow-right"></i> Chọn suất chiếu
                                             </a>
                                         </c:when>
                                         <c:otherwise>
-                                            <button class="btn-select-movie" onclick="alert('Please select a date first'); document.getElementById('dateSelect').focus();">
-                                                <i class="fas fa-arrow-right"></i> Select Showtime
+                                            <button class="btn-select-movie" onclick="alert('Vui lòng chọn ngày trước'); document.getElementById('dateSelect').focus();">
+                                                <i class="fas fa-arrow-right"></i> Chọn suất chiếu
                                             </button>
                                         </c:otherwise>
                                     </c:choose>
@@ -226,26 +228,26 @@
             <c:otherwise>
                 <div class="empty-state">
                     <i class="fas fa-film"></i>
-                    <h3>No Movies Found</h3>
+                    <h3>Không tìm thấy phim</h3>
                     <p>
                         <c:choose>
                             <c:when test="${not empty searchQuery || not empty selectedGenre || not empty selectedAgeRating}">
-                                No movies match your search criteria. Try adjusting your filters.
+                                Không có phim nào khớp với điều kiện tìm kiếm. Thử thay đổi bộ lọc.
                             </c:when>
                             <c:when test="${showAllMovies}">
-                                There are no active movies in the system.
+                                Không có phim nào đang hoạt động trong hệ thống.
                             </c:when>
                             <c:when test="${selectedDate != null}">
-                                There are no movies showing on ${selectedDate}. Please select another date.
+                                Không có phim chiếu vào ngày ${selectedDate}. Vui lòng chọn ngày khác.
                             </c:when>
                             <c:otherwise>
-                                There are no movies available.
+                                Không có phim khả dụng.
                             </c:otherwise>
                         </c:choose>
                     </p>
                     <c:if test="${not empty searchQuery || not empty selectedGenre || not empty selectedAgeRating || showAllMovies}">
                         <button class="reset-btn" onclick="window.location.href='${pageContext.request.contextPath}/staff/counter-booking'" style="margin-top: 20px;">
-                            <i class="fas fa-calendar-day"></i> Show Today's Movies
+                            <i class="fas fa-calendar-day"></i> Hiển thị phim chiếu hôm nay
                         </button>
                     </c:if>
                 </div>
