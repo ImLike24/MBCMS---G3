@@ -32,6 +32,20 @@ CREATE TABLE users (
 );
 GO
 
+IF COL_LENGTH('users', 'branch_id') IS NULL
+BEGIN
+    ALTER TABLE users
+        ADD branch_id INT NULL;
+
+    ALTER TABLE users
+        ADD CONSTRAINT FK_users_branch
+            FOREIGN KEY (branch_id) REFERENCES cinema_branches(branch_id);
+
+    CREATE INDEX idx_users_branch
+        ON users(branch_id);
+END;
+GO
+
 CREATE TABLE cinema_branches (
     branch_id INT IDENTITY(1,1) PRIMARY KEY,
     branch_name NVARCHAR(100) NOT NULL,
