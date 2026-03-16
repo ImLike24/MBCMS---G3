@@ -115,7 +115,7 @@
                                                 <th>Mức Giảm</th>
                                                 <th>Giá Đổi (Điểm)</th>
                                                 <th>Hạn (ngày)</th>
-                                                <th>Lượt đổi còn lại</th>
+                                                <th>Lượt dùng còn lại</th>
                                                 <th class="text-center" width="100">Hành động</th>
                                             </tr>
                                         </thead>
