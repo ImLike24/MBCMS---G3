@@ -2,6 +2,7 @@ package controllers.staff;
 
 import models.Movie;
 import models.Showtime;
+import models.User;
 import services.CounterBookingShowtimesService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -52,8 +53,12 @@ public class CounterBookingShowtimes extends HttpServlet {
                     : LocalDate.now();
 
             CounterBookingShowtimesService service = new CounterBookingShowtimesService();
+
+            // Chi nhánh của staff
+            User currentUser = (User) session.getAttribute("user");
+            Integer branchId = currentUser != null ? currentUser.getBranchId() : null;
             CounterBookingShowtimesService.ShowtimesResult result =
-                    service.getShowtimesForMovie(movieId, selectedDate);
+                    service.getShowtimesForMovie(movieId, selectedDate, branchId);
 
             Movie movie = result != null ? result.movie : null;
             if (movie == null) {

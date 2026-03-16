@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cinema Staff Dashboard</title>
+    <title>Bảng điều khiển nhân viên rạp</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff.css">
@@ -22,26 +22,26 @@
             <div class="logo-icon">
                 <i class="fas fa-film"></i>
             </div>
-            <h3>Cinema Staff</h3>
+            <h3>Nhân viên rạp</h3>
         </div>
 
         <ul class="sidebar-menu">
             <li>
                 <a href="${pageContext.request.contextPath}/staff/dashboard" class="active">
                     <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
+                    <span>Bảng điều khiển</span>
                 </a>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/staff/counter-booking">
                     <i class="fas fa-ticket-alt"></i>
-                    <span>Counter Booking</span>
+                    <span>Bán vé tại quầy</span>
                 </a>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/staff/schedule">
                     <i class="fas fa-calendar-alt"></i>
-                    <span>View Working Schedule</span>
+                    <span>Lịch làm việc</span>
                 </a>
             </li>
         </ul>
@@ -65,11 +65,11 @@
                                 ${sessionScope.user.fullName}
                             </c:when>
                             <c:otherwise>
-                                Staff User
+                                Nhân viên
                             </c:otherwise>
                         </c:choose>
                     </div>
-                    <div class="user-role">Cinema Staff</div>
+                    <div class="user-role">Nhân viên rạp</div>
                 </div>
             </div>
         </div>
@@ -79,7 +79,7 @@
     <div class="main-content">
         <!-- Top Bar -->
         <div class="top-bar">
-            <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+            <h1><i class="fas fa-tachometer-alt"></i> Bảng điều khiển</h1>
             <div class="top-bar-actions">
                 <div class="current-time">
                     <i class="fas fa-clock"></i>
@@ -87,24 +87,24 @@
                 </div>
                 <a href="${pageContext.request.contextPath}/logout" class="btn-logout">
                     <i class="fas fa-sign-out-alt"></i>
-                    Logout
+                    Đăng xuất
                 </a>
             </div>
         </div>
 
         <!-- Welcome Section -->
         <div class="welcome-section">
-            <h2>Welcome back, 
+            <h2>Chào mừng quay lại, 
                 <c:choose>
                     <c:when test="${not empty sessionScope.user.fullName}">
                         ${sessionScope.user.fullName}
                     </c:when>
                     <c:otherwise>
-                        Staff
+                        Nhân viên
                     </c:otherwise>
                 </c:choose>!
             </h2>
-            <p>Ready to provide excellent service to our customers today.</p>
+            <p>Sẵn sàng phục vụ khách hàng thật tốt hôm nay.</p>
         </div>
 
         <!-- Dashboard Cards -->
@@ -114,7 +114,7 @@
                     <i class="fas fa-ticket-alt"></i>
                 </div>
                 <h3>0</h3>
-                <p>Tickets Sold Today</p>
+                <p>Vé bán hôm nay</p>
             </div>
 
             <div class="dashboard-card card-success">
@@ -122,7 +122,7 @@
                     <i class="fas fa-money-bill-wave"></i>
                 </div>
                 <h3>0 đ</h3>
-                <p>Today's Revenue</p>
+                <p>Doanh thu hôm nay</p>
             </div>
 
             <div class="dashboard-card card-warning">
@@ -130,7 +130,7 @@
                     <i class="fas fa-film"></i>
                 </div>
                 <h3>0</h3>
-                <p>Active Showtimes</p>
+                <p>Suất chiếu đang hoạt động</p>
             </div>
 
             <div class="dashboard-card card-info">
@@ -138,21 +138,21 @@
                     <i class="fas fa-users"></i>
                 </div>
                 <h3>0</h3>
-                <p>Customers Served</p>
+                <p>Khách đã phục vụ</p>
             </div>
         </div>
 
         <!-- Quick Actions -->
         <div class="quick-actions">
-            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+            <h3><i class="fas fa-bolt"></i> Thao tác nhanh</h3>
             <div class="action-buttons">
                 <a href="${pageContext.request.contextPath}/staff/counter-booking" class="action-btn">
                     <i class="fas fa-ticket-alt"></i>
-                    <span>Start Counter Booking</span>
+                    <span>Bắt đầu bán vé quầy</span>
                 </a>
                 <a href="${pageContext.request.contextPath}/staff/schedule" class="action-btn">
                     <i class="fas fa-calendar-check"></i>
-                    <span>View My Schedule</span>
+                    <span>Xem lịch làm việc</span>
                 </a>
             </div>
         </div>

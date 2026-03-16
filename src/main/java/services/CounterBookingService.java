@@ -4,8 +4,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -13,13 +17,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import models.CounterTicket;
 import models.PointHistory;
+import models.SeatTypeSurcharge;
+import models.Showtime;
 import models.User;
 import models.UserVoucher;
 import models.Voucher;
 import repositories.CounterTickets;
 import repositories.PointHistories;
 import repositories.Roles;
+import repositories.SeatTypeSurcharges;
 import repositories.Showtimes;
+import repositories.TicketPrices;
 import repositories.UserVouchers;
 import repositories.Users;
 import repositories.Vouchers;
@@ -46,6 +54,8 @@ public class CounterBookingService {
         Showtimes showtimesRepo = null;
         Vouchers vouchersRepo = null;
         UserVouchers userVouchersRepo = null;
+        TicketPrices ticketPricesRepo = null;
+        SeatTypeSurcharges seatTypeSurchargesRepo = null;
 
         try {
             int showtimeId = requestData.get("showtimeId").getAsInt();
@@ -66,10 +76,10 @@ public class CounterBookingService {
 
             JsonArray seatsArray = requestData.getAsJsonArray("seats");
 
-            // Validate payment method
-            if (!"CASH".equals(paymentMethod) && !"BANKING".equals(paymentMethod)) {
+            // Validate payment method (counter booking: cash only)
+            if (!"CASH".equals(paymentMethod)) {
                 resp.addProperty("success", false);
-                resp.addProperty("message", "Invalid payment method");
+                resp.addProperty("message", "Invalid payment method (counter supports CASH only)");
                 return resp;
             }
 
@@ -79,9 +89,58 @@ public class CounterBookingService {
             // Generate unique ticket code for this transaction
             String ticketCode = counterTicketsRepo.generateTicketCode();
 
-            // Get showtime details for price calculation
+            // Get showtime details and branch info for price calculation
             Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
-            BigDecimal basePrice = ((models.Showtime) showtimeDetails.get("showtime")).getBasePrice();
+            Showtime showtime = (Showtime) showtimeDetails.get("showtime");
+            Integer branchId = (Integer) showtimeDetails.get("branchId");
+
+            BigDecimal basePriceFromShowtime = (showtime != null && showtime.getBasePrice() != null)
+                    ? showtime.getBasePrice()
+                    : BigDecimal.ZERO;
+
+            // Prepare dynamic ticket prices from configuration (ticket_prices) if possible
+            BigDecimal adultPrice = null;
+            BigDecimal childPrice = null;
+            Map<String, Double> surchargeRates = new HashMap<>();
+
+            if (showtime != null && branchId != null
+                    && showtime.getShowDate() != null && showtime.getStartTime() != null) {
+
+                DayOfWeek dayOfWeek = showtime.getShowDate().getDayOfWeek();
+                String dayType = (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY)
+                        ? "WEEKEND"
+                        : "WEEKDAY";
+
+                int hour = showtime.getStartTime().getHour();
+                String timeSlot;
+                if (hour >= 6 && hour < 12) timeSlot = "MORNING";
+                else if (hour >= 12 && hour < 17) timeSlot = "AFTERNOON";
+                else if (hour >= 17 && hour < 22) timeSlot = "EVENING";
+                else timeSlot = "NIGHT";
+
+                ticketPricesRepo = new TicketPrices();
+                adultPrice = ticketPricesRepo.getTicketPrice(branchId, "ADULT", dayType, timeSlot,
+                        showtime.getShowDate());
+                childPrice = ticketPricesRepo.getTicketPrice(branchId, "CHILD", dayType, timeSlot,
+                        showtime.getShowDate());
+
+                // Load seat-type surcharge rates for this branch
+                seatTypeSurchargesRepo = new SeatTypeSurcharges();
+                List<SeatTypeSurcharge> surchargeList = seatTypeSurchargesRepo.getSurchargesByBranch(branchId);
+                if (surchargeList != null) {
+                    for (SeatTypeSurcharge s : surchargeList) {
+                        surchargeRates.put(s.getSeatType(), s.getSurchargeRate());
+                    }
+                }
+            }
+
+            // Fallbacks if config is missing
+            if (adultPrice == null || adultPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                adultPrice = basePriceFromShowtime;
+            }
+            if (childPrice == null || childPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                childPrice = adultPrice;
+            }
 
             // Prepare counter tickets in memory first (no DB writes yet)
             List<Integer> ticketIds = new ArrayList<>();
@@ -106,19 +165,15 @@ public class CounterBookingService {
                     return resp;
                 }
 
-                // Calculate price
-                BigDecimal price = basePrice;
+                // Calculate price using configured ticket_prices and seat_type_surcharges
+                BigDecimal price = "CHILD".equals(ticketType) ? childPrice : adultPrice;
 
-                // Adjust for seat type
-                if ("VIP".equals(seatType)) {
-                    price = price.multiply(new BigDecimal("1.5"));
-                } else if ("COUPLE".equals(seatType)) {
-                    price = price.multiply(new BigDecimal("2.0"));
-                }
-
-                // Adjust for ticket type
-                if ("CHILD".equals(ticketType)) {
-                    price = price.multiply(new BigDecimal("0.7"));
+                // Adjust for seat type via surcharge rate (percent)
+                Double rate = surchargeRates.get(seatType);
+                if (rate != null && rate > 0) {
+                    BigDecimal multiplier = BigDecimal.ONE.add(
+                            BigDecimal.valueOf(rate).divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
+                    price = price.multiply(multiplier);
                 }
 
                 // Round to 2 decimal places
@@ -379,6 +434,12 @@ public class CounterBookingService {
             }
             if (showtimesRepo != null) {
                 showtimesRepo.closeConnection();
+            }
+            if (ticketPricesRepo != null) {
+                ticketPricesRepo.closeConnection();
+            }
+            if (seatTypeSurchargesRepo != null) {
+                seatTypeSurchargesRepo.closeConnection();
             }
             if (vouchersRepo != null) {
                 vouchersRepo.closeConnection();

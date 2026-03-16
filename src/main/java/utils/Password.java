@@ -22,10 +22,17 @@ public class Password {
 
 //      Check password input and password in DB
     public static boolean verifyPassword(String plainTextPassword, String hashedPassword) {
-        if (hashedPassword == null || !hashedPassword.startsWith("$2a$")) {
-            return false; // Không phải mã BCrypt hợp lệ
+        if (hashedPassword == null) {
+            return false;
         }
-        return BCrypt.checkpw(plainTextPassword, hashedPassword);
+
+        // Trường hợp cũ: mật khẩu đã được hash bằng BCrypt
+        if (hashedPassword.startsWith("$2a$")) {
+            return BCrypt.checkpw(plainTextPassword, hashedPassword);
+        }
+
+        // Fallback: hỗ trợ mật khẩu đang lưu ở dạng plain text (dùng cho dữ liệu mẫu/dev)
+        return plainTextPassword.equals(hashedPassword);
     }
 
 //      Check password valid

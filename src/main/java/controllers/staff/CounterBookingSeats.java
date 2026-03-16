@@ -59,6 +59,11 @@ public class CounterBookingSeats extends HttpServlet {
             request.setAttribute("seatsWithStatus", result.seatsWithStatus);
             request.setAttribute("availableSeats", result.availableSeats);
             request.setAttribute("showtimeId", showtimeId);
+
+            // Dynamic ticket prices & surcharges
+            request.setAttribute("adultPrice", result.adultPrice);
+            request.setAttribute("childPrice", result.childPrice);
+            request.setAttribute("surchargeList", result.surchargeList);
             
             Showtime showtime = result.showtime;
             request.setAttribute("showtime", showtime);

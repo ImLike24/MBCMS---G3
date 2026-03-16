@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Working Schedule - Cinema Staff</title>
+    <title>Lịch làm việc - Nhân viên rạp</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff.css">
@@ -157,26 +157,26 @@
         <div class="logo-icon">
             <i class="fas fa-film"></i>
         </div>
-        <h3>Cinema Staff</h3>
+        <h3>Nhân viên rạp</h3>
     </div>
 
     <ul class="sidebar-menu">
         <li>
             <a href="${pageContext.request.contextPath}/staff/dashboard">
                 <i class="fas fa-home"></i>
-                <span>Dashboard</span>
+                <span>Bảng điều khiển</span>
             </a>
         </li>
         <li>
             <a href="${pageContext.request.contextPath}/staff/counter-booking">
                 <i class="fas fa-ticket-alt"></i>
-                <span>Counter Booking</span>
+                <span>Bán vé tại quầy</span>
             </a>
         </li>
         <li>
             <a href="${pageContext.request.contextPath}/staff/schedule" class="active">
                 <i class="fas fa-calendar-alt"></i>
-                <span>View Working Schedule</span>
+                <span>Lịch làm việc</span>
             </a>
         </li>
     </ul>
@@ -200,11 +200,11 @@
                             ${sessionScope.user.fullName}
                         </c:when>
                         <c:otherwise>
-                            Staff User
+                            Nhân viên
                         </c:otherwise>
                     </c:choose>
                 </div>
-                <div class="user-role">Cinema Staff</div>
+                <div class="user-role">Nhân viên rạp</div>
             </div>
         </div>
     </div>
@@ -212,11 +212,11 @@
 
 <div class="main-content">
     <div class="top-bar">
-        <h1><i class="fas fa-calendar-alt"></i> Working Schedule</h1>
+        <h1><i class="fas fa-calendar-alt"></i> Lịch làm việc</h1>
         <div class="top-bar-actions">
             <a href="${pageContext.request.contextPath}/logout" class="btn-logout">
                 <i class="fas fa-sign-out-alt"></i>
-                Logout
+                Đăng xuất
             </a>
         </div>
     </div>
@@ -229,15 +229,15 @@
         <h1>
             <i class="fas fa-calendar-day"></i>
             <span>
-                Week:
+                Tuần:
                 ${weekLabel}
             </span>
         </h1>
         <form method="get" action="${pageContext.request.contextPath}/staff/schedule" class="schedule-date-picker">
-            <label for="dateInput">Select date:</label>
+            <label for="dateInput">Chọn ngày:</label>
             <input type="date" id="dateInput" name="date" value="${referenceDateStr}">
             <button type="submit" class="btn btn-primary" style="padding:6px 14px;font-size:13px;">
-                <i class="fas fa-search"></i> View
+                <i class="fas fa-search"></i> Xem
             </button>
         </form>
     </div>
@@ -255,7 +255,7 @@
                 <c:when test="${empty scheduleByBranch[branchId]}">
                     <div class="empty-schedule">
                         <i class="fas fa-info-circle"></i>
-                        No showtimes scheduled for this branch on selected date.
+                        Không có suất chiếu nào cho chi nhánh này trong ngày đã chọn.
                     </div>
                 </c:when>
                 <c:otherwise>
@@ -283,7 +283,7 @@
                                                 <div class="schedule-slot">
                                                     <div class="time">${st.startTime} - ${st.endTime}</div>
                                                     <div class="movie">${st.movieTitle}</div>
-                                                    <div class="room">Room ${st.roomName}</div>
+                                                    <div class="room">Phòng ${st.roomName}</div>
                                                     <span class="schedule-status ${st.status}">
                                                         ${st.status}
                                                     </span>

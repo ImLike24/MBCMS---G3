@@ -35,6 +35,14 @@ public class Users extends DBContext {
         
         u.setTotalAccumulatedPoints(rs.getInt("total_accumulated_points"));
         u.setTierId(rs.getInt("tier_id"));
+        try {
+            int bId = rs.getInt("branch_id");
+            if (!rs.wasNull()) {
+                u.setBranchId(bId);
+            }
+        } catch (SQLException ignore) {
+            // column may not exist in older schemas
+        }
 
         if (rs.getTimestamp("created_at") != null)
             u.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
@@ -89,9 +97,9 @@ public class Users extends DBContext {
     }
 
     public boolean insert(User u) {
-        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points, total_accumulated_points, tier_id) "
+        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points, total_accumulated_points, tier_id, branch_id) "
                 +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, u.getRoleId());
             st.setString(2, u.getUsername());
@@ -109,6 +117,11 @@ public class Users extends DBContext {
             st.setInt(9, u.getPoints() != null ? u.getPoints() : 0);
             st.setInt(10, u.getTotalAccumulatedPoints() != null ? u.getTotalAccumulatedPoints() : 0);
             st.setInt(11, u.getTierId() != null ? u.getTierId() : 1);
+            if (u.getBranchId() != null) {
+                st.setInt(12, u.getBranchId());
+            } else {
+                st.setNull(12, java.sql.Types.INTEGER);
+            }
 
             return st.executeUpdate() > 0;
         } catch (SQLException e) {

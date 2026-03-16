@@ -28,7 +28,7 @@ public class StaffScheduleService {
         public String weekLabel;
     }
 
-    public ScheduleResult buildSchedule(LocalDate referenceDate) throws Exception {
+    public ScheduleResult buildSchedule(LocalDate referenceDate, Integer branchId) throws Exception {
         CinemaBranches branchesRepo = null;
         Showtimes showtimesRepo = null;
 
@@ -48,7 +48,13 @@ public class StaffScheduleService {
                 weekDays.add(day);
             }
 
-            List<CinemaBranch> branches = branchesRepo.getActiveBranches();
+            List<CinemaBranch> branches;
+            if (branchId != null) {
+                CinemaBranch b = branchesRepo.findById(branchId);
+                branches = b != null ? java.util.List.of(b) : java.util.List.of();
+            } else {
+                branches = branchesRepo.getActiveBranches();
+            }
 
             Map<Integer, Map<String, List<Map<String, Object>>>> scheduleByBranch = new HashMap<>();
 
