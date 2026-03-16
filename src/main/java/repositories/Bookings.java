@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package repositories;
 
 import java.sql.Connection;
@@ -9,14 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.SQLException;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Random;
-
 import java.math.BigDecimal;
 
-import config.DBContext; // Đảm bảo bạn đã có DBContext
+import config.DBContext;
 
 public class Bookings {
 
@@ -25,71 +16,212 @@ public class Bookings {
     public Bookings() throws Exception {
         conn = new DBContext().getConnection();
     }
+    
+    public void closeConnection() {
 
-    // ==============================
-    // Generate booking code
-    // Format: BK20260305123045XYZ
-    // ==============================
-    public String generateBookingCode() {
-        String timestamp = LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        try {
 
-        int randomNumber = new Random().nextInt(900) + 100; // 100-999
+            if (conn != null && !conn.isClosed()) {
+                conn.close();
+            }
 
-        return "BK" + timestamp + randomNumber;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
-
-    // ==========================================
-    // Create Online Booking (Initial PENDING)
-    // ==========================================
-    public int createOnlineBooking(int userId,
-                                   int showtimeId,
-                                   String paymentMethod,
-                                   String bookingCode) throws SQLException {
+    
+    // Update booking PAID
+    public boolean updateBookingPaid(String bookingCode, BigDecimal amount) {
 
         String sql = """
-                INSERT INTO bookings
-                (user_id, showtime_id, booking_code,
-                 total_amount, discount_amount, final_amount,
-                 payment_method, payment_status, status, payment_time)
-                VALUES (?, ?, ?,
-                        0, 0, 0,
-                        ?, 'PAID', 'CONFIRMED', SYSDATETIME())
-                """;
+            UPDATE bookings
+            SET payment_status='PAID',
+                status='CONFIRMED',
+                total_amount=?,
+                final_amount=?,
+                payment_time=SYSDATETIME()
+            WHERE booking_code=?
+        """;
 
-        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try {
 
-            ps.setInt(1, userId);
-            ps.setInt(2, showtimeId);
+            PreparedStatement ps = conn.prepareStatement(sql);
+
+            ps.setBigDecimal(1, amount);
+            ps.setBigDecimal(2, amount);
             ps.setString(3, bookingCode);
-            ps.setString(4, paymentMethod);
 
-            int affectedRows = ps.executeUpdate();
+            return ps.executeUpdate() > 0;
 
-            if (affectedRows == 0) {
-                return -1;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    // Get bookingId
+    public int getBookingId(String bookingCode) {
+
+        String sql = "SELECT booking_id FROM bookings WHERE booking_code=?";
+
+        try {
+
+            PreparedStatement ps = conn.prepareStatement(sql);
+
+            ps.setString(1, bookingCode);
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt("booking_id");
             }
 
-            try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (rs.next()) {
-                    return rs.getInt(1); // booking_id
-                }
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         return -1;
     }
 
-    // ==============================
-    // Close connection
-    // ==============================
-    public void closeConnection() {
-        try {
-            if (conn != null && !conn.isClosed()) {
-                conn.close();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+    // Insert online ticket
+    public void insertOnlineTicket(int bookingId,int showtimeId,int seatId) throws Exception {
+
+        String sql = """
+        INSERT INTO online_tickets
+        (booking_id,showtime_id,seat_id)
+        VALUES (?,?,?)
+        """;
+
+        PreparedStatement ps = conn.prepareStatement(sql);
+
+        ps.setInt(1,bookingId);
+        ps.setInt(2,showtimeId);
+        ps.setInt(3,seatId);
+
+        ps.executeUpdate();
+    }
+
+    // Delete booking
+    public void deleteBooking(String bookingCode) throws Exception {
+
+        String sql1 = """
+        DELETE FROM online_tickets
+        WHERE booking_id = (
+            SELECT booking_id FROM bookings WHERE booking_code=?
+        )
+        """;
+
+        PreparedStatement ps1 = conn.prepareStatement(sql1);
+        ps1.setString(1,bookingCode);
+        ps1.executeUpdate();
+
+
+        String sql2 = "DELETE FROM bookings WHERE booking_code=?";
+
+        PreparedStatement ps2 = conn.prepareStatement(sql2);
+        ps2.setString(1,bookingCode);
+        ps2.executeUpdate();
+    }
+        
+    public int getShowtimeIdByCode(String bookingCode) throws Exception {
+        String sql = "SELECT showtime_id FROM bookings WHERE booking_code=?";
+
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, bookingCode);
+
+        ResultSet rs = ps.executeQuery();
+
+        if(rs.next()){
+            return rs.getInt("showtime_id");
         }
+
+        return 0;
+    }
+    
+    public int getBookingIdByCode(String bookingCode) throws Exception {
+
+        String sql = "SELECT booking_id FROM bookings WHERE booking_code = ?";
+
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, bookingCode);
+
+        ResultSet rs = ps.executeQuery();
+
+        if (rs.next()) {
+            return rs.getInt("booking_id");
+        }
+
+        return 0;
+    }
+    
+    public String getSeatIdsByBookingCode(String bookingCode) throws Exception {
+
+        String sql = """
+            SELECT seat_id
+            FROM online_tickets
+            WHERE booking_id = (
+                SELECT booking_id
+                FROM bookings
+                WHERE booking_code = ?
+            )
+        """;
+
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, bookingCode);
+
+        ResultSet rs = ps.executeQuery();
+
+        StringBuilder seatIds = new StringBuilder();
+
+        while(rs.next()){
+
+            if(seatIds.length() > 0){
+                seatIds.append(",");
+            }
+
+            seatIds.append(rs.getInt("seat_id"));
+        }
+
+        return seatIds.toString();
+    }
+    
+    public int insertBooking(int userId,int showtimeId,String bookingCode,BigDecimal amount) throws Exception {
+        String sql = """
+        INSERT INTO bookings
+        (user_id,showtime_id,booking_code,total_amount,final_amount,payment_status)
+        VALUES (?,?,?, ?, ?, 'PENDING')
+        """;
+
+        PreparedStatement ps = conn.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+
+        ps.setInt(1,userId);
+        ps.setInt(2,showtimeId);
+        ps.setString(3,bookingCode);
+        ps.setBigDecimal(4,amount);
+        ps.setBigDecimal(5,amount);
+
+        ps.executeUpdate();
+
+        ResultSet rs = ps.getGeneratedKeys();
+
+        if(rs.next()){
+            return rs.getInt(1);
+        }
+        return 0;
+    }
+    
+    public void confirmBooking(String bookingCode) throws Exception {
+        String sql1 = """
+        UPDATE bookings
+        SET payment_status='PAID',
+            status='CONFIRMED',
+            payment_time=SYSDATETIME()
+        WHERE booking_code=?
+        """;
+
+        PreparedStatement ps1 = conn.prepareStatement(sql1);
+        ps1.setString(1,bookingCode);
+        ps1.executeUpdate();
     }
 }

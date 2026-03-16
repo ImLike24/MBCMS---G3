@@ -70,62 +70,24 @@
                     <hr>
                     <h5 class="mb-2">Ghế đã chọn</h5>
                     <div id="selectedSeatsDisplay">
-                        <c:forEach var="seat" items="${selectedSeats}">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div>
-                                    <span class = "seat-tag">${seat.seatCode}</span>
-                                    <span class="badge bg-secondary me-1">${seat.seatType}</span>
-                                    <span class="badge bg-info">${seat.ticketType}</span>
-                                </div>
-                                <div class = "text-end text-light">
-                                    <fmt:formatNumber value="${seat.price}" type="currency" currencySymbol="₫"/>
-                                </div>
-                            </div>
-                        </c:forEach>
+                        <span class="text-muted">Đang tải dữ liệu ghế...</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <span class="text-muted">Tổng tiền</span>
-                        <span class="total-amount" id="totalAmountText">
-                            <fmt:formatNumber value="${totalAmount != null ? totalAmount : 0}" type="currency" currencySymbol="₫"/>
-                        </span>
+                        <span class="total-amount" id="totalAmountText">0 ₫</span>
                     </div>
-                </div>
-
-                <div class="mb-4">
-                    <h5 class="mb-3">Thông tin người nhận vé</h5>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-light">Họ tên</label>
-                            <input type="text" class="form-control" id="customerName" placeholder="Nguyễn Văn A">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-light">Email (nhận e-ticket)</label>
-                            <input type="email" class="form-control" id="customerEmail" placeholder="email@example.com">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <h5 class="mb-3">Phương thức thanh toán</h5>
-                    <p class="text-muted small mb-2">Khách hàng chỉ được thanh toán online.</p>
-                    <div class="d-flex gap-3">
-                        <button type="button" class="btn btn-primary flex-fill" id="btnOnline" disabled>
-                            <i class="fa fa-credit-card"></i> Thanh toán online
-                        </button>
-                    </div>
-                </div>
+                </div> 
 
                 <div class="d-flex gap-3">
-                    <button type="button" class="btn btn-primary flex-fill" id="btnConfirmPay">Xác nhận thanh toán</button>
-                    <button type="button" class="btn btn-secondary flex-fill" id="btnPrint" disabled>
-                        In vé
+                    <button type="button" class="btn btn-primary flex-fill" id="btnConfirmPay">
+                        Xác nhận & Thanh toán VNPay
                     </button>
                 </div>
 
                 <div id="paymentMessage" class="mt-3 text-success fw-semibold" style="display:none;"></div>
 
                 <div id="receiptArea" class="receipt-box mt-4" style="display:none;">
-                    <h5 class="mb-2">Hóa đơn thanh toán</h5>
+                    <h5 class="mb-2">E-ticket</h5>
                     <p class="mb-1"><strong>Mã vé:</strong> <span id="receiptCode"></span></p>
                     <p class="mb-1"><strong>Phim:</strong> ${movieTitle}</p>
                     <p class="mb-1"><strong>Rạp:</strong> ${showtimeDetails.branchName}</p>
@@ -164,11 +126,10 @@
     function renderBookingSummary() {
         const container = document.getElementById('selectedSeatsDisplay');
         const totalEl = document.getElementById('totalAmountText');
-        const btnConfirm = document.getElementById('btnConfirmPay');
         if (!bookingData || !bookingData.seats || bookingData.seats.length === 0) {
-            if (container) container.innerHTML = '<span class="text-muted">Không tìm thấy dữ liệu ghế. Vui lòng quay lại chọn ghế.</span>';
-            if (totalEl) totalEl.textContent = formatCurrency(0);
-            if (btnConfirm) btnConfirm.disabled = true;
+            container.innerHTML = '<span class="text-muted">Không tìm thấy dữ liệu ghế. Vui lòng quay lại chọn ghế.</span>';
+            totalEl.textContent = formatCurrency(0);
+            document.getElementById('btnConfirmPay').disabled = true;
             return;
         }
 
@@ -197,63 +158,74 @@
         });
         container.appendChild(frag);
 
-        if (totalEl) totalEl.textContent = formatCurrency(bookingData.totalAmount);
-        if (btnConfirm) btnConfirm.disabled = false;
+        totalEl.textContent = formatCurrency(bookingData.totalAmount);
+        document.getElementById('btnConfirmPay').disabled = false;
     }
 
-    async function submitPayment() {
-        if (!bookingData) return;
-        const name = document.getElementById('customerName').value.trim();
-        const email = document.getElementById('customerEmail').value.trim();
+    async function redirectToVnpayPayment() {
+        if (!bookingData) {
+            alert("Không tìm thấy thông tin đặt chỗ. Vui lòng chọn ghế lại.");
+            return;
+        }
+
         const msgEl = document.getElementById('paymentMessage');
 
-        msgEl.style.display = 'none';
-        msgEl.classList.remove('text-danger');
-
         try {
+            // 1️⃣ Gọi VNPay ajax để tạo paymentUrl
+            const vnpRes = await fetch(ctx + '/payment/vnpayajax', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body:
+                    "amount=" + bookingData.totalAmount
+            });
+
+            const vnpData = await vnpRes.json();
+
+            if (vnpData.code !== "00") {
+                alert("Không tạo được thanh toán VNPay");
+                return;
+            }
+
+            const paymentUrl = vnpData.data;
+
+            // 2️⃣ Lấy TxnRef từ URL
+            const txnRef = new URL(paymentUrl).searchParams.get("vnp_TxnRef");
+
+            // 3️⃣ Gửi BookingPayment để insert PENDING
             const payload = {
                 showtimeId: bookingData.showtimeId,
                 seats: bookingData.seats,
                 totalAmount: bookingData.totalAmount,
-                customerName: name,
-                customerEmail: email,
-                paymentMethod: 'BANKING'
+                txnRef: txnRef
             };
 
             const res = await fetch(ctx + '/customer/booking-payment', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(payload)
             });
 
             const data = await res.json();
+
             if (!data.success) {
-                msgEl.textContent = data.message || 'Thanh toán thất bại.';
-                msgEl.classList.add('text-danger');
-                msgEl.style.display = 'block';
+                alert("Không thể tạo booking.");
                 return;
             }
 
-            bookingData.bookingCode = data.bookingCode;
-            try {
-                sessionStorage.setItem('customerBookingData', JSON.stringify(bookingData));
-            } catch (e) {}
+            // 4️⃣ Lưu bookingCode
+            sessionStorage.setItem('lastBookingCode', txnRef);
 
-            msgEl.textContent = 'Thanh toán thành công. Mã đặt vé: ' + data.bookingCode;
-            msgEl.classList.remove('text-danger');
-            msgEl.style.display = 'block';
+            // 5️⃣ Redirect VNPay
+            window.location.href = paymentUrl;
 
-            const receipt = document.getElementById('receiptArea');
-            const ticketLabel = (t) => (t === 'CHILD' ? 'Trẻ em' : 'Người lớn');
-            document.getElementById('receiptCode').textContent = data.bookingCode;
-            document.getElementById('receiptSeats').textContent = bookingData.seats
-                .map(s => s.seatCode + ' (' + ticketLabel(s.ticketType || 'ADULT') + ')').join(', ');
-            document.getElementById('receiptTotal').textContent = formatCurrency(bookingData.totalAmount);
-            receipt.style.display = 'block';
-            document.getElementById('btnPrint').disabled = false;
+        } catch (err) {
 
-        } catch (e) {
-            msgEl.textContent = 'Lỗi hệ thống, vui lòng thử lại.';
+            console.error(err);
+            msgEl.textContent = 'Lỗi kết nối, vui lòng thử lại.';
             msgEl.classList.add('text-danger');
             msgEl.style.display = 'block';
         }
@@ -261,14 +233,10 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         loadBookingFromStorage();
-        // Customer chỉ thanh toán online
         selectedPaymentMethod = 'BANKING';
         renderBookingSummary();
 
-        document.getElementById('btnConfirmPay').addEventListener('click', submitPayment);
-        document.getElementById('btnPrint').addEventListener('click', function () {
-            window.print();
-        });
+        document.getElementById('btnConfirmPay').addEventListener('click', redirectToVnpayPayment);
     });
 </script>
 

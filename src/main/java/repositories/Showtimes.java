@@ -917,7 +917,7 @@ public class Showtimes extends DBContext {
         java.math.BigDecimal onlineRevenue = java.math.BigDecimal.ZERO;
 
         String onlineSql = """
-                SELECT b.booking_code AS ticket_code,
+                SELECT ot.e_ticket_code AS ticket_code,
                        b.booking_code,
                        COALESCE(u.fullName, 'N/A') AS customer_name,
                        COALESCE(u.email, '')        AS customer_email,
@@ -1052,7 +1052,7 @@ public class Showtimes extends DBContext {
         List<Map<String, Object>> onlineTickets = new ArrayList<>();
         java.math.BigDecimal onlineRevenue = java.math.BigDecimal.ZERO;
         String onlineSql = """
-                SELECT b.booking_code AS ticket_code,
+                SELECT ot.e_ticket_code AS ticket_code,
                        b.booking_code,
                        COALESCE(u.fullName, 'N/A') AS customer_name,
                        COALESCE(u.email, '')        AS customer_email,
