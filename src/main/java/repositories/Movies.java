@@ -5,6 +5,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashSet;
 import models.Movie;
 
 public class Movies extends DBContext {
@@ -347,10 +348,17 @@ public class Movies extends DBContext {
         m.setDescription(rs.getString("description"));
         m.setDuration(rs.getInt("duration"));
 
-        // NEW: map genres
+        // NEW: map genres (loại bỏ trùng, giữ nguyên thứ tự)
         String genreList = rs.getString("genre_list");
         if (genreList != null && !genreList.isEmpty()) {
-            m.setGenres(List.of(genreList.split("\\s*,\\s*")));
+            String[] arr = genreList.split("\\s*,\\s*");
+            LinkedHashSet<String> distinct = new LinkedHashSet<>();
+            for (String g : arr) {
+                if (g != null && !g.isBlank()) {
+                    distinct.add(g);
+                }
+            }
+            m.setGenres(new ArrayList<>(distinct));
         } else {
             m.setGenres(new ArrayList<>());
         }

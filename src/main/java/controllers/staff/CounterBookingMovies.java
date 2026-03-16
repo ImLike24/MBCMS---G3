@@ -99,6 +99,7 @@ public class CounterBookingMovies extends HttpServlet {
 
             // Filter attributes
             request.setAttribute("ageRatings", ageRatings);
+            request.setAttribute("genres", moviesPage.genres);
             request.setAttribute("selectedGenre", genre);
             request.setAttribute("selectedAgeRating", ageRating);
             request.setAttribute("searchQuery", search);

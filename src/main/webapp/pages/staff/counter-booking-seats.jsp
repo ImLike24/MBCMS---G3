@@ -245,7 +245,13 @@
         ];
 
         const showtimeId = ${showtimeId};
-        const basePrice = ${showtime.basePrice};
+        const ticketPrices = {
+            'ADULT': ${adultPrice},
+            'CHILD': ${childPrice}
+        };
+        const surchargeRates = {
+            <c:forEach var="s" items="${surchargeList}" varStatus="vs">'${s.seatType}': ${s.surchargeRate}<c:if test="${!vs.last}">,</c:if></c:forEach>
+        };
 
         // Selected seats storage
         let selectedSeats = [];
@@ -447,18 +453,14 @@
             let totalAmount = 0;
 
             selectedSeats.forEach(seat => {
-                let price = basePrice;
-                
-                // Adjust price for seat type
-                if (seat.seatType === 'VIP') {
-                    price *= 1.5; // VIP is 50% more
-                } else if (seat.seatType === 'COUPLE') {
-                    price *= 2; // Couple seat is double
+                let price = ticketPrices[seat.ticketType] || ticketPrices['ADULT'] || 0;
+
+                const rate = surchargeRates[seat.seatType];
+                if (rate != null && rate > 0) {
+                    price *= (1 + rate / 100);
                 }
 
-                // Adjust price for ticket type
                 if (seat.ticketType === 'CHILD') {
-                    price *= 0.7; // Child ticket is 30% discount
                     childCount++;
                 } else {
                     adultCount++;

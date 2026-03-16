@@ -3,7 +3,9 @@ package services;
 import java.time.LocalDate;
 import java.util.List;
 import models.Movie;
+import models.Genre;
 import repositories.Movies;
+import services.GenreService;
 
 /**
  * Business logic for listing movies for counter booking (staff).
@@ -17,6 +19,7 @@ public class CounterBookingMoviesService {
         public List<String> ageRatings;
         public LocalDate selectedDate;
         public boolean showAllMovies;
+        public List<Genre> genres;
     }
 
     private static final int PAGE_SIZE = 8;
@@ -27,7 +30,8 @@ public class CounterBookingMoviesService {
                                           String genre,
                                           String ageRating,
                                           int page) throws Exception {
-        Movies moviesRepo = null;
+            Movies moviesRepo = null;
+            GenreService genreService = new GenreService();
         try {
             moviesRepo = new Movies();
 
@@ -85,6 +89,7 @@ public class CounterBookingMoviesService {
             result.ageRatings = ageRatings;
             result.selectedDate = selectedDate;
             result.showAllMovies = showAllMovies;
+            result.genres = genreService.getAllActiveGenres();
             return result;
         } finally {
             if (moviesRepo != null) {
