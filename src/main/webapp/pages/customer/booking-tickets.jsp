@@ -100,7 +100,7 @@
 
                 <div id="priceSummary" class="price-summary" style="display:none;">
                     <div class="price-row total">
-                        <span>Tạm tính:</span>
+                        <span>Tổng tạm tính:</span>
                         <span class="price-amount" id="totalAmount">0 VND</span>
                     </div>
                 </div>
@@ -137,9 +137,11 @@
 
     const ctx = '${pageContext.request.contextPath}';
     const showtimeId = ${showtimeId};
+    <c:set var="adultPriceNum" value="${adultPrice != null ? adultPrice : (basePrice != null ? basePrice : (showtime != null && showtime.basePrice != null ? showtime.basePrice : 0))}" />
+    <c:set var="childPriceNum" value="${childPrice != null ? childPrice : (basePrice != null ? basePrice : (showtime != null && showtime.basePrice != null ? showtime.basePrice : 0))}" />
     const ticketPrices = {
-        'ADULT': ${adultPrice != null ? adultPrice : basePrice},
-        'CHILD': ${childPrice != null ? childPrice : basePrice}
+        'ADULT': <fmt:formatNumber value="${adultPriceNum}" type="number" groupingUsed="false" maxFractionDigits="0" />,
+        'CHILD': <fmt:formatNumber value="${childPriceNum}" type="number" groupingUsed="false" maxFractionDigits="0" />
     };
     const surchargeRates = {
         <c:forEach var="s" items="${surchargeList}" varStatus="vs">'${s.seatType}': ${s.surchargeRate}<c:if test="${!vs.last}">,</c:if></c:forEach>
@@ -246,6 +248,19 @@
             return;
         }
 
+        // Tính giá từng ghế trước để hiển thị
+        let total = 0;
+        selectedSeats.forEach(seat => {
+            let price = ticketPrices[seat.ticketType] || ticketPrices['ADULT'] || 0;
+            const rate = surchargeRates[seat.seatType];
+            if (rate != null && rate > 0) {
+                price *= (1 + rate / 100);
+            }
+            seat.price = Math.round(price);
+            total += seat.price;
+        });
+        currentTotal = total;
+
         listContainer.innerHTML = '';
         selectedSeats
             .slice()
@@ -255,6 +270,8 @@
                 const childActiveClass = seat.ticketType === 'CHILD' ? 'active' : '';
                 const seatTypeClass = seat.seatType ? seat.seatType.toLowerCase() : '';
                 const seatTypeLabel = seat.seatType || 'NORMAL';
+                const ticketTypeLabel = seat.ticketType === 'CHILD' ? 'Trẻ em' : 'Người lớn';
+                const seatPriceFormatted = formatCurrency(seat.price || 0);
 
                 const item = document.createElement('div');
                 item.className = 'selected-seat-item';
@@ -271,23 +288,11 @@
                     '<i class="fa fa-user"></i> Người lớn</button>' +
                     '<button type="button" class="ticket-type-btn ' + childActiveClass + '" onclick="setTicketType(' + seat.seatId + ', \'CHILD\')">' +
                     '<i class="fa fa-child"></i> Trẻ em</button>' +
-                    '</div>';
+                    '</div>' +
+                    '<div class="seat-item-price small mt-1"><strong>' + ticketTypeLabel + ':</strong> <span class="price-amount">' + seatPriceFormatted + '</span></div>';
                 listContainer.appendChild(item);
             });
 
-        let total = 0;
-        selectedSeats.forEach(seat => {
-            let price = ticketPrices[seat.ticketType] || ticketPrices['ADULT'] || 0;
-
-            const rate = surchargeRates[seat.seatType];
-            if (rate != null && rate > 0) {
-                price *= (1 + rate / 100);
-            }
-            seat.price = price;
-            total += price;
-        });
-
-        currentTotal = total;
         document.getElementById('totalAmount').textContent = formatCurrency(total);
         priceSummary.style.display = 'block';
         btnProceed.disabled = false;
@@ -339,7 +344,7 @@
                         seatCode: seat.seatCode,
                         seatType: seat.seatType,
                         ticketType: seat.ticketType || 'ADULT',
-                        price: seat.price || basePrice
+                        price: seat.price || (ticketPrices[seat.ticketType] || ticketPrices['ADULT'] || 0)
                     }))
                 };
 

@@ -116,9 +116,10 @@ public class BookingTickets extends HttpServlet {
                     childPriceBD = ticketPricesDao.getTicketPrice(branchId, "CHILD", dayType, timeSlot, showtime.getShowDate());
                 }
 
-                // Trả dữ liệu sang Frontend (JSP)
-                double adultPrice = (adultPriceBD != null) ? adultPriceBD.doubleValue() : 0.0;
-                double childPrice = (childPriceBD != null) ? childPriceBD.doubleValue() : 0.0;
+                // Trả dữ liệu sang Frontend (JSP) — dùng basePrice của suất chiếu khi chưa cấu hình giá ADULT/CHILD
+                double fallbackPrice = (showtime.getBasePrice() != null) ? showtime.getBasePrice().doubleValue() : 0.0;
+                double adultPrice = (adultPriceBD != null) ? adultPriceBD.doubleValue() : fallbackPrice;
+                double childPrice = (childPriceBD != null) ? childPriceBD.doubleValue() : fallbackPrice;
 
                 request.setAttribute("adultPrice", adultPrice);
                 request.setAttribute("childPrice", childPrice);
