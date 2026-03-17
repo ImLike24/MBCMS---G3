@@ -19,7 +19,7 @@ DELETE FROM reported_comments;
 DELETE FROM invoice_items;
 DELETE FROM invoices;
 DELETE FROM revenue_reports;
-DELETE FROM notifications;
+-- DELETE FROM notifications; -- table not in schema
 DELETE FROM reviews;
 DELETE FROM counter_tickets;
 DELETE FROM online_tickets;
@@ -246,17 +246,17 @@ GO
 -- ========== 12. ONLINE TICKETS ==========
 -- Trigger will update booking total_amount & final_amount. Seat: room 1 -> seat_id 1-24 (A1=1..D6=24).
 -- Booking 1: showtime 1, seats 1,2 (A1,A2). Booking 2: showtime 2 (cũng room 1), seat 5 (A5). Booking 3: chưa có vé.
-INSERT INTO online_tickets (booking_id, showtime_id, seat_id, ticket_type, seat_type, price, e_ticket_code) VALUES
-(1, 1, 1, 'ADULT', 'NORMAL', 75000, 'ET-MB20250225001-1'),
-(1, 1, 2, 'ADULT', 'NORMAL', 75000, 'ET-MB20250225001-2'),
-(2, 2, 5, 'ADULT', 'NORMAL', 85000, 'ET-MB20250225002-1');
+INSERT INTO online_tickets (booking_id, showtime_id, seat_id, ticket_type, seat_type, price) VALUES
+(1, 1, 1, 'ADULT', 'NORMAL', 75000),
+(1, 1, 2, 'ADULT', 'NORMAL', 75000),
+(2, 2, 5, 'ADULT', 'NORMAL', 85000);
 GO
 
 -- ========== 13. COUNTER TICKETS ==========
 -- Showtime 1: room 1. Use seats 3,4 (A3,A4) - not sold online. Sold by staff user_id 2.
-INSERT INTO counter_tickets (showtime_id, seat_id, ticket_type, seat_type, price, ticket_code, sold_by, payment_method, customer_name, customer_phone, sold_at) VALUES
-(1, 3, 'ADULT', 'NORMAL', 75000, 'CT-20250222-001', 2, 'CASH', N'Nguyễn Văn X', '0978123456', '2025-02-22 08:30:00'),
-(1, 4, 'CHILD', 'NORMAL', 55000, 'CT-20250222-002', 2, 'CASH', N'Trần Thị Y', '0987654321', '2025-02-22 08:35:00');
+INSERT INTO counter_tickets (showtime_id, seat_id, ticket_type, seat_type, price, sold_by, payment_method, customer_name, customer_phone, sold_at) VALUES
+(1, 3, 'ADULT', 'NORMAL', 75000, 2, 'CASH', N'Nguyễn Văn X', '0978123456', '2025-02-22 08:30:00'),
+(1, 4, 'CHILD', 'NORMAL', 55000, 2, 'CASH', N'Trần Thị Y', '0987654321', '2025-02-22 08:35:00');
 GO
 
 -- ========== 14. SEAT TYPE SURCHARGES (per branch) ==========
@@ -284,16 +284,21 @@ SET IDENTITY_INSERT reviews OFF;
 GO
 
 -- ========== 16. NOTIFICATIONS ==========
-INSERT INTO notifications (user_id, title, message, notification_type, sent_at) VALUES
-(5, N'Đặt vé thành công', N'Mã đặt chỗ MB20250225001 đã thanh toán thành công.', 'BOOKING', '2025-02-22 10:01:00'),
-(6, N'Đặt vé thành công', N'Mã đặt chỗ MB20250225002 đã thanh toán thành công.', 'BOOKING', '2025-02-22 11:31:00'),
-(5, N'Khuyến mãi cuối tuần', N'Giảm 20% vé sáng thứ 7-CN. Áp dụng đến 28/02.', 'GENERAL', '2025-02-20 09:00:00');
+-- notifications table is not in schema; skipped
 GO
 
 -- ========== 17. REVENUE REPORTS ==========
 INSERT INTO revenue_reports (branch_id, report_date, sale_channel, online_tickets_count, online_revenue, counter_tickets_count, counter_revenue, total_tickets_count, total_revenue, adult_tickets, child_tickets, normal_seats, vip_seats, couple_seats, generated_by) VALUES
 (1, '2025-02-22', 'COMBINED', 3, 235000, 2, 130000, 5, 365000, 4, 1, 5, 0, 0, 1),
 (1, '2025-02-21', 'ONLINE', 4, 320000, 0, 0, 4, 320000, 4, 0, 4, 0, 0, 1);
+GO
+
+-- Fix ZALOPA typo in constraint (safe to run on existing DB)
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_invoice_payment_method' AND parent_object_id = OBJECT_ID('invoices'))
+BEGIN
+    ALTER TABLE invoices DROP CONSTRAINT CK_invoice_payment_method;
+    ALTER TABLE invoices ADD CONSTRAINT CK_invoice_payment_method CHECK (payment_method IN ('ZALOPAY','BANKING','CASH'));
+END;
 GO
 
 -- ========== 18. INVOICES ==========
@@ -357,15 +362,15 @@ SET IDENTITY_INSERT showtimes ON;
 
 INSERT INTO showtimes (showtime_id, movie_id, room_id, show_date, start_time, end_time, base_price, status) VALUES
 -- Branch 1: Phòng 1,2,3
-(9,  1, 1, '2026-03-17', '09:00', '10:50', 75000, 'SCHEDULED'),
-(10, 3, 2, '2026-03-17', '14:00', '16:46', 95000, 'SCHEDULED'),
-(11, 5, 3, '2026-03-17', '10:00', '11:36', 65000, 'SCHEDULED'),
+(9,  1, 1, '2026-03-17', '18:00', '19:50', 75000, 'SCHEDULED'),
+(10, 3, 2, '2026-03-17', '19:00', '21:46', 95000, 'SCHEDULED'),
+(11, 5, 3, '2026-03-17', '20:00', '21:36', 65000, 'SCHEDULED'),
 (12, 2, 1, '2026-03-18', '11:00', '13:00', 75000, 'SCHEDULED'),
 (13, 4, 2, '2026-03-19', '19:00', '21:11', 85000, 'SCHEDULED'),
 -- Branch 2: Phòng A,B
-(14, 3, 4, '2026-03-17', '09:00', '11:46', 85000, 'SCHEDULED'),
-(15, 5, 5, '2026-03-17', '10:00', '11:36', 65000, 'SCHEDULED'),
-(16, 1, 4, '2026-03-17', '14:00', '15:50', 85000, 'SCHEDULED'),
+(14, 3, 4, '2026-03-17', '18:00', '20:46', 85000, 'SCHEDULED'),
+(15, 5, 5, '2026-03-17', '19:00', '20:36', 65000, 'SCHEDULED'),
+(16, 1, 4, '2026-03-17', '20:00', '21:50', 85000, 'SCHEDULED'),
 (17, 4, 5, '2026-03-18', '19:00', '21:11', 95000, 'SCHEDULED'),
 (18, 3, 4, '2026-03-19', '11:00', '13:46', 85000, 'SCHEDULED');
 
