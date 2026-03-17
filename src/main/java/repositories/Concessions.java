@@ -49,7 +49,7 @@ public class Concessions extends DBContext {
     // Lấy theo ID
     public Concession getConcessionById(int id) {
         String sql = """
-            SELECT concession_type, quantity, price_base,
+            SELECT concession_id, concession_type, quantity, price_base,
                    concession_name, added_by, created_at
             FROM concessions
             WHERE concession_id = ?
@@ -97,16 +97,14 @@ public class Concessions extends DBContext {
             UPDATE concessions
             SET concession_type = ?,
                 quantity = ?,
-                price_base = ?,
-                concession_name = ?
+                price_base = ?
             WHERE concession_id = ?
             """;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, c.getConcessionType());
             ps.setObject(2, c.getQuantity(), Types.INTEGER);
             ps.setDouble(3, c.getPriceBase());
-            ps.setString(4, c.getConcessionName());
-            ps.setInt(5, c.getConcessionId());
+            ps.setInt(4, c.getConcessionId());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -138,6 +136,7 @@ public class Concessions extends DBContext {
 
     private Concession mapRowToConcession(ResultSet rs) throws SQLException {
         Concession c = new Concession();
+        c.setConcessionId(rs.getInt("concession_id"));
         c.setConcessionType(rs.getString("concession_type"));
         c.setQuantity(rs.getObject("quantity", Integer.class));
         c.setPriceBase(rs.getDouble("price_base"));
