@@ -35,9 +35,24 @@ public class SeatOccupancyReport extends HttpServlet {
             return;
         }
 
-        List<Integer> branchIds = new ArrayList<>();
+        List<Integer> allBranchIds = new ArrayList<>();
         for (CinemaBranch b : managedBranches) {
-            branchIds.add(b.getBranchId());
+            allBranchIds.add(b.getBranchId());
+        }
+
+        String branchIdParam = request.getParameter("branchId");
+        Integer selectedBranchId = null;
+        List<Integer> branchIds = new ArrayList<>(allBranchIds);
+        if (branchIdParam != null && !branchIdParam.isBlank() && !"all".equals(branchIdParam)) {
+            try {
+                int bid = Integer.parseInt(branchIdParam.trim());
+                if (allBranchIds.contains(bid)) {
+                    branchIds.clear();
+                    branchIds.add(bid);
+                    selectedBranchId = bid;
+                }
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         LocalDate fromDate = parseDate(request.getParameter("fromDate"), LocalDate.now().minusDays(30));
@@ -46,6 +61,7 @@ public class SeatOccupancyReport extends HttpServlet {
         var rows = perfRepo.getSeatOccupancy(branchIds, fromDate, toDate);
 
         request.setAttribute("managedBranches", managedBranches);
+        request.setAttribute("selectedBranchId", selectedBranchId);
         request.setAttribute("rows", rows);
         request.setAttribute("fromDate", fromDate);
         request.setAttribute("toDate", toDate);

@@ -30,18 +30,27 @@
 
         <div class="card card-custom mb-4">
             <div class="card-body p-4">
-                <form action="${pageContext.request.contextPath}/manager/report/performance/seat-occupancy" method="get" class="row g-3">
-                    <div class="col-md-4">
+                <form action="${pageContext.request.contextPath}/manager/report/performance/seat-occupancy" method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Chi nhánh</label>
+                        <select name="branchId" class="form-select">
+                            <option value="all">Tất cả chi nhánh</option>
+                            <c:forEach var="b" items="${managedBranches}">
+                                <option value="${b.branchId}" ${selectedBranchId != null && selectedBranchId == b.branchId ? 'selected' : ''}>${b.branchName}</option>
+                            </c:forEach>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label">Từ ngày</label>
                         <input type="date" class="form-control" name="fromDate" value="${fromDate}">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Đến ngày</label>
                         <input type="date" class="form-control" name="toDate" value="${toDate}">
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn btn-orange px-4">
-                            <i class="fa fa-filter me-2"></i>Lọc
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-orange w-100">
+                            <i class="fa fa-filter me-2"></i>Lọc dữ liệu
                         </button>
                     </div>
                 </form>

@@ -28,6 +28,7 @@ import repositories.TicketPrices;
 @WebServlet(name = "TicketsOfChosenMovie", urlPatterns = { "/customer/booking-tickets" })
 public class BookingTickets extends HttpServlet {
 
+    // force update
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -426,7 +427,7 @@ public class BookingTickets extends HttpServlet {
             bookingData.put("concessions", bookingConcessions);
             session.setAttribute("customerBookingData", bookingData);
 
-            response.sendRedirect(request.getContextPath() + "/customer/booking-payment?showtimeId=" + showtimeId);
+            response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
 
         } catch (Exception e) {
             e.printStackTrace();

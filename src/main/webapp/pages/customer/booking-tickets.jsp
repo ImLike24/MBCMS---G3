@@ -11,6 +11,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/font-awesome.min.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/global.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/booking-tickets.css">
     </head>
     <body>
 
@@ -22,6 +23,7 @@
                 <div class="alert alert-danger">${error}</div>
             </c:if>
 
+            <!-- force update -->
             <div class="content-layout">
                     <!-- Left: form GET – chọn ghế rồi bấm "Cập nhật ghế đã chọn" -->
                     <form method="get" action="${pageContext.request.contextPath}/customer/booking-tickets" id="formSeatMap">
@@ -108,23 +110,27 @@
                                     <span>Couple</span>
                                 </div>
                             </div>
-                            <div class="mt-3 text-end">
-                                <button type="submit" class="btn btn-sm btn-outline-warning px-4 seat-update-btn">
-                                    <i class="fa fa-sync"></i> Cập nhật ghế đã chọn
-                                </button>
-                            </div>
                             <div class="concession-counter mt-4">
                                 <h4 class="mb-2"><i class="fa fa-coffee"></i> Quầy đồ ăn / Thức uống</h4>
                                 <c:choose>
                                     <c:when test="${not empty concessionsList}">
-                                        <p class="small text-muted mb-2">Chọn số lượng bên dưới, sau khi chọn ghế bấm <strong>Cập nhật ghế đã chọn</strong> hoặc xem tổng ở <strong>Thông tin mua hàng</strong> bên phải.</p>
+                                        <p class="small text-muted mb-2">Xem danh sách món bên dưới, nhấn <strong>Chọn món</strong> để chỉnh số lượng ở phần <strong>Thông tin mua hàng</strong> bên phải.</p>
                                         <div class="concession-list">
                                             <c:forEach var="c" items="${concessionsList}">
                                                 <div class="concession-row">
-                                                    <span class="concession-name">${c.concessionName}</span>
-                                                    <span class="concession-type small text-muted">(${c.concessionType})</span>
-                                                    <span class="concession-price"><fmt:formatNumber value="${c.priceBase}" type="number" maxFractionDigits="0"/> ₫</span>
-                                                    <input type="number" name="concession_${c.concessionId}" value="${concessionQty[c.concessionId] != null ? concessionQty[c.concessionId] : 0}" min="0" class="form-control form-control-sm concession-qty">
+                                                    <div class="flex-grow-1">
+                                                        <span class="concession-name">${c.concessionName}</span>
+                                                        <span class="concession-type small text-muted">(${c.concessionType})</span>
+                                                        <div class="small text-muted mt-1">
+                                                            Giá: <fmt:formatNumber value="${c.priceBase}" type="number" maxFractionDigits="0"/> ₫
+                                                            · Kho: ${c.quantity != null ? c.quantity : 0} món
+                                                        </div>
+                                                    </div>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-warning ms-2 btn-jump-concession"
+                                                            data-concession-id="${c.concessionId}">
+                                                        Chọn món
+                                                    </button>
                                                 </div>
                                             </c:forEach>
                                         </div>
@@ -150,15 +156,17 @@
                                 </p>
                                 <c:choose>
                                     <c:when test="${not empty selectedSeatsInfo}">
-                                        <form method="post" action="${pageContext.request.contextPath}/customer/booking-tickets">
+                                        <form method="post" action="${pageContext.request.contextPath}/customer/booking-tickets" id="bookingSummaryForm">
                                             <input type="hidden" name="showtimeId" value="${showtimeId}">
+                                            <div id="bookingPricesConfig" data-adult="${adultPrice != null ? adultPrice : 0}" data-child="${childPrice != null ? childPrice : 0}" data-surcharges='${surchargeRatesJson != null ? surchargeRatesJson : "{}"}' style="display:none;"></div>
                                             <div class="selected-seats-list mb-2">
                                                 <c:forEach var="seatInfo" items="${selectedSeatsInfo}">
-                                                    <div class="selected-seat-item">
+                                                    <c:set var="st" value="${seatInfo.seatType != null ? seatInfo.seatType : 'NORMAL'}"/>
+                                                    <div class="selected-seat-item" data-seat-type="${st}">
                                                         <input type="hidden" name="seatIds" value="${seatInfo.seatId}">
                                                         <div class="seat-item-header">
                                                             <span class="seat-code">${seatInfo.seatCode}</span>
-                                                            <span class="seat-price"><fmt:formatNumber value="${seatInfo.price}" type="number" maxFractionDigits="0"/> ₫</span>
+                                                            <span class="seat-price" data-price="${seatInfo.price}"><fmt:formatNumber value="${seatInfo.price}" type="number" maxFractionDigits="0"/> ₫</span>
                                                             <c:url var="removeSeatUrl" value="/customer/booking-tickets">
                                                                 <c:param name="showtimeId" value="${showtimeId}"/>
                                                                 <c:forEach var="other" items="${selectedSeatsInfo}">
@@ -174,11 +182,11 @@
                                                             <a href="${removeSeatUrl}" class="btn-remove-seat" title="Bỏ ghế này" data-seat-id="${seatInfo.seatId}">&times;</a>
                                                         </div>
                                                         <div class="ticket-type-selector">
-                                                            <label class="ticket-type-btn ${seatInfo.ticketType == 'ADULT' ? 'active' : ''}">
+                                                            <label class="ticket-type-btn">
                                                                 <input type="radio" name="ticketType_${seatInfo.seatId}" value="ADULT" ${seatInfo.ticketType == 'ADULT' ? 'checked' : ''}>
                                                                 <i class="fa fa-user"></i> Người lớn
                                                             </label>
-                                                            <label class="ticket-type-btn ${seatInfo.ticketType == 'CHILD' ? 'active' : ''}">
+                                                            <label class="ticket-type-btn">
                                                                 <input type="radio" name="ticketType_${seatInfo.seatId}" value="CHILD" ${seatInfo.ticketType == 'CHILD' ? 'checked' : ''}>
                                                                 <i class="fa fa-child"></i> Trẻ em
                                                             </label>
@@ -189,13 +197,15 @@
                                             <c:if test="${not empty concessionsList}">
                                                 <div class="concession-section mt-3 mb-3">
                                                     <h4 class="mb-2"><i class="fa fa-coffee"></i> Đồ ăn / Thức uống</h4>
-                                                    <div class="concession-list">
+                                                    <div class="concession-list" id="summaryConcessionList">
                                                         <c:forEach var="c" items="${concessionsList}">
-                                                            <div class="concession-row">
+                                                            <div class="concession-row summary-concession-row ${concessionQty[c.concessionId] != null && concessionQty[c.concessionId] > 0 ? '' : 'd-none'}"
+                                                                 data-concession-id="${c.concessionId}">
                                                                 <span class="concession-name">${c.concessionName}</span>
                                                                 <span class="concession-type small text-muted">(${c.concessionType})</span>
                                                                 <span class="concession-price"><fmt:formatNumber value="${c.priceBase}" type="number" maxFractionDigits="0"/> ₫</span>
-                                                                <input type="number" name="concession_${c.concessionId}" value="${concessionQty[c.concessionId] != null ? concessionQty[c.concessionId] : 0}" min="0" class="form-control form-control-sm concession-qty">
+                                                                <input type="number" name="concession_${c.concessionId}" value="${concessionQty[c.concessionId] != null ? concessionQty[c.concessionId] : 0}" min="0" class="form-control form-control-sm concession-qty summary-concession-qty" data-price="${c.priceBase}">
+                                                                <button type="button" class="btn-remove-concession" title="Bỏ món" data-remove-concession="${c.concessionId}">&times;</button>
                                                             </div>
                                                         </c:forEach>
                                                     </div>
@@ -204,29 +214,21 @@
                                             <div class="price-summary">
                                                 <div class="price-row">
                                                     <span>Tổng vé:</span>
-                                                    <span class="price-amount"><fmt:formatNumber value="${ticketTotal}" type="number" maxFractionDigits="0"/> ₫</span>
+                                                    <span class="price-amount" id="ticketTotalEl"><fmt:formatNumber value="${ticketTotal}" type="number" maxFractionDigits="0"/> ₫</span>
                                                 </div>
                                                 <c:if test="${not empty concessionsList}">
                                                     <div class="price-row">
                                                         <span>Tổng đồ ăn / thức uống:</span>
-                                                        <span class="price-amount"><fmt:formatNumber value="${concessionTotal}" type="number" maxFractionDigits="0"/> ₫</span>
+                                                        <span class="price-amount" id="concessionTotalEl"><fmt:formatNumber value="${concessionTotal}" type="number" maxFractionDigits="0"/> ₫</span>
                                                     </div>
                                                 </c:if>
                                                 <div class="price-row total">
                                                     <span>Tổng cộng:</span>
-                                                    <span class="price-amount"><fmt:formatNumber value="${totalAmount}" type="number" maxFractionDigits="0"/> ₫</span>
+                                                    <span class="price-amount" id="grandTotalEl"><fmt:formatNumber value="${totalAmount}" type="number" maxFractionDigits="0"/> ₫</span>
                                                 </div>
                                             </div>
-                                            <p class="small text-muted mb-2">Đổi loại vé hoặc số lượng đồ ăn rồi bấm <strong>Cập nhật tổng</strong> để xem lại tiền.</p>
+                                            <p class="small text-muted mb-2">Đổi loại vé (Người lớn/Trẻ em) hoặc số lượng đồ ăn — tổng tiền cập nhật ngay, không cần reload.</p>
                                             <div class="action-buttons mt-3">
-                                                <button type="submit"
-                                                        name="action"
-                                                        value="update"
-                                                        formmethod="get"
-                                                        formaction="${pageContext.request.contextPath}/customer/booking-tickets"
-                                                        class="btn btn-sm btn-outline-light btn-update-total">
-                                                    <i class="fa fa-calculator"></i> Cập nhật tổng
-                                                </button>
                                                 <button type="submit" class="btn btn-sm btn-warning btn-proceed px-4">
                                                     Tiếp tục
                                                 </button>
@@ -239,7 +241,7 @@
                                         </p>
                                     </c:when>
                                     <c:otherwise>
-                                        <p class="text-muted small mb-2">Chọn ghế bên trái, bấm <strong>Cập nhật ghế đã chọn</strong> để hiển thị danh sách và chọn loại vé (Người lớn / Trẻ em).</p>
+                                        <p class="text-muted small mb-2">Chọn ghế bên trái để hiển thị danh sách ghế đã chọn và chọn loại vé (Người lớn / Trẻ em).</p>
                                     </c:otherwise>
                                 </c:choose>
                                 <p class="mb-0 small text-muted mt-2">
@@ -250,169 +252,135 @@
                     </div>
                 </div>
         </div>
-
-        <style>
-            .content-layout {
-                display: grid;
-                grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.1fr);
-                gap: 24px;
-                align-items: flex-start;
-            }
-
-            .booking-summary {
-                background: #121212;
-                border-radius: 16px;
-                padding: 18px 20px;
-                box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
-                border: 1px solid rgba(255, 255, 255, 0.06);
-            }
-
-            .booking-summary h3 {
-                font-size: 18px;
-                margin-bottom: 14px;
-            }
-
-            .info-box {
-                background: linear-gradient(145deg, #191919, #101010);
-                border-radius: 12px;
-                padding: 14px 16px;
-            }
-
-            .seat-map-section {
-                background: #111;
-                border-radius: 16px;
-                padding: 16px 18px 18px;
-                box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
-                border: 1px solid rgba(255, 255, 255, 0.05);
-            }
-
-            .seat-checkbox { display: none; }
-            .seat input:checked + span,
-            label.seat:has(.seat-checkbox:checked) {
-                background: #d96c2c !important;
-                color: #fff !important;
-            }
-            /* Giống counter-booking: nút Người lớn / Trẻ em */
-            .booking-summary .ticket-type-selector {
-                display: flex;
-                gap: 8px;
-            }
-            .booking-summary .ticket-type-selector input[type="radio"] {
-                display: none;
-            }
-            .booking-summary .ticket-type-selector .ticket-type-btn {
-                flex: 1;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: 6px;
-                padding: 8px 12px;
-                border: 2px solid #262625;
-                background: transparent;
-                color: #ccc;
-                border-radius: 6px;
-                cursor: pointer;
-                transition: all 0.3s;
-                font-size: 13px;
-                font-weight: 500;
-                margin: 0;
-            }
-            .booking-summary .ticket-type-selector .ticket-type-btn:hover {
-                border-color: #d96c2c;
-                color: #d96c2c;
-            }
-            .booking-summary .ticket-type-selector .ticket-type-btn.active,
-            .booking-summary .ticket-type-selector label:has(input:checked) {
-                background: #d96c2c;
-                border-color: #d96c2c;
-                color: #fff;
-            }
-            .booking-summary .selected-seat-item .seat-item-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 10px;
-            }
-            .booking-summary .selected-seat-item .seat-price {
-                margin-left: 0;
-            }
-            .price-summary {
-                border-top: 1px solid #eee;
-                padding-top: 8px;
-                margin-top: 4px;
-                font-size: 14px;
-            }
-            .price-row.total {
-                display: flex;
-                justify-content: space-between;
-                font-weight: 600;
-            }
-            .price-amount {
-                color: #d96c2c;
-            }
-            .btn-remove-seat {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 22px;
-                height: 22px;
-                border-radius: 999px;
-                border: 1px solid #ff4b5c;
-                color: #ff4b5c;
-                background: transparent;
-                cursor: pointer;
-                font-size: 13px;
-                padding: 0;
-                text-decoration: none;
-            }
-            .btn-remove-seat:hover {
-                background: #ff4b5c;
-                color: #ffffff;
-            }
-            .seat-price {
-                margin-left: auto;
-                font-weight: 600;
-                color: #d96c2c;
-            }
-            .btn-update-total {
-                border-radius: 999px;
-                padding-inline: 16px;
-            }
-            .btn-proceed {
-                border-radius: 999px;
-                font-weight: 600;
-            }
-            .btn-clear-all {
-                border-radius: 999px;
-                padding-inline: 16px;
-            }
-            .seat-update-btn {
-                border-radius: 999px;
-                font-size: 13px;
-            }
-            .concession-counter {
-                background: rgba(255,255,255,0.04);
-                border-radius: 12px;
-                padding: 14px 16px;
-                border: 1px solid rgba(255,255,255,0.08);
-            }
-            .concession-counter h4 { font-size: 16px; }
-            .concession-empty { font-size: 14px; padding: 10px 0; }
-            .concession-section h4 { font-size: 15px; }
-            .concession-list { max-height: 200px; overflow-y: auto; }
-            .concession-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 6px 0;
-                border-bottom: 1px solid rgba(255,255,255,0.06);
-            }
-            .concession-row:last-child { border-bottom: none; }
-            .concession-name { flex: 1; font-weight: 500; }
-            .concession-price { color: #d96c2c; min-width: 70px; text-align: right; }
-            .concession-qty { width: 64px; text-align: center; }
-        </style>
-
         <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+        <script>
+        // Tự động submit khi chọn/bỏ chọn ghế để cập nhật danh sách bên phải
+        (function() {
+            var form = document.getElementById('formSeatMap');
+            if (!form) return;
+            var timer = null;
+            form.querySelectorAll('.seat-checkbox').forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                    if (timer) clearTimeout(timer);
+                    timer = setTimeout(function() { form.submit(); }, 200);
+                });
+            });
+            // Nút "Chọn món": hiện món ở Thông tin mua hàng + set qty mặc định
+            document.querySelectorAll('.btn-jump-concession').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var id = this.getAttribute('data-concession-id');
+                    var targetList = document.getElementById('summaryConcessionList');
+                    if (!id || !targetList) return;
+                    var row = targetList.querySelector('.summary-concession-row[data-concession-id=\"' + id + '\"]');
+                    if (!row) return;
+                    row.classList.remove('d-none');
+                    var qtyInput = row.querySelector('.summary-concession-qty');
+                    if (qtyInput) {
+                        var v = parseInt(qtyInput.value, 10) || 0;
+                        if (v <= 0) qtyInput.value = 1;
+                        qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        qtyInput.focus();
+                        qtyInput.select && qtyInput.select();
+                    }
+                    row.scrollIntoView && row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                });
+            });
+
+            // Nút bỏ món trong Thông tin mua hàng
+            document.querySelectorAll('[data-remove-concession]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var id = this.getAttribute('data-remove-concession');
+                    var row = this.closest('.summary-concession-row');
+                    if (!row) return;
+                    var qtyInput = row.querySelector('.summary-concession-qty');
+                    if (qtyInput) {
+                        qtyInput.value = 0;
+                        qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    row.classList.add('d-none');
+                });
+            });
+        })();
+
+        (function() {
+            var config = document.getElementById('bookingPricesConfig');
+            if (!config) return;
+            var adultPrice = parseFloat(config.getAttribute('data-adult')) || 0;
+            var childPrice = parseFloat(config.getAttribute('data-child')) || 0;
+            var surcharges = {};
+            try {
+                surcharges = JSON.parse(config.getAttribute('data-surcharges') || '{}');
+            } catch (e) {}
+
+            function getSeatPrice(seatType, ticketType) {
+                var base = (ticketType === 'CHILD') ? childPrice : adultPrice;
+                var rate = surcharges[seatType] || 0;
+                return Math.round(base * (1 + rate / 100));
+            }
+
+            function formatVnd(n) {
+                return (n || 0).toLocaleString('vi-VN') + ' ₫';
+            }
+
+            function refreshTicketTotal() {
+                var total = 0;
+                document.querySelectorAll('.selected-seat-item').forEach(function(item) {
+                    var seatType = item.getAttribute('data-seat-type') || 'NORMAL';
+                    var radio = item.querySelector('input[type="radio"]:checked');
+                    var ticketType = radio ? radio.value : 'ADULT';
+                    var price = getSeatPrice(seatType, ticketType);
+                    total += price;
+                    var priceEl = item.querySelector('.seat-price');
+                    if (priceEl) {
+                        priceEl.setAttribute('data-price', price);
+                        priceEl.textContent = formatVnd(price);
+                    }
+                });
+                var el = document.getElementById('ticketTotalEl');
+                if (el) el.textContent = formatVnd(total);
+                return total;
+            }
+
+            function refreshConcessionTotal() {
+                var total = 0;
+                document.querySelectorAll('.summary-concession-qty').forEach(function(input) {
+                    var qty = parseInt(input.value, 10) || 0;
+                    var price = parseFloat(input.getAttribute('data-price')) || 0;
+                    total += qty * price;
+                });
+                var el = document.getElementById('concessionTotalEl');
+                if (el) el.textContent = formatVnd(total);
+                return total;
+            }
+
+            function refreshGrandTotal() {
+                var ticket = 0;
+                document.querySelectorAll('.selected-seat-item .seat-price').forEach(function(el) {
+                    ticket += parseInt(el.getAttribute('data-price'), 10) || 0;
+                });
+                var concession = 0;
+                document.querySelectorAll('.summary-concession-qty').forEach(function(input) {
+                    var qty = parseInt(input.value, 10) || 0;
+                    concession += qty * (parseFloat(input.getAttribute('data-price')) || 0);
+                });
+                var el = document.getElementById('grandTotalEl');
+                if (el) el.textContent = formatVnd(ticket + concession);
+            }
+
+            document.querySelectorAll('.selected-seat-item').forEach(function(item) {
+                item.querySelectorAll('input[type="radio"]').forEach(function(radio) {
+                    radio.addEventListener('change', function() {
+                        refreshTicketTotal();
+                        refreshGrandTotal();
+                    });
+                });
+            });
+
+            document.querySelectorAll('.summary-concession-qty').forEach(function(input) {
+                input.addEventListener('input', function() { refreshConcessionTotal(); refreshGrandTotal(); });
+                input.addEventListener('change', function() { refreshConcessionTotal(); refreshGrandTotal(); });
+            });
+        })();
+        </script>
     </body>
 </html>
