@@ -215,6 +215,7 @@ public class Movies extends DBContext {
         params.add(offset);
         params.add(pageSize);
 
+        System.out.println("[DEBUG Movies.getMoviesShowingOnDateWithFilter] sql=" + sql + " params=" + params);
         try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 Object param = params.get(i);
@@ -235,7 +236,7 @@ public class Movies extends DBContext {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
+        System.out.println("[DEBUG Movies.getMoviesShowingOnDateWithFilter] result count=" + movies.size());
         return movies;
     }
 

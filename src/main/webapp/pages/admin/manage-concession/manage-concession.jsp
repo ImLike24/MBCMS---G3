@@ -1,6 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -19,7 +21,6 @@
             --light: #f8f9fa;
             --gray: #6c757d;
         }
-
         body { margin-left: 50px; background-color: #f5f7ff; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
         .main-content { margin-left: 280px; margin-right: 20px; padding: 1.5rem 0; }
         .page-header { background: white; border-radius: 12px; padding: 1.25rem 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
@@ -37,12 +38,10 @@
         .pagination .page-item.active .page-link { background-color: var(--primary); border-color: var(--primary); }
         .pagination .page-link { color: var(--primary); }
         .pagination .page-link:hover { background-color: #e9ecef; }
-
         @media (max-width: 992px) { .main-content { margin-left: 0; margin-right: 0; } }
     </style>
 </head>
 <body>
-
 <jsp:include page="/components/layout/dashboard/dashboard_header.jsp" />
 <jsp:include page="/components/layout/dashboard/admin_sidebar.jsp">
     <jsp:param name="page" value="concession"/>
@@ -60,14 +59,38 @@
         </a>
     </div>
 
-    <!-- Thông báo thành công / lỗi (giữ nguyên) -->
+    <!-- Thông báo thành công / lỗi -->
     <c:if test="${param.success == 'add'}">
         <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
             <i class="fas fa-check-circle me-2"></i> Thêm concession thành công!
             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
         </div>
     </c:if>
-    <!-- ... các alert khác tương tự ... -->
+    <c:if test="${param.success == 'update'}">
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="fas fa-check-circle me-2"></i> Cập nhật concession thành công!
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+    </c:if>
+    <c:if test="${param.success == 'delete'}">
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="fas fa-check-circle me-2"></i> Xóa concession thành công!
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+    </c:if>
+    <c:if test="${param.error != null}">
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Lỗi:
+            <c:choose>
+                <c:when test="${param.error == 'notfound'}">Không tìm thấy sản phẩm</c:when>
+                <c:when test="${param.error == 'invalid'}">Dữ liệu không hợp lệ</c:when>
+                <c:when test="${param.error == 'delete'}">Không thể xóa sản phẩm</c:when>
+                <c:otherwise>${param.error}</c:otherwise>
+            </c:choose>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+    </c:if>
 
     <div class="card-modern">
         <div class="card-body p-0">
@@ -85,8 +108,14 @@
                     <tbody>
                     <c:forEach var="item" items="${concessions}">
                         <tr>
-                            <td><div class="product-name">${item.concessionName}</div></td>
-                            <td><span class="badge bg-info-subtle text-info">${item.concessionType}</span></td>
+                            <td>
+                                <div class="product-name">
+                                    <c:out value="${item.concessionName}"/>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info-subtle text-info">${item.concessionType}</span>
+                            </td>
                             <td class="text-center">
                                 <c:choose>
                                     <c:when test="${item.quantity == null || item.quantity == 0}">
@@ -101,16 +130,18 @@
                                 </c:choose>
                             </td>
                             <td class="text-end fw-medium">
-                                <fmt:formatNumber value="${item.priceBase}" pattern="#,##0"/> ₫
+                                <fmt:formatNumber value="${item.priceBase}" pattern="#,##0"/>.000₫
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-2">
-                                    <a href="${pageContext.request.contextPath}/admin/concessions/edit?name=${item.concessionName}"
+                                    <a href="${pageContext.request.contextPath}/admin/concessions/edit?id=${item.concessionId}"
                                        class="btn btn-warning btn-action" title="Chỉnh sửa">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <a href="#" onclick="if(confirm('Xóa \"${item.concessionName}\"?'))
-                                       window.location='${pageContext.request.contextPath}/admin/concessions/delete?name=${item.concessionName}'"
+
+                                    <a href="#"
+                                       onclick="if(confirm('Xóa sản phẩm?')) 
+                                            window.location='${pageContext.request.contextPath}/admin/concessions/delete?id=${item.concessionId}'"
                                        class="btn btn-danger btn-action" title="Xóa">
                                         <i class="fas fa-trash-alt"></i>
                                     </a>
@@ -134,25 +165,20 @@
                 </table>
             </div>
 
-            <!-- PHÂN TRANG -->
+            <!-- Phân trang -->
             <c:if test="${totalPages > 1}">
                 <nav aria-label="Concession pagination" class="d-flex justify-content-center my-4">
                     <ul class="pagination mb-0">
-                        <!-- Previous -->
                         <li class="page-item ${currentPage == 0 ? 'disabled' : ''}">
                             <a class="page-link" href="?page=${currentPage - 1}&size=${pageSize}" aria-label="Previous">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
                         </li>
-
-                        <!-- Các trang số -->
                         <c:forEach begin="0" end="${totalPages - 1}" var="i">
                             <li class="page-item ${currentPage == i ? 'active' : ''}">
                                 <a class="page-link" href="?page=${i}&size=${pageSize}">${i + 1}</a>
                             </li>
                         </c:forEach>
-
-                        <!-- Next -->
                         <li class="page-item ${currentPage == totalPages - 1 ? 'disabled' : ''}">
                             <a class="page-link" href="?page=${currentPage + 1}&size=${pageSize}" aria-label="Next">
                                 <span aria-hidden="true">&raquo;</span>
@@ -162,7 +188,6 @@
                 </nav>
             </c:if>
 
-            <!-- Hiển thị thông tin phân trang -->
             <div class="text-center text-muted small mb-3">
                 Hiển thị ${concessions.size()} / ${totalItems} sản phẩm
                 (Trang ${currentPage + 1} / ${totalPages})

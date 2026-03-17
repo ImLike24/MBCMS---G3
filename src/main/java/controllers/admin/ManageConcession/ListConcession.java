@@ -67,6 +67,7 @@ public class ListConcession extends HttpServlet {
         List<Concession> concessionsForPage = allConcessions.subList(startIndex, endIndex);
 
         // Đặt các attribute cần cho JSP
+
         request.setAttribute("concessions", concessionsForPage);
         request.setAttribute("currentPage", currentPage);
         request.setAttribute("totalPages", totalPages);
