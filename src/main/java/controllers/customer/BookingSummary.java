@@ -215,6 +215,12 @@ public class BookingSummary extends HttpServlet {
             return;
         }
 
+        // Disable DB insert/payment side effects for online booking.
+        // Keep the selected seats in session and return to summary page.
+        session.setAttribute("paymentError", "Chức năng xử lý thanh toán online đang tạm thời bị tắt.");
+        response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
+        return;
+
         Showtimes showtimesRepo = null;
         OnlineTickets onlineTicketsRepo = null;
         Bookings bookingsRepo = null;
