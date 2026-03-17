@@ -80,37 +80,53 @@ GO
 -- role_id: 1=ADMIN, 2=BRANCH_MANAGER, 3=CINEMA_STAFF, 4=CUSTOMER
 -- Mật khẩu: 123456 (BCrypt hash sinh bởi utils.Password.hashPassword)
 -- Thêm branch_id: staff & manager thuộc chi nhánh 1, customer không gán chi nhánh
+SET IDENTITY_INSERT users ON;
+
 INSERT INTO users (
-    role_id, username, email, password, fullName, birthday, phone,
+    user_id, role_id, username, email, password, fullName, birthday, phone,
     status, points, total_accumulated_points, tier_id, branch_id
 ) VALUES
-(1, 'admin',    'admin@mbcms.vn',   '123456', N'Quản trị viên',             '1990-01-15', '0901234567', 'ACTIVE', 0, 0, 1, NULL),
-(3, 'staff1',   'staff1@mbcms.vn',  '123456', N'Nguyễn Văn A',             '1995-03-20', '0912345678', 'ACTIVE', 0, 0, 1, NULL),
-(3, 'staff2',   'staff2@mbcms.vn',  '123456', N'Trần Thị B',               '1998-07-10', '0923456789', 'ACTIVE', 0, 0, 1, NULL),
-(2, 'manager1', 'manager@mbcms.vn', '123456', N'Lê Quản lý Chi nhánh',     '1988-11-05', '0934567890', 'ACTIVE', 0, 0, 1, NULL),
-(4, 'customer1','customer1@gmail.com','123456',N'Phạm Văn Khách',         '2000-05-22', '0945678901', 'ACTIVE',150,150,2, NULL),
-(4, 'customer2','customer2@gmail.com','123456',N'Hoàng Thị Lan',          '1999-12-01', '0956789012', 'ACTIVE', 80, 80,1, NULL),
-(4, 'customer3','customer3@gmail.com','123456',N'Võ Minh Tuấn',           '2001-08-14', '0967890123', 'ACTIVE', 0,  0, 1, NULL);
+(1, 1, 'admin',    'admin@mbcms.vn',   '123456', N'Quản trị viên',             '1990-01-15', '0901234567', 'ACTIVE', 0, 0, 1, NULL),
+(2, 3, 'staff1',   'staff1@mbcms.vn',  '123456', N'Nguyễn Văn A',             '1995-03-20', '0912345678', 'ACTIVE', 0, 0, 1, NULL),
+(3, 3, 'staff2',   'staff2@mbcms.vn',  '123456', N'Trần Thị B',               '1998-07-10', '0923456789', 'ACTIVE', 0, 0, 1, NULL),
+(4, 2, 'manager1', 'manager@mbcms.vn', '123456', N'Lê Quản lý Chi nhánh',     '1988-11-05', '0934567890', 'ACTIVE', 0, 0, 1, NULL),
+(5, 4, 'customer1','customer1@gmail.com','123456',N'Phạm Văn Khách',         '2000-05-22', '0945678901', 'ACTIVE',150,150,2, NULL),
+(6, 4, 'customer2','customer2@gmail.com','123456',N'Hoàng Thị Lan',          '1999-12-01', '0956789012', 'ACTIVE', 80, 80,1, NULL),
+(7, 4, 'customer3','customer3@gmail.com','123456',N'Võ Minh Tuấn',           '2001-08-14', '0967890123', 'ACTIVE', 0,  0, 1, NULL),
+-- Branch 2 staff (để test isolation lịch làm việc theo chi nhánh)
+(8, 2, 'manager2', 'manager2@mbcms.vn','123456', N'Đinh Quản lý Thủ Đức',    '1985-06-15', '0934567891', 'ACTIVE', 0, 0, 1, NULL),
+(9, 3, 'staff3',   'staff3@mbcms.vn',  '123456', N'Nguyễn Thị C',            '1997-04-25', '0912345679', 'ACTIVE', 0, 0, 1, NULL);
+
+SET IDENTITY_INSERT users OFF;
 GO
 
 -- ========== 3. CINEMA BRANCHES ==========
 -- manager_id = 4 (manager1, user thứ 4 vừa insert)
-INSERT INTO cinema_branches (branch_name, address, phone, email, manager_id, is_active) VALUES
-(N'MB Cinema Quận 1', N'123 Nguyễn Huệ, Quận 1, TP.HCM', '028-38251234', 'q1@mbcinema.vn', 4, 1),
-(N'MB Cinema Thủ Đức', N'456 Võ Văn Ngân, Thủ Đức, TP.HCM', '028-38901234', 'thuduc@mbcinema.vn', 4, 1);
+SET IDENTITY_INSERT cinema_branches ON;
+
+INSERT INTO cinema_branches (branch_id, branch_name, address, phone, email, manager_id, is_active) VALUES
+(1, N'MB Cinema Quận 1', N'123 Nguyễn Huệ, Quận 1, TP.HCM', '028-38251234', 'q1@mbcinema.vn', 4, 1),
+(2, N'MB Cinema Thủ Đức', N'456 Võ Văn Ngân, Thủ Đức, TP.HCM', '028-38901234', 'thuduc@mbcinema.vn', 8, 1);
+
+SET IDENTITY_INSERT cinema_branches OFF;
 GO
 
 -- Cập nhật branch_id cho staff và manager sau khi cinema_branches đã được tạo
 UPDATE users SET branch_id = 1 WHERE user_id IN (2, 3, 4); -- staff1, staff2, manager1 thuộc chi nhánh 1
+UPDATE users SET branch_id = 2 WHERE user_id IN (8, 9);    -- manager2, staff3 thuộc chi nhánh 2
 GO
 
 -- ========== 4. SCREENING ROOMS ==========
-INSERT INTO screening_rooms (branch_id, room_name, total_seats, status) VALUES
-(1, 'Phòng 1', 0, 'ACTIVE'),
-(1, 'Phòng 2', 0, 'ACTIVE'),
-(1, 'Phòng 3', 0, 'ACTIVE'),
-(2, 'Phòng A', 0, 'ACTIVE'),
-(2, 'Phòng B', 0, 'ACTIVE');
+SET IDENTITY_INSERT screening_rooms ON;
+
+INSERT INTO screening_rooms (room_id, branch_id, room_name, total_seats, status) VALUES
+(1, 1, N'Phòng 1', 0, 'ACTIVE'),
+(2, 1, N'Phòng 2', 0, 'ACTIVE'),
+(3, 1, N'Phòng 3', 0, 'ACTIVE'),
+(4, 2, N'Phòng A', 0, 'ACTIVE'),
+(5, 2, N'Phòng B', 0, 'ACTIVE');
+
+SET IDENTITY_INSERT screening_rooms OFF;
 GO
 
 -- ========== 5. SEATS ==========
@@ -144,23 +160,31 @@ INSERT INTO seats (room_id, seat_code, seat_type, row_number, seat_number, statu
 GO
 
 -- ========== 6. GENRES ==========
-INSERT INTO genres (genre_name, description, is_active) VALUES
-(N'Hành động', N'Phim hành động, phiêu lưu', 1),
-(N'Tình cảm', N'Phim tình cảm, lãng mạn', 1),
-(N'Hài', N'Phim hài kịch', 1),
-(N'Kinh dị', N'Phim kinh dị, bí ẩn', 1),
-(N'Khoa học viễn tưởng', N'Sci-Fi, viễn tưởng', 1),
-(N'Hoạt hình', N'Phim hoạt hình', 1),
-(N'Gia đình', N'Phim dành cho gia đình', 1);
+SET IDENTITY_INSERT genres ON;
+
+INSERT INTO genres (genre_id, genre_name, description, is_active) VALUES
+(1, N'Hành động', N'Phim hành động, phiêu lưu', 1),
+(2, N'Tình cảm', N'Phim tình cảm, lãng mạn', 1),
+(3, N'Hài', N'Phim hài kịch', 1),
+(4, N'Kinh dị', N'Phim kinh dị, bí ẩn', 1),
+(5, N'Khoa học viễn tưởng', N'Sci-Fi, viễn tưởng', 1),
+(6, N'Hoạt hình', N'Phim hoạt hình', 1),
+(7, N'Gia đình', N'Phim dành cho gia đình', 1);
+
+SET IDENTITY_INSERT genres OFF;
 GO
 
 -- ========== 7. MOVIES ==========
-INSERT INTO movies (title, description, duration, release_date, end_date, rating, age_rating, director, cast, poster_url, is_active) VALUES
-(N'Làm Giàu Với Ma', N'Comedy horror về một nhóm bạn trẻ đụng độ ma và cố gắng kiếm tiền từ ma.', 110, '2025-01-10', '2025-03-31', 0, 'T16', N'Trấn Thành', N'Trấn Thành, Thu Trang, Tiến Luật', '/posters/lam-giau-voi-ma.jpg', 1),
-(N'Làm Mẹ 4.0', N'Phim gia đình hài cảm động về hành trình làm mẹ thời hiện đại.', 120, '2025-02-01', '2025-04-15', 0, 'T13', N'Vũ Ngọc Đãng', N'Minh Hằng, Hồng Ánh, Lê Khánh', '/posters/lam-me-40.jpg', 1),
-(N'Dune: Part Two', N'Paul Atreides hợp nhất với người Fremen để trả thù và bảo vệ vũ trụ.', 166, '2025-02-14', '2025-04-30', 0, 'T16', N'Denis Villeneuve', N'Timothée Chalamet, Zendaya', '/posters/dune2.jpg', 1),
-(N'Mai', N'Cuộc đời của Mai - người phụ nữ trung niên với nhiều biến cố và sự hồi sinh.', 131, '2024-02-10', '2025-02-28', 0, 'T18', N'Trấn Thành', N'Phương Anh Đào, Thu Trang', '/posters/mai.jpg', 1),
-(N'Inside Out 2', N'Riley lớn lên và những cảm xúc mới xuất hiện trong đầu cô.', 96, '2025-01-17', '2025-04-01', 0, 'T0', N'Kelsey Mann', N'(Lồng tiếng)', '/posters/inside-out-2.jpg', 1);
+SET IDENTITY_INSERT movies ON;
+
+INSERT INTO movies (movie_id, title, description, duration, release_date, end_date, rating, age_rating, director, cast, poster_url, is_active) VALUES
+(1, N'Làm Giàu Với Ma', N'Comedy horror về một nhóm bạn trẻ đụng độ ma và cố gắng kiếm tiền từ ma.', 110, '2025-01-10', '2025-03-31', 0, 'T16', N'Trấn Thành', N'Trấn Thành, Thu Trang, Tiến Luật', '/posters/lam-giau-voi-ma.jpg', 1),
+(2, N'Làm Mẹ 4.0', N'Phim gia đình hài cảm động về hành trình làm mẹ thời hiện đại.', 120, '2025-02-01', '2025-04-15', 0, 'T13', N'Vũ Ngọc Đãng', N'Minh Hằng, Hồng Ánh, Lê Khánh', '/posters/lam-me-40.jpg', 1),
+(3, N'Dune: Part Two', N'Paul Atreides hợp nhất với người Fremen để trả thù và bảo vệ vũ trụ.', 166, '2025-02-14', '2025-04-30', 0, 'T16', N'Denis Villeneuve', N'Timothée Chalamet, Zendaya', '/posters/dune2.jpg', 1),
+(4, N'Mai', N'Cuộc đời của Mai - người phụ nữ trung niên với nhiều biến cố và sự hồi sinh.', 131, '2024-02-10', '2025-02-28', 0, 'T18', N'Trấn Thành', N'Phương Anh Đào, Thu Trang', '/posters/mai.jpg', 1),
+(5, N'Inside Out 2', N'Riley lớn lên và những cảm xúc mới xuất hiện trong đầu cô.', 96, '2025-01-17', '2025-04-01', 0, 'T0', N'Kelsey Mann', N'(Lồng tiếng)', '/posters/inside-out-2.jpg', 1);
+
+SET IDENTITY_INSERT movies OFF;
 GO
 
 -- ========== 8. MOVIE_GENRES ==========
@@ -174,15 +198,19 @@ GO
 
 -- ========== 9. SHOWTIMES ==========
 -- movie_id, room_id, show_date, start_time, end_time, base_price, status
-INSERT INTO showtimes (movie_id, room_id, show_date, start_time, end_time, base_price, status) VALUES
-(1, 1, '2025-02-25', '09:00', '10:50', 75000, 'SCHEDULED'),
-(1, 1, '2025-02-25', '14:00', '15:50', 85000, 'SCHEDULED'),
-(1, 2, '2025-02-25', '19:00', '20:50', 95000, 'SCHEDULED'),
-(2, 1, '2025-02-25', '11:00', '13:00', 75000, 'SCHEDULED'),
-(3, 2, '2025-02-25', '21:00', '23:46', 95000, 'SCHEDULED'),
-(4, 3, '2025-02-24', '18:30', '20:41', 85000, 'SCHEDULED'),
-(5, 4, '2025-02-26', '10:00', '11:36', 65000, 'SCHEDULED'),
-(1, 4, '2025-02-26', '14:00', '15:50', 75000, 'SCHEDULED');
+SET IDENTITY_INSERT showtimes ON;
+
+INSERT INTO showtimes (showtime_id, movie_id, room_id, show_date, start_time, end_time, base_price, status) VALUES
+(1, 1, 1, '2025-02-25', '09:00', '10:50', 75000, 'SCHEDULED'),
+(2, 1, 1, '2025-02-25', '14:00', '15:50', 85000, 'SCHEDULED'),
+(3, 1, 2, '2025-02-25', '19:00', '20:50', 95000, 'SCHEDULED'),
+(4, 2, 1, '2025-02-25', '11:00', '13:00', 75000, 'SCHEDULED'),
+(5, 3, 2, '2025-02-25', '21:00', '23:46', 95000, 'SCHEDULED'),
+(6, 4, 3, '2025-02-24', '18:30', '20:41', 85000, 'SCHEDULED'),
+(7, 5, 4, '2025-02-26', '10:00', '11:36', 65000, 'SCHEDULED'),
+(8, 1, 4, '2025-02-26', '14:00', '15:50', 75000, 'SCHEDULED');
+
+SET IDENTITY_INSERT showtimes OFF;
 GO
 
 -- ========== 10. TICKET PRICES ==========
@@ -205,10 +233,14 @@ GO
 
 -- ========== 11. BOOKINGS ==========
 -- user_id 5,6,7 = customers. Showtime 1 = 2025-02-25 09:00 room 1.
-INSERT INTO bookings (user_id, showtime_id, booking_code, total_amount, discount_amount, final_amount, payment_method, payment_status, booking_time, payment_time, status) VALUES
-(5, 1, 'MB20250225001', 0, 0, 0, 'ZALOPAY', 'PAID', '2025-02-22 10:00:00', '2025-02-22 10:01:00', 'CONFIRMED'),
-(6, 2, 'MB20250225002', 0, 0, 0, 'BANKING', 'PAID', '2025-02-22 11:30:00', '2025-02-22 11:31:00', 'CONFIRMED'),
-(5, 4, 'MB20250225003', 0, 0, 0, 'ZALOPAY', 'PENDING', '2025-02-22 14:00:00', NULL, 'PENDING');
+SET IDENTITY_INSERT bookings ON;
+
+INSERT INTO bookings (booking_id, user_id, showtime_id, booking_code, total_amount, discount_amount, final_amount, payment_method, payment_status, booking_time, payment_time, status) VALUES
+(1, 5, 1, 'MB20250225001', 0, 0, 0, 'ZALOPAY', 'PAID', '2025-02-22 10:00:00', '2025-02-22 10:01:00', 'CONFIRMED'),
+(2, 6, 2, 'MB20250225002', 0, 0, 0, 'BANKING', 'PAID', '2025-02-22 11:30:00', '2025-02-22 11:31:00', 'CONFIRMED'),
+(3, 5, 4, 'MB20250225003', 0, 0, 0, 'ZALOPAY', 'PENDING', '2025-02-22 14:00:00', NULL, 'PENDING');
+
+SET IDENTITY_INSERT bookings OFF;
 GO
 
 -- ========== 12. ONLINE TICKETS ==========
@@ -240,11 +272,15 @@ WHERE NOT EXISTS (
 GO
 
 -- ========== 15. REVIEWS ==========
-INSERT INTO reviews (user_id, movie_id, rating, comment, helpful_count, is_verified) VALUES
-(5, 1, 4.5, N'Phim vui, diễn viên đạt. Đáng xem cuối tuần.', 3, 1),
-(6, 1, 4, N'Hài nhưng vẫn có cảm xúc.', 1, 1),
-(5, 4, 5, N'Mai hay và sâu sắc, khuyên xem.', 5, 1),
-(7, 2, 3.5, N'Phim gia đình ổn.', 0, 0);
+SET IDENTITY_INSERT reviews ON;
+
+INSERT INTO reviews (review_id, user_id, movie_id, rating, comment, helpful_count, is_verified) VALUES
+(1, 5, 1, 4.5, N'Phim vui, diễn viên đạt. Đáng xem cuối tuần.', 3, 1),
+(2, 6, 1, 4, N'Hài nhưng vẫn có cảm xúc.', 1, 1),
+(3, 5, 4, 5, N'Mai hay và sâu sắc, khuyên xem.', 5, 1),
+(4, 7, 2, 3.5, N'Phim gia đình ổn.', 0, 0);
+
+SET IDENTITY_INSERT reviews OFF;
 GO
 
 -- ========== 16. NOTIFICATIONS ==========
@@ -262,9 +298,13 @@ GO
 
 -- ========== 18. INVOICES ==========
 -- Invoice for online booking 1 (customer Phạm Văn Khách), branch 1, created_by staff 2.
-INSERT INTO invoices (invoice_code, booking_id, sale_channel, customer_name, customer_phone, customer_email, branch_id, total_amount, discount_amount, final_amount, payment_method, payment_status, status, created_by, notes) VALUES
-('INV-20250222-0001', 1, 'ONLINE', N'Phạm Văn Khách', '0945678901', 'customer1@gmail.com', 1, 150000, 0, 150000, 'ZALOPAY', 'PAID', 'ACTIVE', 2, NULL),
-('INV-20250222-0002', NULL, 'COUNTER', N'Nguyễn Văn X', '0978123456', NULL, 1, 75000, 0, 75000, 'CASH', 'PAID', 'ACTIVE', 2, N'Vé quầy');
+SET IDENTITY_INSERT invoices ON;
+
+INSERT INTO invoices (invoice_id, invoice_code, booking_id, sale_channel, customer_name, customer_phone, customer_email, branch_id, total_amount, discount_amount, final_amount, payment_method, payment_status, status, created_by, notes) VALUES
+(1, 'INV-20250222-0001', 1, 'ONLINE', N'Phạm Văn Khách', '0945678901', 'customer1@gmail.com', 1, 150000, 0, 150000, 'ZALOPAY', 'PAID', 'ACTIVE', 2, NULL),
+(2, 'INV-20250222-0002', NULL, 'COUNTER', N'Nguyễn Văn X', '0978123456', NULL, 1, 75000, 0, 75000, 'CASH', 'PAID', 'ACTIVE', 2, N'Vé quầy');
+
+SET IDENTITY_INSERT invoices OFF;
 GO
 
 -- ========== 19. INVOICE ITEMS ==========
@@ -282,9 +322,13 @@ GO
 
 -- ========== 21. VOUCHERS & USER_VOUCHERS (LOYALTY SAMPLE) ==========
 -- Vouchers (tham chiếu theo schema mới trong MBCMS.sql)
-INSERT INTO vouchers (voucher_name, voucher_type, voucher_code, points_cost, discount_amount, max_usage_limit, valid_days, is_active) VALUES
-(N'GIẢM 50K VÉ ONLINE', 'PUBLIC', 'SALE50K', 0, 50000, 0, 30, 1),
-(N'VOUCHER THÀNH VIÊN 30K', 'LOYALTY', NULL, 100, 30000, 1, 60, 1);
+SET IDENTITY_INSERT vouchers ON;
+
+INSERT INTO vouchers (voucher_id, voucher_name, voucher_type, voucher_code, points_cost, discount_amount, max_usage_limit, valid_days, is_active) VALUES
+(1, N'GIẢM 50K VÉ ONLINE', 'PUBLIC', 'SALE50K', 0, 50000, 0, 30, 1),
+(2, N'VOUCHER THÀNH VIÊN 30K', 'LOYALTY', NULL, 100, 30000, 1, 60, 1);
+
+SET IDENTITY_INSERT vouchers OFF;
 GO
 
 -- User vouchers (gán cho customer1 và customer2)
@@ -305,16 +349,26 @@ GO
 
 
 
--- Cập nhật các suất chiếu của 2 phim đầu tiên sang ngày 22/2/2026
-UPDATE showtimes 
-SET show_date = '2026-02-22',
-    status = 'SCHEDULED'
-WHERE movie_id IN (1, 2)
-  AND show_date < '2026-02-22';
+-- ========== SHOWTIMES TUẦN 16-22/3/2026 (để test với ngày hiện tại) ==========
+-- Branch 1 (rooms 1,2,3) và Branch 2 (rooms 4,5) đều có suất chiếu trong tuần này
+-- staff1/staff2 (branch 1) chỉ thấy showtime_id 9-13
+-- staff3 (branch 2) chỉ thấy showtime_id 14-18
+SET IDENTITY_INSERT showtimes ON;
 
+INSERT INTO showtimes (showtime_id, movie_id, room_id, show_date, start_time, end_time, base_price, status) VALUES
+-- Branch 1: Phòng 1,2,3
+(9,  1, 1, '2026-03-17', '09:00', '10:50', 75000, 'SCHEDULED'),
+(10, 3, 2, '2026-03-17', '14:00', '16:46', 95000, 'SCHEDULED'),
+(11, 5, 3, '2026-03-17', '10:00', '11:36', 65000, 'SCHEDULED'),
+(12, 2, 1, '2026-03-18', '11:00', '13:00', 75000, 'SCHEDULED'),
+(13, 4, 2, '2026-03-19', '19:00', '21:11', 85000, 'SCHEDULED'),
+-- Branch 2: Phòng A,B
+(14, 3, 4, '2026-03-17', '09:00', '11:46', 85000, 'SCHEDULED'),
+(15, 5, 5, '2026-03-17', '10:00', '11:36', 65000, 'SCHEDULED'),
+(16, 1, 4, '2026-03-17', '14:00', '15:50', 85000, 'SCHEDULED'),
+(17, 4, 5, '2026-03-18', '19:00', '21:11', 95000, 'SCHEDULED'),
+(18, 3, 4, '2026-03-19', '11:00', '13:46', 85000, 'SCHEDULED');
 
-UPDATE users
-SET 
-    points = ISNULL(points, 0) + 100,
-    total_accumulated_points = ISNULL(total_accumulated_points, 0) + 100
-WHERE phone = '0368005500';
+SET IDENTITY_INSERT showtimes OFF;
+GO
+

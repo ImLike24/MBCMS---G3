@@ -224,6 +224,9 @@
     <c:if test="${not empty error}">
         <div class="alert alert-danger">${error}</div>
     </c:if>
+    <c:if test="${not empty branchWarning}">
+        <div class="alert alert-warning">${branchWarning}</div>
+    </c:if>
 
     <div class="schedule-filter-bar">
         <h1>
@@ -251,11 +254,19 @@
                 <span><i class="fas fa-map-marker-alt"></i> ${branch.address}</span>
             </div>
 
+            <c:set var="hasAnyShowtime" value="false"/>
+            <c:forEach items="${weekDays}" var="wd">
+                <c:set var="dayKey" value="${wd.key}"/>
+                <c:if test="${not empty scheduleByBranch[branchId][dayKey]}">
+                    <c:set var="hasAnyShowtime" value="true"/>
+                </c:if>
+            </c:forEach>
+
             <c:choose>
-                <c:when test="${empty scheduleByBranch[branchId]}">
+                <c:when test="${not hasAnyShowtime}">
                     <div class="empty-schedule">
                         <i class="fas fa-info-circle"></i>
-                        Không có suất chiếu nào cho chi nhánh này trong ngày đã chọn.
+                        Không có suất chiếu nào trong tuần này cho chi nhánh này.
                     </div>
                 </c:when>
                 <c:otherwise>
