@@ -49,7 +49,7 @@ public class Concessions extends DBContext {
     // Lấy theo ID
     public Concession getConcessionById(int id) {
         String sql = """
-            SELECT concession_type, quantity, price_base,
+            SELECT concession_id, concession_type, quantity, price_base,
                    concession_name, added_by, created_at
             FROM concessions
             WHERE concession_id = ?
@@ -138,6 +138,7 @@ public class Concessions extends DBContext {
 
     private Concession mapRowToConcession(ResultSet rs) throws SQLException {
         Concession c = new Concession();
+        c.setConcessionId(rs.getInt("concession_id"));
         c.setConcessionType(rs.getString("concession_type"));
         c.setQuantity(rs.getObject("quantity", Integer.class));
         c.setPriceBase(rs.getDouble("price_base"));
