@@ -46,6 +46,20 @@ CREATE TABLE cinema_branches (
 );
 GO
 
+IF COL_LENGTH('users', 'branch_id') IS NULL
+BEGIN
+    ALTER TABLE users
+        ADD branch_id INT NULL;
+
+    ALTER TABLE users
+        ADD CONSTRAINT FK_users_branch
+            FOREIGN KEY (branch_id) REFERENCES cinema_branches(branch_id);
+
+    CREATE INDEX idx_users_branch
+        ON users(branch_id);
+END;
+GO
+
 CREATE TABLE screening_rooms (
     room_id INT IDENTITY(1,1) PRIMARY KEY,
     branch_id INT NOT NULL,
@@ -853,11 +867,10 @@ GO
 
 -- 6. CẬP NHẬT BẢNG BOOKINGS
 ALTER TABLE bookings
-ADD applied_voucher_id INT NULL;
+ADD applied_voucher_code VARCHAR(50) NULL;
 GO
 
-ALTER TABLE bookings
-ADD CONSTRAINT FK_booking_voucher FOREIGN KEY (applied_voucher_id) REFERENCES user_vouchers(id);
+CREATE INDEX idx_booking_voucher_code ON bookings(applied_voucher_code);
 GO
 
 -- 7. BẢNG CẤU HÌNH TÍCH ĐIỂM
@@ -877,9 +890,36 @@ VALUES (1, 10000, 1, 100);
 GO
 
 -- 11/03/2026
-ALTER TABLE [MBCMS].[dbo].[concessions]
-ADD concession_name NVARCHAR(255);
+-- ALTER TABLE [MBCMS].[dbo].[concessions]
+-- ADD concession_name NVARCHAR(255);
 
 -- 14/03/2026
-ALTER TABLE vouchers
-Update current_usage INT DEFAULT 0;
+IF COL_LENGTH('vouchers', 'current_usage') IS NULL
+BEGIN
+    ALTER TABLE vouchers
+        ADD current_usage INT DEFAULT 0;
+END;
+GO
+
+--16/03/2026: Chuyển bookings.applied_voucher_id -> applied_voucher_code (an toàn khi chạy nhiều lần)
+IF COL_LENGTH('bookings', 'applied_voucher_id') IS NOT NULL
+BEGIN
+    -- Xóa FK nếu tồn tại
+    IF EXISTS (
+        SELECT 1
+        FROM sys.foreign_keys
+        WHERE name = 'FK_booking_voucher'
+          AND parent_object_id = OBJECT_ID('bookings')
+    )
+    BEGIN
+        ALTER TABLE bookings DROP CONSTRAINT FK_booking_voucher;
+    END;
+
+    ALTER TABLE bookings DROP COLUMN applied_voucher_id;
+END;
+
+IF COL_LENGTH('bookings', 'applied_voucher_code') IS NULL
+BEGIN
+    ALTER TABLE bookings ADD applied_voucher_code VARCHAR(50) NULL;
+END;
+GO

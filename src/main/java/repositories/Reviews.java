@@ -71,4 +71,18 @@ public class Reviews extends DBContext {
             return false;
         }
     }
+    public double getAverageRating(int movieId) {
+        String sql = "SELECT AVG(CAST(rating AS DECIMAL(3,2))) as avg_rating FROM reviews WHERE movie_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, movieId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return Math.round(rs.getDouble("avg_rating") * 10.0) / 10.0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0.0;
+    }
 }

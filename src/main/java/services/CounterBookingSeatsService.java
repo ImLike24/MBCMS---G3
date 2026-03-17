@@ -1,10 +1,14 @@
 package services;
 
+import java.time.DayOfWeek;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import models.Showtime;
 import repositories.Showtimes;
+import repositories.TicketPrices;
+import repositories.SeatTypeSurcharges;
+import java.math.BigDecimal;
 
 /**
  * Business logic for seat selection screen at counter booking.
@@ -18,15 +22,24 @@ public class CounterBookingSeatsService {
         public Showtime showtime;
         public String formattedStartTime;
         public String formattedShowDate;
+        public Double adultPrice;
+        public Double childPrice;
+        public java.util.List<models.SeatTypeSurcharge> surchargeList;
     }
 
     public SeatsResult getSeatsForShowtime(int showtimeId) throws Exception {
         Showtimes showtimesRepo = null;
+        TicketPrices ticketPricesRepo = null;
+        SeatTypeSurcharges seatTypeSurchargesRepo = null;
         try {
+            System.out.println("[CounterBookingSeatsService] === getSeatsForShowtime ===");
+            System.out.println("[CounterBookingSeatsService] showtimeId = " + showtimeId);
+
             showtimesRepo = new Showtimes();
 
             Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
             if (showtimeDetails.isEmpty()) {
+                System.out.println("[CounterBookingSeatsService] showtimeDetails is empty -> return null");
                 return null;
             }
 
@@ -50,11 +63,70 @@ public class CounterBookingSeatsService {
                     result.formattedShowDate = showtime.getShowDate()
                             .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
                 }
+
+                // ===== Load dynamic ticket prices & seat-type surcharges for this showtime =====
+                Integer branchId = (Integer) showtimeDetails.get("branchId");
+                System.out.println("[CounterBookingSeatsService] branchId from showtimeDetails = " + branchId);
+                System.out.println("[CounterBookingSeatsService] showDate = " + showtime.getShowDate());
+                System.out.println("[CounterBookingSeatsService] startTime = " + showtime.getStartTime());
+                BigDecimal adultPriceBD = null;
+                BigDecimal childPriceBD = null;
+
+                if (branchId != null && showtime.getShowDate() != null && showtime.getStartTime() != null) {
+                    DayOfWeek dayOfWeek = showtime.getShowDate().getDayOfWeek();
+                    String dayType = (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY)
+                            ? "WEEKEND"
+                            : "WEEKDAY";
+
+                    int hour = showtime.getStartTime().getHour();
+                    String timeSlot;
+                    if (hour >= 6 && hour < 12) timeSlot = "MORNING";
+                    else if (hour >= 12 && hour < 17) timeSlot = "AFTERNOON";
+                    else if (hour >= 17 && hour < 22) timeSlot = "EVENING";
+                    else timeSlot = "NIGHT";
+
+                    System.out.println("[CounterBookingSeatsService] resolved dayType = " + dayType
+                            + ", timeSlot = " + timeSlot);
+
+                    ticketPricesRepo = new TicketPrices();
+                    adultPriceBD = ticketPricesRepo.getTicketPrice(branchId, "ADULT", dayType, timeSlot,
+                            showtime.getShowDate());
+                    childPriceBD = ticketPricesRepo.getTicketPrice(branchId, "CHILD", dayType, timeSlot,
+                            showtime.getShowDate());
+
+                    System.out.println("[CounterBookingSeatsService] adultPriceBD = " + adultPriceBD
+                            + ", childPriceBD = " + childPriceBD);
+
+                    seatTypeSurchargesRepo = new SeatTypeSurcharges();
+                    result.surchargeList = seatTypeSurchargesRepo.getSurchargesByBranch(branchId);
+                }
+
+                double adultPrice = (adultPriceBD != null) ? adultPriceBD.doubleValue() : 0.0;
+                double childPrice = (childPriceBD != null) ? childPriceBD.doubleValue() : 0.0;
+
+                if (adultPrice == 0.0 && showtime.getBasePrice() != null) {
+                    adultPrice = showtime.getBasePrice().doubleValue();
+                }
+                if (childPrice == 0.0) {
+                    childPrice = adultPrice;
+                }
+
+                result.adultPrice = adultPrice;
+                result.childPrice = childPrice;
+
+                System.out.println("[CounterBookingSeatsService] final adultPrice = " + adultPrice
+                        + ", childPrice = " + childPrice);
             }
             return result;
         } finally {
             if (showtimesRepo != null) {
                 showtimesRepo.closeConnection();
+            }
+            if (ticketPricesRepo != null) {
+                ticketPricesRepo.closeConnection();
+            }
+            if (seatTypeSurchargesRepo != null) {
+                seatTypeSurchargesRepo.closeConnection();
             }
         }
     }

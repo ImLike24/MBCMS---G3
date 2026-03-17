@@ -2,6 +2,7 @@ package repositories;
 
 import config.DBContext;
 import models.User;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,6 +10,10 @@ import java.sql.Timestamp;
 import java.util.List;
 
 public class Users extends DBContext {
+
+    public Connection getConnection() {
+        return connection;
+    }
 
     // Helper map ResultSet to User Object
     private User mapResultSetToUser(ResultSet rs) throws SQLException {
@@ -30,6 +35,14 @@ public class Users extends DBContext {
         
         u.setTotalAccumulatedPoints(rs.getInt("total_accumulated_points"));
         u.setTierId(rs.getInt("tier_id"));
+        try {
+            int bId = rs.getInt("branch_id");
+            if (!rs.wasNull()) {
+                u.setBranchId(bId);
+            }
+        } catch (SQLException ignore) {
+            // column may not exist in older schemas
+        }
 
         if (rs.getTimestamp("created_at") != null)
             u.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
@@ -84,9 +97,9 @@ public class Users extends DBContext {
     }
 
     public boolean insert(User u) {
-        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points, total_accumulated_points, tier_id) "
+        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points, total_accumulated_points, tier_id, branch_id) "
                 +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, u.getRoleId());
             st.setString(2, u.getUsername());
@@ -104,6 +117,11 @@ public class Users extends DBContext {
             st.setInt(9, u.getPoints() != null ? u.getPoints() : 0);
             st.setInt(10, u.getTotalAccumulatedPoints() != null ? u.getTotalAccumulatedPoints() : 0);
             st.setInt(11, u.getTierId() != null ? u.getTierId() : 1);
+            if (u.getBranchId() != null) {
+                st.setInt(12, u.getBranchId());
+            } else {
+                st.setNull(12, java.sql.Types.INTEGER);
+            }
 
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -463,6 +481,27 @@ public class Users extends DBContext {
             st.setInt(1, pointsToRedeem);
             st.setInt(2, userId);
             st.setInt(3, pointsToRedeem);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateTier(int userId) {
+        String sql = """
+            UPDATE users
+            SET tier_id = (
+                SELECT TOP 1 tier_id
+                FROM membership_tiers
+                WHERE min_points_required <= (SELECT total_accumulated_points FROM users WHERE user_id = ?)
+                ORDER BY min_points_required DESC
+            )
+            WHERE user_id = ?
+        """;
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, userId);
+            st.setInt(2, userId);
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

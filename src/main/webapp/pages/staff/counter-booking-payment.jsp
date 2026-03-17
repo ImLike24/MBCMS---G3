@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment - Counter Booking</title>
+    <title>Thanh toán - Bán vé quầy</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff.css">
     <style>
@@ -499,30 +499,30 @@
             <i class="fas fa-chevron-left"></i>
         </button>
 
-        <div class="sidebar-header">
+            <div class="sidebar-header">
             <div class="logo-icon">
                 <i class="fas fa-film"></i>
             </div>
-            <h3>Cinema Staff</h3>
+            <h3>Nhân viên rạp</h3>
         </div>
 
         <ul class="sidebar-menu">
             <li>
                 <a href="${pageContext.request.contextPath}/staff/dashboard">
                     <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
+                    <span>Bảng điều khiển</span>
                 </a>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/staff/counter-booking" class="active">
                     <i class="fas fa-ticket-alt"></i>
-                    <span>Counter Booking</span>
+                    <span>Bán vé tại quầy</span>
                 </a>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/staff/schedule">
                     <i class="fas fa-calendar-alt"></i>
-                    <span>View Working Schedule</span>
+                    <span>Lịch làm việc</span>
                 </a>
             </li>
         </ul>
@@ -545,12 +545,12 @@
                             <c:when test="${not empty sessionScope.user.fullName}">
                                 ${sessionScope.user.fullName}
                             </c:when>
-                            <c:otherwise>
-                                Staff User
+                                <c:otherwise>
+                                Nhân viên
                             </c:otherwise>
                         </c:choose>
                     </div>
-                    <div class="user-role">Cinema Staff</div>
+                    <div class="user-role">Nhân viên rạp</div>
                 </div>
             </div>
         </div>
@@ -561,32 +561,32 @@
     <div class="payment-container">
         <div class="payment-card" id="paymentCard">
             <div class="payment-header">
-                <h1><i class="fas fa-credit-card"></i> Payment</h1>
-                <p>Complete your counter booking</p>
+                <h1><i class="fas fa-credit-card"></i> Thanh toán</h1>
+                <p>Hoàn tất giao dịch bán vé tại quầy</p>
             </div>
 
             <div id="errorMessage" class="error-message"></div>
 
             <!-- Booking Summary -->
             <div class="booking-summary">
-                <h3><i class="fas fa-receipt"></i> Booking Summary</h3>
+                <h3><i class="fas fa-receipt"></i> Tóm tắt đặt chỗ</h3>
                 <div id="selectedSeatsDisplay"></div>
                 <div class="total-amount">
-                    <span class="label">Total Amount:</span>
+                    <span class="label">Tổng tiền:</span>
                     <span class="amount" id="totalAmountDisplay">0 VND</span>
                 </div>
                 <div id="discountInfo" style="display: none; margin-top: 8px; font-size: 13px;">
                     <div class="summary-row">
-                        <span class="summary-row-label">Total Discount (voucher + points):</span>
+                        <span class="summary-row-label">Tổng giảm giá (voucher + điểm):</span>
                         <span id="discountAmountDisplay">0 VND</span>
                     </div>
                     <div id="pointsUsageInfo" class="summary-row" style="color:#ccc;display:none;margin-top:3px;">
-                        <span class="summary-row-label">Points used:</span>
+                        <span class="summary-row-label">Điểm đã dùng:</span>
                         <span id="pointsUsedDisplay">0</span>
                         <span class="points-discount-inline">&nbsp;(≈ <span id="pointsDiscountDisplay">0 VND</span>)</span>
                     </div>
                     <div class="summary-row" style="margin-top:6px;">
-                        <span class="summary-row-label">Final Amount:</span>
+                        <span class="summary-row-label">Thành tiền:</span>
                         <strong id="finalAmountDisplay">0 VND</strong>
                     </div>
                 </div>
@@ -594,13 +594,13 @@
 
             <!-- Customer Information (Optional) -->
             <div class="form-section">
-                <h3><i class="fas fa-user"></i> Customer Information (Optional)</h3>
+                <h3><i class="fas fa-user"></i> Thông tin khách hàng (không bắt buộc)</h3>
                 <div class="form-group">
-                    <label for="customerName">Full Name</label>
-                    <input type="text" id="customerName" placeholder="Enter customer name">
+                    <label for="customerName">Họ và tên</label>
+                    <input type="text" id="customerName" placeholder="Nhập tên khách hàng">
                 </div>
                 <div class="form-group">
-                    <label for="customerPhone">Phone Number</label>
+                    <label for="customerPhone">Số điện thoại</label>
                     <input type="tel" id="customerPhone" placeholder="0123456789">
                 </div>
                 <div class="form-group">
@@ -613,42 +613,42 @@
             <div class="form-section">
                 <h3><i class="fas fa-ticket-alt"></i> Voucher</h3>
                 <div class="form-group">
-                    <label for="voucherCode">Voucher Code (optional)</label>
-                    <input type="text" id="voucherCode" placeholder="Enter voucher code if any">
+                    <label for="voucherCode">Mã voucher (không bắt buộc)</label>
+                    <input type="text" id="voucherCode" placeholder="Nhập mã voucher nếu có">
                 </div>
                 <div class="form-group">
                     <button type="button" class="btn btn-secondary" style="width:100%;justify-content:center;" onclick="suggestBestVoucher()">
-                        <i class="fas fa-magic"></i> Suggest Best Voucher (by phone)
+                        <i class="fas fa-magic"></i> Gợi ý voucher tốt nhất (theo số điện thoại)
                     </button>
                 </div>
                 <div class="form-group" id="voucherSuggestionsContainer" style="display:none; margin-top:8px;">
-                    <label style="color:#ccc;font-size:13px;">Available vouchers for this customer</label>
+                    <label style="color:#ccc;font-size:13px;">Các voucher hiện có của khách</label>
                     <div id="voucherSuggestionsList" style="max-height:160px; overflow-y:auto; border:1px solid #262625; border-radius:8px; padding:8px;"></div>
                 </div>
             </div>
 
             <!-- Loyalty Points (Optional) -->
             <div class="form-section">
-                <h3><i class="fas fa-star"></i> Loyalty Points (Optional)</h3>
+                <h3><i class="fas fa-star"></i> Điểm tích lũy (không bắt buộc)</h3>
                 <div class="form-group">
-                    <label for="redeemPoints">Points to Use</label>
-                    <input type="number" id="redeemPoints" min="0" step="1" placeholder="Enter points customer wants to redeem">
+                    <label for="redeemPoints">Số điểm muốn dùng</label>
+                    <input type="number" id="redeemPoints" min="0" step="1" placeholder="Nhập số điểm khách muốn sử dụng">
                 </div>
                 <p style="color:#777;font-size:12px;margin-top:-8px;">
-                    1 point = 1,000 VND discount. Actual usable points will be capped by the customer's balance and bill amount.
+                    1 điểm = giảm 1.000 VND. Số điểm thực tế sử dụng sẽ bị giới hạn bởi số điểm hiện có và số tiền hóa đơn.
                 </p>
                 <div class="form-group">
-                    <button type="button" class="btn btn-secondary" style="width:100%;justify-content:center;"
+                            <button type="button" class="btn btn-secondary" style="width:100%;justify-content:center;"
                             onclick="lookupLoyalty()">
-                        <i class="fas fa-search"></i> Check Current Points (by phone)
+                        <i class="fas fa-search"></i> Kiểm tra điểm hiện tại (theo số điện thoại)
                     </button>
                     <div id="loyaltyInfoText" class="loyalty-info-text"></div>
                     <div class="loyalty-actions">
                         <button type="button" class="btn btn-secondary" onclick="useAllPoints()">
-                            Use All Points
+                            Dùng toàn bộ điểm
                         </button>
                         <button type="button" class="btn btn-secondary" onclick="clearPointUsage()">
-                            Custom Amount
+                            Nhập số điểm tùy ý
                         </button>
                     </div>
                 </div>
@@ -656,19 +656,13 @@
 
             <!-- Payment Method -->
             <div class="form-section">
-                <h3><i class="fas fa-wallet"></i> Payment Method</h3>
+                <h3><i class="fas fa-wallet"></i> Phương thức thanh toán</h3>
                 <div class="payment-methods">
                     <label class="payment-method selected" id="cashMethod">
                         <input type="radio" name="paymentMethod" value="CASH" checked>
                         <i class="fas fa-money-bill-wave"></i>
-                        <div class="method-name">Cash</div>
-                        <div class="method-desc">Pay with cash at counter</div>
-                    </label>
-                    <label class="payment-method" id="bankingMethod">
-                        <input type="radio" name="paymentMethod" value="BANKING">
-                        <i class="fas fa-university"></i>
-                        <div class="method-name">Banking</div>
-                        <div class="method-desc">Bank transfer / QR code</div>
+                        <div class="method-name">Tiền mặt</div>
+                        <div class="method-desc">Thanh toán tiền mặt tại quầy</div>
                     </label>
                 </div>
             </div>
@@ -676,10 +670,10 @@
             <!-- Action Buttons -->
             <div class="action-buttons">
                 <button class="btn btn-secondary" onclick="goBack()">
-                    <i class="fas fa-arrow-left"></i> Back
+                    <i class="fas fa-arrow-left"></i> Quay lại
                 </button>
                 <button class="btn btn-primary" id="btnConfirmPayment" onclick="confirmPayment()">
-                    <i class="fas fa-check"></i> Confirm Payment
+                    <i class="fas fa-check"></i> Xác nhận thanh toán
                 </button>
             </div>
         </div>
@@ -696,22 +690,22 @@
             <div class="success-modal-icon">
                 <i class="fas fa-check"></i>
             </div>
-            <div class="success-modal-title">Payment Successful!</div>
-            <div class="success-modal-subtitle">Booking completed successfully</div>
+            <div class="success-modal-title">Thanh toán thành công!</div>
+            <div class="success-modal-subtitle">Đặt vé tại quầy đã hoàn tất</div>
             <button class="btn-export-receipt" onclick="exportReceipt()">
-                <i class="fas fa-file-export"></i> Export Receipt
+                <i class="fas fa-file-export"></i> Xuất hóa đơn
             </button>
             <button class="btn-new-booking" onclick="newBooking()">
-                <i class="fas fa-plus"></i> New Booking
+                <i class="fas fa-plus"></i> Tạo giao dịch mới
             </button>
         </div>
     </div>
 
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner">
+            <div class="loading-spinner">
             <div class="spinner"></div>
-            <p style="color: white; font-size: 18px;">Processing payment...</p>
+            <p style="color: white; font-size: 18px;">Đang xử lý thanh toán...</p>
         </div>
     </div>
 
@@ -733,6 +727,13 @@
         // Get booking data from sessionStorage
         const bookingData = JSON.parse(sessionStorage.getItem('bookingData') || '{}');
         const showtimeId = ${showtimeId};
+        const ticketPrices = {
+            ADULT: ${adultPrice},
+            CHILD: ${childPrice}
+        };
+        const surchargeRates = {
+            <c:forEach var="s" items="${surchargeList}" varStatus="vs">'${s.seatType}': ${s.surchargeRate}<c:if test="${!vs.last}">,</c:if></c:forEach>
+        };
         let ticketCodeGenerated = '';
         let lastFinalAmount = null;
         let lastDiscountAmount = null;
@@ -747,7 +748,7 @@
         // Display booking summary
         function displayBookingSummary() {
             if (!bookingData.seats || bookingData.seats.length === 0) {
-                document.getElementById('errorMessage').textContent = 'No seats selected. Please go back and select seats.';
+                document.getElementById('errorMessage').textContent = 'Chưa chọn ghế nào. Vui lòng quay lại để chọn ghế.';
                 document.getElementById('errorMessage').classList.add('show');
                 document.getElementById('btnConfirmPayment').disabled = true;
                 return;
@@ -767,14 +768,16 @@
         }
 
         function displayTotalAmount() {
-            const basePrice = ${showtimeDetails.showtime.basePrice};
             let totalAmount = 0;
 
             bookingData.seats.forEach(seat => {
-                let price = basePrice;
-                if (seat.seatType === 'VIP')    price *= 1.5;
-                else if (seat.seatType === 'COUPLE') price *= 2.0;
-                if (seat.ticketType === 'CHILD') price *= 0.7;
+                let price = ticketPrices[seat.ticketType] || ticketPrices['ADULT'] || 0;
+
+                const rate = surchargeRates[seat.seatType];
+                if (rate != null && rate > 0) {
+                    price *= (1 + rate / 100);
+                }
+
                 totalAmount += price;
             });
 
@@ -873,13 +876,13 @@
             errorEl.classList.remove('show');
 
             if (!phone) {
-                errorEl.textContent = 'Please enter customer phone to lookup vouchers.';
+                errorEl.textContent = 'Vui lòng nhập số điện thoại khách hàng để tra cứu voucher.';
                 errorEl.classList.add('show');
                 return;
             }
 
             if (!bookingData.seats || bookingData.seats.length === 0) {
-                errorEl.textContent = 'No seats selected. Please go back and select seats.';
+                errorEl.textContent = 'Chưa chọn ghế nào. Vui lòng quay lại để chọn ghế.';
                 errorEl.classList.add('show');
                 return;
             }
@@ -899,7 +902,7 @@
                 const data = await res.json();
 
                 if (!data.success) {
-                    errorEl.textContent = data.message || 'Cannot suggest voucher.';
+                    errorEl.textContent = data.message || 'Không thể gợi ý voucher.';
                     errorEl.classList.add('show');
                     return;
                 }
@@ -920,7 +923,7 @@
                         console.warn('Cannot render suggested voucher preview', e);
                     }
                 } else {
-                    errorEl.textContent = 'Customer has vouchers but none give additional discount for this bill.';
+                    errorEl.textContent = 'Khách có voucher nhưng không voucher nào giúp giảm thêm cho hóa đơn này.';
                     errorEl.classList.add('show');
                 }
 
@@ -944,7 +947,7 @@
             currentCustomerPoints = null;
 
             if (!phone) {
-                errorEl.textContent = 'Please enter customer phone to lookup points.';
+                errorEl.textContent = 'Vui lòng nhập số điện thoại khách hàng để tra cứu điểm.';
                 errorEl.classList.add('show');
                 return;
             }
@@ -959,7 +962,7 @@
                 const data = await res.json();
 
                 if (!data.success) {
-                    errorEl.textContent = data.message || 'Cannot load loyalty info.';
+                    errorEl.textContent = data.message || 'Không thể tải thông tin điểm thưởng.';
                     errorEl.classList.add('show');
                     return;
                 }
@@ -994,7 +997,7 @@
             const errorEl = document.getElementById('errorMessage');
 
             if (currentCustomerPoints == null) {
-                errorEl.textContent = 'Please check customer points first.';
+                errorEl.textContent = 'Vui lòng kiểm tra điểm của khách trước.';
                 errorEl.classList.add('show');
                 return;
             }
@@ -1098,10 +1101,10 @@
             let confirmed = false;
             try {
                 confirmed = await showConfirmModal({
-                    title:       'Confirm Payment',
-                    message:     'Are you sure you want to complete this payment?',
-                    confirmText: 'Confirm Payment',
-                    cancelText:  'Cancel',
+                    title:       'Xác nhận thanh toán',
+                    message:     'Bạn có chắc chắn muốn hoàn tất thanh toán này không?',
+                    confirmText: 'Xác nhận thanh toán',
+                    cancelText:  'Hủy',
                     icon:        'fas fa-credit-card'
                 });
                 
@@ -1109,7 +1112,7 @@
             } catch (error) {
                 console.error('Error showing modal:', error);
                 // Fallback to native confirm
-                confirmed = confirm('Are you sure you want to complete this payment?');
+                confirmed = confirm('Bạn có chắc chắn muốn hoàn tất thanh toán này không?');
             }
 
             if (!confirmed) {
@@ -1209,12 +1212,12 @@
                     sessionStorage.removeItem('bookingData');
                     document.getElementById('successModalOverlay').classList.add('active');
                 } else {
-                    throw new Error(result.message || 'Payment failed');
+                    throw new Error(result.message || 'Thanh toán thất bại');
                 }
             } catch (error) {
                 console.error('Payment error:', error);
                 document.getElementById('loadingOverlay').classList.remove('show');
-                document.getElementById('errorMessage').textContent = 'Payment failed: ' + error.message;
+                document.getElementById('errorMessage').textContent = 'Thanh toán thất bại: ' + error.message;
                 document.getElementById('errorMessage').classList.add('show');
                 document.getElementById('btnConfirmPayment').disabled = false;
             }

@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 import models.User;
 import repositories.Bookings;
 
-@WebServlet(name = "BookingPayment", urlPatterns = {"/customer/booking-payment"})
+@WebServlet(name = "BookingPayment", urlPatterns = { "/customer/booking-payment" })
 public class BookingPayment extends HttpServlet {
 
     private static final Logger LOGGER = Logger.getLogger(BookingPayment.class.getName());
@@ -69,6 +69,54 @@ public class BookingPayment extends HttpServlet {
             if (showtimeDetails == null || showtimeDetails.isEmpty()) {
                 response.sendRedirect(request.getContextPath() + "/customer/booking-tickets");
                 return;
+            }
+
+            // Voucher Validation
+            String voucherCode = request.getParameter("voucherCode");
+            if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+                repositories.Vouchers voucherRepo = new repositories.Vouchers();
+                repositories.UserVouchers uvRepo = new repositories.UserVouchers();
+
+                String code = voucherCode.trim();
+                models.Voucher v = voucherRepo.getActiveVoucherByCode(code);
+
+                if (v == null) {
+                    // Try to find a personalized voucher in user_vouchers
+                    User user = (User) session.getAttribute("user");
+                    if (user != null) {
+                        models.UserVoucher uv = uvRepo.getVoucherByCode(code);
+                        if (uv != null && uv.getUserId() == user.getUserId()) {
+                            if ("AVAILABLE".equals(uv.getStatus())) {
+                                if (uv.getExpiresAt() != null
+                                        && uv.getExpiresAt().isAfter(java.time.LocalDateTime.now())) {
+                                    v = voucherRepo.getVoucherById(uv.getVoucherId());
+                                } else {
+                                    request.setAttribute("voucherMessage", "Voucher đã hết hạn sử dụng.");
+                                }
+                            } else {
+                                request.setAttribute("voucherMessage",
+                                        "Voucher này đã được sử dụng hoặc không khả dụng.");
+                            }
+                        }
+                    }
+                }
+
+                if (v != null && request.getAttribute("voucherMessage") == null) {
+                    if (v.getIsActive() && v.getCurrentUsage() < v.getMaxUsageLimit()) {
+                        request.setAttribute("discountAmount", v.getDiscountAmount());
+                        request.setAttribute("appliedVoucherCode", code);
+                        request.setAttribute("voucherMessage", "Áp dụng thành công: " + v.getVoucherName());
+                        request.setAttribute("isVoucherValid", true);
+                    } else {
+                        request.setAttribute("voucherMessage", "Voucher đã hết lượt sử dụng hoặc đã bị tạm ngưng.");
+                        request.setAttribute("isVoucherValid", false);
+                    }
+                } else if (request.getAttribute("isVoucherValid") == null) {
+                    if (request.getAttribute("voucherMessage") == null) {
+                        request.setAttribute("voucherMessage", "Mã voucher không hợp lệ.");
+                    }
+                    request.setAttribute("isVoucherValid", false);
+                }
             }
 
             request.setAttribute("showtimeDetails", showtimeDetails);
@@ -144,15 +192,30 @@ public class BookingPayment extends HttpServlet {
 
         JsonObject requestData = gson.fromJson(jsonBuilder.toString(), JsonObject.class);
         String txnRef = requestData.get("txnRef").getAsString();
+        String voucherCode = requestData.has("voucherCode") ? requestData.get("voucherCode").getAsString() : null;
+
         Showtimes showtimesRepo = null;
+        repositories.Vouchers voucherRepo = new repositories.Vouchers();
 
         try {
-
             int showtimeId = requestData.get("showtimeId").getAsInt();
 
             JsonArray seatsArray = requestData.getAsJsonArray("seats");
 
             BigDecimal totalAmount = new BigDecimal(requestData.get("totalAmount").getAsString());
+            BigDecimal discountAmount = BigDecimal.ZERO;
+
+            if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+                models.Voucher v = voucherRepo.getActiveVoucherByCode(voucherCode);
+                if (v != null && v.getCurrentUsage() < v.getMaxUsageLimit()) {
+                    discountAmount = v.getDiscountAmount();
+                }
+            }
+
+            BigDecimal finalAmount = totalAmount.subtract(discountAmount);
+            if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
+                finalAmount = BigDecimal.ZERO;
+            }
 
             showtimesRepo = new Showtimes();
             for (int i = 0; i < seatsArray.size(); i++) {
@@ -163,15 +226,17 @@ public class BookingPayment extends HttpServlet {
                     return;
                 }
             }
-            
+
             Bookings bookingRepo = new Bookings();
-            
+
             int bookingId = bookingRepo.insertBooking(
-                   ((User) session.getAttribute("user")).getUserId(),
+                    ((User) session.getAttribute("user")).getUserId(),
                     showtimeId,
                     txnRef,
-                    totalAmount
-            );
+                    totalAmount,
+                    discountAmount,
+                    finalAmount,
+                    voucherCode);
 
             for (int i = 0; i < seatsArray.size(); i++) {
                 JsonObject seatObj = seatsArray.get(i).getAsJsonObject();
@@ -179,7 +244,8 @@ public class BookingPayment extends HttpServlet {
 
                 String ticketType = seatObj.has("ticketType") ? seatObj.get("ticketType").getAsString() : "ADULT";
                 String seatType = seatObj.has("seatType") ? seatObj.get("seatType").getAsString() : "NORMAL";
-                BigDecimal price = seatObj.has("price") ? new BigDecimal(seatObj.get("price").getAsString()) : BigDecimal.ZERO;
+                BigDecimal price = seatObj.has("price") ? new BigDecimal(seatObj.get("price").getAsString())
+                        : BigDecimal.ZERO;
 
                 bookingRepo.insertOnlineTicket(
                         bookingId,
@@ -187,8 +253,7 @@ public class BookingPayment extends HttpServlet {
                         seatId,
                         ticketType,
                         seatType,
-                        price
-                );
+                        price);
             }
 
             JsonObject respJson = new JsonObject();

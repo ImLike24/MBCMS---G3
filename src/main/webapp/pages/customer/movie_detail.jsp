@@ -183,7 +183,7 @@
                                         <span class="meta-item"><i class="fa fa-clock-o"></i> ${movie.duration}
                                             min</span>
                                         <span class="meta-item"><span class="rating-badge"><i class="fa fa-star"></i>
-                                                ${movie.rating}</span></span>
+                                                ${avgRating > 0 ? avgRating : "0.0"}</span></span>
                                         <span class="meta-item"
                                             style="border: 1px solid #777; padding: 2px 8px; border-radius: 4px;">${movie.ageRating}</span>
                                     </div>

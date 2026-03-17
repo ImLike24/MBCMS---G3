@@ -70,8 +70,10 @@
                             <i class="fa-solid fa-arrow-left me-1"></i>Quay lại
                         </a>
                         <div>
-                            <h3 class="fw-bold text-dark mb-0">
-                                <i class="fa-solid fa-calendar-plus me-2" style="color:#d96c2c;"></i>Lên lịch Suất Chiếu
+                            <h3 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-calendar-plus" style="color:#d96c2c;"></i> 
+                                <span>Lên lịch Suất Chiếu</span>
+                                <span class="badge bg-dark fs-6 rounded-pill px-3 py-2 ms-2"><i class="fa-solid fa-building me-1"></i> ${currentBranchName}</span>
                             </h3>
                             <nav aria-label="breadcrumb">
                                 <ol class="breadcrumb mb-0 mt-1">
