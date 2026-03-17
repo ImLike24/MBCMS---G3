@@ -1,9 +1,9 @@
 package controllers.staff;
 
 import models.User;
-import models.CounterTicket;
-import models.Voucher;
-import models.UserVoucher;
+import models.Showtime;
+import repositories.SeatTypeSurcharges;
+import repositories.TicketPrices;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
@@ -20,6 +20,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import services.CounterBookingService;
 import services.CounterBookingPaymentPageService;
+
+import java.math.BigDecimal;
+import java.time.DayOfWeek;
 
 @WebServlet(name = "counterBookingPayment", urlPatterns = {"/staff/counter-booking-payment"})
 public class CounterBookingPayment extends HttpServlet {
@@ -57,19 +60,81 @@ public class CounterBookingPayment extends HttpServlet {
             // Get showtime details
             CounterBookingPaymentPageService pageService = new CounterBookingPaymentPageService();
             Map<String, Object> showtimeDetails = pageService.getShowtimeDetails(showtimeId);
-            
+
             if (showtimeDetails.isEmpty()) {
                 request.setAttribute("error", "Showtime not found");
                 response.sendRedirect(request.getContextPath() + "/staff/counter-booking");
                 return;
             }
 
-            // Set attributes for JSP
+            // Basic attributes for JSP
             request.setAttribute("showtimeDetails", showtimeDetails);
             request.setAttribute("showtimeId", showtimeId);
             request.setAttribute("movieTitle", showtimeDetails.get("movieTitle"));
             request.setAttribute("branchName", showtimeDetails.get("branchName"));
-            
+
+            // ======= Dynamic ticket price & surcharge config (same logic as online booking) =======
+            Showtime showtime = (Showtime) showtimeDetails.get("showtime");
+            request.setAttribute("showtime", showtime);
+
+            Double basePrice = 0.0;
+            Double adultPrice = 0.0;
+            Double childPrice = 0.0;
+
+            Integer branchId = (Integer) showtimeDetails.get("branchId");
+            if (showtime != null && branchId != null) {
+                // Load seat-type surcharges for this branch so JSP can apply them
+                SeatTypeSurcharges surchargesRepo = new SeatTypeSurcharges();
+                try {
+                    var surchargeList = surchargesRepo.getSurchargesByBranch(branchId);
+                    request.setAttribute("surchargeList", surchargeList);
+                } finally {
+                    surchargesRepo.closeConnection();
+                }
+
+                // Compute base ticket prices from ticket_prices config
+                if (showtime.getShowDate() != null && showtime.getStartTime() != null) {
+                    DayOfWeek dayOfWeek = showtime.getShowDate().getDayOfWeek();
+                    String dayType = (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY)
+                            ? "WEEKEND"
+                            : "WEEKDAY";
+
+                    int hour = showtime.getStartTime().getHour();
+                    String timeSlot;
+                    if (hour >= 6 && hour < 12) timeSlot = "MORNING";
+                    else if (hour >= 12 && hour < 17) timeSlot = "AFTERNOON";
+                    else if (hour >= 17 && hour < 22) timeSlot = "EVENING";
+                    else timeSlot = "NIGHT";
+
+                    TicketPrices ticketPricesDao = new TicketPrices();
+                    try {
+                        BigDecimal adultPriceBD = ticketPricesDao.getTicketPrice(
+                                branchId, "ADULT", dayType, timeSlot, showtime.getShowDate());
+                        BigDecimal childPriceBD = ticketPricesDao.getTicketPrice(
+                                branchId, "CHILD", dayType, timeSlot, showtime.getShowDate());
+
+                        adultPrice = (adultPriceBD != null) ? adultPriceBD.doubleValue() : 0.0;
+                        childPrice = (childPriceBD != null) ? childPriceBD.doubleValue() : 0.0;
+                    } finally {
+                        ticketPricesDao.closeConnection();
+                    }
+                }
+
+                // Fallback: if no config found, use showtime.basePrice as adult price
+                if (adultPrice == 0.0 && showtime.getBasePrice() != null) {
+                    adultPrice = showtime.getBasePrice().doubleValue();
+                }
+                if (childPrice == 0.0) {
+                    childPrice = adultPrice;
+                }
+
+                basePrice = adultPrice;
+            }
+
+            request.setAttribute("adultPrice", adultPrice);
+            request.setAttribute("childPrice", childPrice);
+            request.setAttribute("basePrice", basePrice);
+
             request.getRequestDispatcher("/pages/staff/counter-booking-payment.jsp").forward(request, response);
             
         } catch (Exception e) {

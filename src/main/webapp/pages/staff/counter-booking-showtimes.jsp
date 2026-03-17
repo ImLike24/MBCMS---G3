@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select Showtime - Counter Booking</title>
+    <title>Chọn suất chiếu - Bán vé quầy</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff.css">
@@ -22,26 +22,26 @@
             <div class="logo-icon">
                 <i class="fas fa-film"></i>
             </div>
-            <h3>Cinema Staff</h3>
+            <h3>Nhân viên rạp</h3>
         </div>
 
         <ul class="sidebar-menu">
             <li>
                 <a href="${pageContext.request.contextPath}/staff/dashboard">
                     <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
+                    <span>Bảng điều khiển</span>
                 </a>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/staff/counter-booking" class="active">
                     <i class="fas fa-ticket-alt"></i>
-                    <span>Counter Booking</span>
+                    <span>Bán vé tại quầy</span>
                 </a>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/staff/schedule">
                     <i class="fas fa-calendar-alt"></i>
-                    <span>View Working Schedule</span>
+                    <span>Lịch làm việc</span>
                 </a>
             </li>
         </ul>
@@ -69,7 +69,7 @@
                             </c:otherwise>
                         </c:choose>
                     </div>
-                    <div class="user-role">Cinema Staff</div>
+                    <div class="user-role">Nhân viên rạp</div>
                 </div>
             </div>
         </div>
@@ -79,10 +79,10 @@
     <div class="main-content">
         <!-- Top Bar -->
         <div class="top-bar">
-            <h1><i class="fas fa-clock"></i> Select Showtime</h1>
+            <h1><i class="fas fa-clock"></i> Chọn suất chiếu</h1>
             <div class="top-bar-actions">
                 <a href="${pageContext.request.contextPath}/staff/counter-booking?date=${selectedDate}" class="btn-back">
-                    <i class="fas fa-arrow-left"></i> Back to Movies
+                    <i class="fas fa-arrow-left"></i> Quay lại danh sách phim
                 </a>
             </div>
         </div>
@@ -106,7 +106,7 @@
                             </div>
                             <div class="movie-meta-item">
                                 <i class="fas fa-clock"></i>
-                                <span>${movie.duration} min</span>
+                                <span>${movie.duration} phút</span>
                             </div>
                             <div class="movie-meta-item">
                                 <i class="fas fa-star"></i>
@@ -116,14 +116,14 @@
                                 <span class="badge">${movie.ageRating}</span>
                             </div>
                         </div>
-                        <c:if test="${not empty movie.description}">
+                            <c:if test="${not empty movie.description}">
                             <p class="movie-description">${movie.description}</p>
                         </c:if>
                         <div class="movie-meta">
                             <c:if test="${not empty movie.director}">
                                 <div class="movie-meta-item">
                                     <i class="fas fa-user-tie"></i>
-                                    <span><strong>Director:</strong> ${movie.director}</span>
+                                    <span><strong>Đạo diễn:</strong> ${movie.director}</span>
                                 </div>
                             </c:if>
                         </div>
@@ -134,12 +134,12 @@
 
         <!-- Showtimes Section -->
         <div class="showtimes-section">
-            <h3><i class="fas fa-calendar-day"></i> Available Showtimes</h3>
+            <h3><i class="fas fa-calendar-day"></i> Các suất chiếu khả dụng</h3>
             
             <div class="date-display">
                 <i class="fas fa-calendar-check"></i>
                 <span>
-                    <fmt:formatDate value="${java.sql.Date.valueOf(selectedDate)}" pattern="EEEE, MMMM dd, yyyy" />
+                    <fmt:formatDate value="${java.sql.Date.valueOf(selectedDate)}" pattern="EEEE, dd/MM/yyyy" />
                 </span>
             </div>
 
@@ -155,13 +155,13 @@
                                 <!-- Status Badge -->
                                 <c:choose>
                                     <c:when test="${availableSeats == 0}">
-                                        <span class="status-badge sold-out">Sold Out</span>
+                                        <span class="status-badge sold-out">Hết chỗ</span>
                                     </c:when>
                                     <c:when test="${availableSeats < totalSeats * 0.2}">
-                                        <span class="status-badge limited">Limited</span>
+                                        <span class="status-badge limited">Sắp hết</span>
                                     </c:when>
                                     <c:otherwise>
-                                        <span class="status-badge available">Available</span>
+                                        <span class="status-badge available">Còn chỗ</span>
                                     </c:otherwise>
                                 </c:choose>
 
@@ -174,11 +174,11 @@
                                 <!-- Info -->
                                 <div class="showtime-info">
                                     <div class="showtime-info-item">
-                                        <span>Base Price:</span>
+                                        <span>Giá cơ bản:</span>
                                         <strong><fmt:formatNumber value="${showtime.basePrice}" pattern="#,###" /> VND</strong>
                                     </div>
                                     <div class="showtime-info-item">
-                                        <span>Status:</span>
+                                        <span>Trạng thái:</span>
                                         <strong>${showtime.status}</strong>
                                     </div>
                                 </div>
@@ -187,7 +187,7 @@
                                 <div class="seat-availability ${!hasSeats ? 'no-seats' : ''}">
                                     <div class="seat-availability-label">
                                         <i class="fas fa-couch"></i>
-                                        <span>Available Seats</span>
+                                        <span>Ghế trống</span>
                                     </div>
                                     <span class="seat-count ${!hasSeats ? 'no-seats' : ''}">${availableSeats} / ${totalSeats}</span>
                                 </div>
@@ -197,12 +197,12 @@
                                     <c:when test="${hasSeats}">
                                         <a href="${pageContext.request.contextPath}/staff/counter-booking-seats?showtimeId=${showtime.showtimeId}" 
                                            class="btn-select-showtime">
-                                            <i class="fas fa-arrow-right"></i> Select Seats
+                                        <i class="fas fa-arrow-right"></i> Chọn ghế
                                         </a>
                                     </c:when>
                                     <c:otherwise>
                                         <button class="btn-select-showtime" disabled>
-                                            <i class="fas fa-ban"></i> Sold Out
+                                            <i class="fas fa-ban"></i> Hết chỗ
                                         </button>
                                     </c:otherwise>
                                 </c:choose>
@@ -213,8 +213,8 @@
                 <c:otherwise>
                     <div class="empty-state">
                         <i class="fas fa-calendar-times"></i>
-                        <h3>No Showtimes Available</h3>
-                        <p>There are no scheduled showtimes for this movie on the selected date.</p>
+                        <h3>Không có suất chiếu</h3>
+                        <p>Không có suất chiếu nào cho phim này trong ngày đã chọn.</p>
                     </div>
                 </c:otherwise>
             </c:choose>

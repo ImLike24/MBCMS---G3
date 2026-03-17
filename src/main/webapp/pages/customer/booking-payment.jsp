@@ -1,50 +1,56 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Thanh toán vé phim</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/font-awesome.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/global.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff.css">
-    <style>
-        .payment-card {
-            background: #1a1a1a;
-            border-radius: 15px;
-            padding: 30px;
-            color: #fff;
-        }
-        .payment-header h1 {
-            font-size: 26px;
-            color: #d96c2c;
-        }
-        .seat-tag {
-            display: inline-block;
-            background: rgba(255,255,255,0.08);
-            border-radius: 999px;
-            padding: 4px 10px;
-            margin: 3px;
-            font-size: 13px;
-        }
-        .total-amount {
-            font-size: 22px;
-            font-weight: 600;
-            color: #d96c2c;
-        }
-        .receipt-box {
-            background: #0c121d;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
+    <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+        <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+            <!DOCTYPE html>
+            <html lang="vi">
 
-<jsp:include page="/components/layout/Header.jsp"/>
+            <head>
+                <meta charset="UTF-8">
+                <title>Thanh toán vé phim</title>
+                <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
+                <link rel="stylesheet" href="${pageContext.request.contextPath}/css/font-awesome.min.css">
+                <link rel="stylesheet" href="${pageContext.request.contextPath}/css/global.css">
+                <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff.css">
+                <style>
+                    .payment-card {
+                        background: #1a1a1a;
+                        border-radius: 15px;
+                        padding: 30px;
+                        color: #fff;
+                    }
+
+                    .payment-header h1 {
+                        font-size: 26px;
+                        color: #d96c2c;
+                    }
+
+                    .seat-tag {
+                        display: inline-block;
+                        background: rgba(255, 255, 255, 0.08);
+                        border-radius: 999px;
+                        padding: 4px 10px;
+                        margin: 3px;
+                        font-size: 13px;
+                    }
+
+                    .total-amount {
+                        font-size: 22px;
+                        font-weight: 600;
+                        color: #d96c2c;
+                    }
+
+                    .receipt-box {
+                        background: #0c121d;
+                        border-radius: 10px;
+                        padding: 15px;
+                        margin-top: 20px;
+                    }
+                </style>
+            </head>
+
+            <body>
+
+                <jsp:include page="/components/layout/Header.jsp" />
 
 <div class="container mt-5 pt-4 mb-5">
     <div class="row justify-content-center">
@@ -175,6 +181,7 @@
     </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+                <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+            </body>
+
+            </html>

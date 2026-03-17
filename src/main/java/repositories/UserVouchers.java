@@ -84,24 +84,30 @@ public class UserVouchers extends DBContext {
     }
 
     public boolean redeemVoucher(int userId, models.Voucher voucher) {
-        String updateUsageSql = "UPDATE vouchers SET current_usage = current_usage + 1, is_active = CASE WHEN current_usage + 1 >= max_usage_limit THEN 0 ELSE is_active END WHERE voucher_id = ? AND current_usage < max_usage_limit AND is_active = 1";
         String updatePointsSql = "UPDATE users SET points = points - ? WHERE user_id = ? AND points >= ?";
         String insertUserVoucherSql = "INSERT INTO user_vouchers (user_id, voucher_id, voucher_code, expires_at) VALUES (?, ?, ?, ?)";
         String insertHistorySql = "INSERT INTO point_history (user_id, points_changed, transaction_type, description) VALUES (?, ?, 'REDEEM', ?)";
 
         String prefix = "";
-        if(voucher.getVoucherCode() != null){
+        if (voucher.getVoucherCode() != null) {
             prefix = voucher.getVoucherCode() + "-";
         }
         String randomCode = prefix + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
         java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now().plusDays(voucher.getValidDays());
 
         try {
-            // 1. Check and increment usage
-            try (PreparedStatement st = connection.prepareStatement(updateUsageSql)) {
+            // 1. Check if voucher is still active and valid
+            String checkActiveSql = "SELECT is_active, current_usage, max_usage_limit FROM vouchers WHERE voucher_id = ? AND is_active = 1";
+            try (PreparedStatement st = connection.prepareStatement(checkActiveSql)) {
                 st.setInt(1, voucher.getVoucherId());
-                if (st.executeUpdate() == 0) {
-                    return false;
+                try (ResultSet rs = st.executeQuery()) {
+                    if (rs.next()) {
+                        if (rs.getInt("current_usage") >= rs.getInt("max_usage_limit")) {
+                            return false; // Out of usage
+                        }
+                    } else {
+                        return false; // Inactive
+                    }
                 }
             }
 
@@ -140,7 +146,6 @@ public class UserVouchers extends DBContext {
     }
 
     public boolean savePublicVoucher(int userId, models.Voucher voucher) {
-        String updateUsageSql = "UPDATE vouchers SET current_usage = current_usage + 1, is_active = CASE WHEN current_usage + 1 >= max_usage_limit THEN 0 ELSE is_active END WHERE voucher_id = ? AND current_usage < max_usage_limit AND is_active = 1";
         String insertUserVoucherSql = "INSERT INTO user_vouchers (user_id, voucher_id, voucher_code, expires_at) VALUES (?, ?, ?, ?)";
 
         // Check if user already has this specific public voucher (status AVAILABLE)
@@ -157,11 +162,18 @@ public class UserVouchers extends DBContext {
 
             java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now().plusDays(voucher.getValidDays());
 
-            // 1. Check and increment usage
-            try (PreparedStatement st = connection.prepareStatement(updateUsageSql)) {
+            // 1. Check if voucher is still active and valid
+            String checkActiveSql = "SELECT is_active, current_usage, max_usage_limit FROM vouchers WHERE voucher_id = ? AND is_active = 1";
+            try (PreparedStatement st = connection.prepareStatement(checkActiveSql)) {
                 st.setInt(1, voucher.getVoucherId());
-                if (st.executeUpdate() == 0) {
-                    return false;
+                try (ResultSet rs = st.executeQuery()) {
+                    if (rs.next()) {
+                        if (rs.getInt("current_usage") >= rs.getInt("max_usage_limit")) {
+                            return false; // Out of usage
+                        }
+                    } else {
+                        return false; // Inactive
+                    }
                 }
             }
 
@@ -175,6 +187,19 @@ public class UserVouchers extends DBContext {
             }
 
             return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean markVoucherAsUsed(String code) {
+        if (code == null || code.trim().isEmpty())
+            return false;
+        String sql = "UPDATE user_vouchers SET status = 'USED', used_at = SYSDATETIME() WHERE voucher_code = ? AND status = 'AVAILABLE'";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, code.trim());
+            return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }

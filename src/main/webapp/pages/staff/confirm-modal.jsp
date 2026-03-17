@@ -8,16 +8,16 @@
         <div class="confirm-modal-icon">
             <i id="confirmModalIcon" class="fas fa-exclamation-triangle"></i>
         </div>
-        <h3 class="confirm-modal-title" id="confirmModalTitle">Confirm Action</h3>
-        <p class="confirm-modal-message" id="confirmModalMessage">Are you sure you want to proceed?</p>
+        <h3 class="confirm-modal-title" id="confirmModalTitle">Xác nhận thao tác</h3>
+        <p class="confirm-modal-message" id="confirmModalMessage">Bạn có chắc chắn muốn tiếp tục không?</p>
         <div class="confirm-modal-actions">
             <button class="confirm-modal-btn cancel" id="confirmModalCancelBtn">
                 <i class="fas fa-times"></i>
-                <span id="confirmModalCancelText">Cancel</span>
+                <span id="confirmModalCancelText">Hủy</span>
             </button>
             <button class="confirm-modal-btn confirm" id="confirmModalConfirmBtn">
                 <i class="fas fa-check"></i>
-                <span id="confirmModalConfirmText">Confirm</span>
+                <span id="confirmModalConfirmText">Xác nhận</span>
             </button>
         </div>
     </div>
@@ -69,18 +69,18 @@
             /**
              * Show a custom confirmation modal.
              * @param {object} options
-             * @param {string} [options.title='Confirm Action']
-             * @param {string} [options.message='Are you sure you want to proceed?']
-             * @param {string} [options.confirmText='Confirm']
-             * @param {string} [options.cancelText='Cancel']
+             * @param {string} [options.title='Xác nhận thao tác']
+             * @param {string} [options.message='Bạn có chắc chắn muốn tiếp tục không?']
+             * @param {string} [options.confirmText='Xác nhận']
+             * @param {string} [options.cancelText='Hủy']
              * @param {string} [options.icon='fas fa-exclamation-triangle']
              * @returns {Promise<boolean>}
              */
             window.showConfirmModal = function ({
-                title       = 'Confirm Action',
-                message     = 'Are you sure you want to proceed?',
-                confirmText = 'Confirm',
-                cancelText  = 'Cancel',
+                title       = 'Xác nhận thao tác',
+                message     = 'Bạn có chắc chắn muốn tiếp tục không?',
+                confirmText = 'Xác nhận',
+                cancelText  = 'Hủy',
                 icon        = 'fas fa-exclamation-triangle'
             } = {}) {
                 document.getElementById('confirmModalTitle').textContent       = title;

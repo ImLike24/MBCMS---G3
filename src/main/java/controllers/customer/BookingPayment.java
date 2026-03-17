@@ -33,7 +33,7 @@ import java.util.logging.Logger;
 import models.User;
 import repositories.Bookings;
 
-@WebServlet(name = "BookingPayment", urlPatterns = {"/customer/booking-payment"})
+@WebServlet(name = "BookingPayment", urlPatterns = { "/customer/booking-payment" })
 public class BookingPayment extends HttpServlet {
 
     private static final Logger LOGGER = Logger.getLogger(BookingPayment.class.getName());

@@ -3,7 +3,9 @@ package services;
 import java.time.LocalDate;
 import java.util.List;
 import models.Movie;
+import models.Genre;
 import repositories.Movies;
+import services.GenreService;
 
 /**
  * Business logic for listing movies for counter booking (staff).
@@ -17,6 +19,7 @@ public class CounterBookingMoviesService {
         public List<String> ageRatings;
         public LocalDate selectedDate;
         public boolean showAllMovies;
+        public List<Genre> genres;
     }
 
     private static final int PAGE_SIZE = 8;
@@ -26,8 +29,10 @@ public class CounterBookingMoviesService {
                                           String search,
                                           String genre,
                                           String ageRating,
-                                          int page) throws Exception {
-        Movies moviesRepo = null;
+                                          int page,
+                                          Integer branchId) throws Exception {
+            Movies moviesRepo = null;
+            GenreService genreService = new GenreService();
         try {
             moviesRepo = new Movies();
 
@@ -70,9 +75,9 @@ public class CounterBookingMoviesService {
                 ageRatings = moviesRepo.getAgeRatingsFromActiveMovies();
             } else {
                 movies = moviesRepo.getMoviesShowingOnDateWithFilter(
-                        selectedDate, search, genre, ageRating, page, PAGE_SIZE);
+                        selectedDate, search, genre, ageRating, branchId, page, PAGE_SIZE);
                 totalMovies = moviesRepo.countMoviesShowingOnDateWithFilter(
-                        selectedDate, search, genre, ageRating);
+                        selectedDate, search, genre, ageRating, branchId);
                 ageRatings = moviesRepo.getAgeRatingsShowingOnDate(selectedDate);
             }
 
@@ -85,6 +90,7 @@ public class CounterBookingMoviesService {
             result.ageRatings = ageRatings;
             result.selectedDate = selectedDate;
             result.showAllMovies = showAllMovies;
+            result.genres = genreService.getAllActiveGenres();
             return result;
         } finally {
             if (moviesRepo != null) {

@@ -158,7 +158,7 @@ public class Movies extends DBContext {
     // Get movies showing on date with search, filter and pagination
     public List<Movie> getMoviesShowingOnDateWithFilter(
             LocalDate date, String search, String genre,
-            String ageRating, int page, int pageSize) {
+            String ageRating, Integer branchId, int page, int pageSize) {
 
         List<Movie> movies = new ArrayList<>();
         StringBuilder sql = new StringBuilder();
@@ -167,6 +167,7 @@ public class Movies extends DBContext {
                 SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
                 FROM movies m
                 INNER JOIN showtimes s ON m.movie_id = s.movie_id
+                INNER JOIN screening_rooms sr ON s.room_id = sr.room_id
                 LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
                 LEFT JOIN genres g ON mg.genre_id = g.genre_id
                 WHERE m.is_active = 1
@@ -176,6 +177,10 @@ public class Movies extends DBContext {
 
         List<Object> params = new ArrayList<>();
         params.add(java.sql.Date.valueOf(date));
+        if (branchId != null) {
+            sql.append("AND sr.branch_id = ? ");
+            params.add(branchId);
+        }
 
         if (search != null && !search.trim().isEmpty()) {
             sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.cast LIKE ?) ");
@@ -235,13 +240,14 @@ public class Movies extends DBContext {
 
     // Count movies showing on date with search and filter
     public int countMoviesShowingOnDateWithFilter(
-            LocalDate date, String search, String genre, String ageRating) {
+            LocalDate date, String search, String genre, String ageRating, Integer branchId) {
 
         StringBuilder sql = new StringBuilder();
         sql.append("""
                 SELECT COUNT(DISTINCT m.movie_id)
                 FROM movies m
                 INNER JOIN showtimes s ON m.movie_id = s.movie_id
+                INNER JOIN screening_rooms sr ON s.room_id = sr.room_id
                 LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
                 LEFT JOIN genres g ON mg.genre_id = g.genre_id
                 WHERE m.is_active = 1
@@ -251,6 +257,10 @@ public class Movies extends DBContext {
 
         List<Object> params = new ArrayList<>();
         params.add(java.sql.Date.valueOf(date));
+        if (branchId != null) {
+            sql.append("AND sr.branch_id = ? ");
+            params.add(branchId);
+        }
 
         if (search != null && !search.trim().isEmpty()) {
             sql.append("AND (m.title LIKE ? OR m.director LIKE ? OR m.cast LIKE ?) ");
@@ -275,6 +285,8 @@ public class Movies extends DBContext {
                 Object param = params.get(i);
                 if (param instanceof java.sql.Date) {
                     pstmt.setDate(i + 1, (java.sql.Date) param);
+                } else if (param instanceof Integer) {
+                    pstmt.setInt(i + 1, (Integer) param);
                 } else {
                     pstmt.setString(i + 1, (String) param);
                 }
@@ -349,10 +361,17 @@ public class Movies extends DBContext {
         m.setDescription(rs.getString("description"));
         m.setDuration(rs.getInt("duration"));
 
-        // NEW: map genres
+        // NEW: map genres (loại bỏ trùng, giữ nguyên thứ tự)
         String genreList = rs.getString("genre_list");
         if (genreList != null && !genreList.isEmpty()) {
-            m.setGenres(List.of(genreList.split("\\s*,\\s*")));
+            String[] arr = genreList.split("\\s*,\\s*");
+            LinkedHashSet<String> distinct = new LinkedHashSet<>();
+            for (String g : arr) {
+                if (g != null && !g.isBlank()) {
+                    distinct.add(g);
+                }
+            }
+            m.setGenres(new ArrayList<>(distinct));
         } else {
             m.setGenres(new ArrayList<>());
         }
