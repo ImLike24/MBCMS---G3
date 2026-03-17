@@ -364,6 +364,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             LocalDate date = LocalDate.parse(request.getParameter("showDate"));
             LocalTime start = LocalTime.parse(request.getParameter("startTime"));
             LocalTime end = LocalTime.parse(request.getParameter("endTime"));
+            boolean overnight = "1".equals(request.getParameter("overnight"));
 
             // Verify showtime exists and is SCHEDULED
             Showtime existing = showtimesDao.getShowtimeById(showtimeId);
@@ -381,8 +382,11 @@ public class ManageShowtimesServlet extends HttpServlet {
                 return;
             }
 
-            // Validate end > start
-            if (!end.isAfter(start)) {
+            // Validate end > start (use LocalDateTime to support overnight showtimes)
+            LocalDate endDate = overnight ? date.plusDays(1) : date;
+            java.time.LocalDateTime startDT = java.time.LocalDateTime.of(date, start);
+            java.time.LocalDateTime endDT = java.time.LocalDateTime.of(endDate, end);
+            if (!endDT.isAfter(startDT)) {
                 forwardWithError(request, response, "edit", branchId,
                         "Giờ kết thúc phải sau giờ bắt đầu.", movieId, roomId, date, start, showtimeId);
                 return;
