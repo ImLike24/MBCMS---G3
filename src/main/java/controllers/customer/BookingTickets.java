@@ -28,6 +28,7 @@ import repositories.TicketPrices;
 @WebServlet(name = "TicketsOfChosenMovie", urlPatterns = { "/customer/booking-tickets" })
 public class BookingTickets extends HttpServlet {
 
+    // force update
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {

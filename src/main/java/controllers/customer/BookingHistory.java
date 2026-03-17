@@ -1,5 +1,12 @@
 package controllers.customer;
 
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -9,17 +16,10 @@ import jakarta.servlet.http.HttpSession;
 import models.User;
 import repositories.Invoices;
 
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @WebServlet(name = "BookingHistory", urlPatterns = {"/customer/booking-history"})
 public class BookingHistory extends HttpServlet {
 
+    // force update
     private static final int PAGE_SIZE = 5;
 
     @Override

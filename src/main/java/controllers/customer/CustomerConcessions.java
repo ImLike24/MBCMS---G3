@@ -15,13 +15,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Servlet trả danh sách đồ ăn / thức uống (concession) cho customer.
- * GET: JSON array [{ concessionId, concessionName, concessionType, priceBase, quantity }, ...]
- */
+
 @WebServlet(name = "CustomerConcessions", urlPatterns = { "/customer/concessions" })
 public class CustomerConcessions extends HttpServlet {
 
+    // force update
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {

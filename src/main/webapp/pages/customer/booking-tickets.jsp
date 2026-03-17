@@ -23,6 +23,7 @@
                 <div class="alert alert-danger">${error}</div>
             </c:if>
 
+            <!-- force update -->
             <div class="content-layout">
                     <!-- Left: form GET – chọn ghế rồi bấm "Cập nhật ghế đã chọn" -->
                     <form method="get" action="${pageContext.request.contextPath}/customer/booking-tickets" id="formSeatMap">

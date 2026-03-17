@@ -4,6 +4,7 @@
             <!DOCTYPE html>
             <html lang="vi">
 
+            <!-- force update -->
             <head>
                 <meta charset="UTF-8">
                 <title>Thanh toán vé phim</title>

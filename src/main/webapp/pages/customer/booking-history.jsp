@@ -74,7 +74,8 @@
         <p class="text-white-50 mb-0 mt-2">Các hóa đơn đặt vé online của bạn. Mỗi hóa đơn kèm chi tiết vé.</p>
     </div>
 
-    <!-- Bộ lọc: khoảng thời gian + danh sách phim -->
+    <!-- force update-->
+    <!-- Bo loc: Khoang thoi gian danh sach phim -->
     <form class="row g-3 mb-3" method="get" action="${pageContext.request.contextPath}/customer/booking-history">
         <div class="col-md-3 col-sm-6">
             <label class="form-label text-white-50 small mb-1">Khoảng thời gian</label>

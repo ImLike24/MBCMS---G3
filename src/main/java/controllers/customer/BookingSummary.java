@@ -36,6 +36,7 @@ import repositories.Bookings;
 @WebServlet(name = "BookingSummary", urlPatterns = { "/customer/booking-summary" })
 public class BookingSummary extends HttpServlet {
 
+    // force update
     private static final Logger LOGGER = Logger.getLogger(BookingSummary.class.getName());
 
     @Override
