@@ -63,7 +63,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Số điện thoại</label>
                             <input type="text" class="form-control" name="phone" value="${branch.phone}"
-                                   pattern="^(84|0[3|5|7|8|9])+([0-9]{8})$" maxlength="11"
+                                   pattern="^(84|0[3|5|7|8|9])+([0-9]{8})$" maxlength="10"
                                    title="Vui lòng nhập SĐT hợp lệ (VD: 0987654321)" placeholder="098..." ${disabledAttr}>
                         </div>
 
