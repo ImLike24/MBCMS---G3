@@ -134,16 +134,29 @@ public class TicketPricing extends HttpServlet {
             p.setTicketType(request.getParameter("ticketType"));
             p.setDayType(request.getParameter("dayType"));
             p.setTimeSlot(request.getParameter("timeSlot"));
-            p.setPrice(new BigDecimal(request.getParameter("price")));
-            p.setEffectiveFrom(LocalDate.parse(request.getParameter("effectiveFrom")));
 
-            String effTo = request.getParameter("effectiveTo");
-            if(effTo != null && !effTo.isEmpty()) {
-                p.setEffectiveTo(LocalDate.parse(effTo));
+            // CHỐNG LỖI PARSE GIÁ TIỀN (NumberFormatException)
+            try {
+                p.setPrice(new BigDecimal(request.getParameter("price")));
+            } catch (NumberFormatException ex) {
+                throw new Exception("Giá vé không hợp lệ. Vui lòng chỉ nhập số (VD: 50000).");
+            }
+
+            // CHỐNG LỖI PARSE NGÀY THÁNG (DateTimeParseException)
+            try {
+                p.setEffectiveFrom(LocalDate.parse(request.getParameter("effectiveFrom")));
+
+                String effTo = request.getParameter("effectiveTo");
+                if(effTo != null && !effTo.isEmpty()) {
+                    p.setEffectiveTo(LocalDate.parse(effTo));
+                }
+            } catch (java.time.format.DateTimeParseException ex) {
+                throw new Exception("Định dạng ngày tháng không hợp lệ. Vui lòng kiểm tra lại (Năm tối đa 4 chữ số).");
             }
 
             p.setActive(request.getParameter("isActive") != null);
 
+            // Call Service
             if ("create".equals(action)) {
                 priceService.createTicketPrice(p);
                 response.sendRedirect("ticket-prices?message=created");
@@ -154,10 +167,9 @@ public class TicketPricing extends HttpServlet {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("[Validation Info] - " + e.getMessage());
 
             request.setAttribute("errorMessage", e.getMessage());
-
             request.setAttribute("priceObj", p);
             request.getRequestDispatcher("/pages/manager/ticket-price/form.jsp").forward(request, response);
         }

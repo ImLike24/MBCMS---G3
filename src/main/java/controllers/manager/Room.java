@@ -119,6 +119,12 @@ public class Room extends HttpServlet {
             e.printStackTrace();
             request.setAttribute("error", e.getMessage());
             ScreeningRoom r = new ScreeningRoom();
+            if ("update".equals(action)) {
+                String idStr = request.getParameter("roomId");
+                if (idStr != null && !idStr.isEmpty()) {
+                    r.setRoomId(Integer.parseInt(idStr));
+                }
+            }
             r.setRoomName(request.getParameter("roomName"));
             r.setStatus(request.getParameter("status"));
             request.setAttribute("room", r);

@@ -69,9 +69,17 @@ public class Branch extends HttpServlet {
                     break;
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            request.setAttribute("error", "Lỗi hệ thống: " + e.getMessage());
-            listBranches(request, response);
+            request.setAttribute("error", e.getMessage());
+            CinemaBranch b = extractBranchFromRequest(request);
+
+            if ("update".equals(action)) {
+                String idStr = request.getParameter("branchId");
+                if (idStr != null && !idStr.isEmpty()) {
+                    b.setBranchId(Integer.parseInt(idStr));
+                }
+            }
+            request.setAttribute("branch", b);
+            request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
         }
     }
 

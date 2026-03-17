@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <title>${isViewMode ? 'Chi tiết' : (branch != null ? 'Cập nhật' : 'Thêm')} Chi nhánh</title>
+    <title>${not empty room.roomId ? 'Cập nhật' : 'Thêm'} Phòng chiếu</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin-layout.css">
@@ -19,24 +19,23 @@
     <div class="container-fluid" style="max-width: 900px;">
         <nav aria-label="breadcrumb" class="mb-4">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="branches" class="text-decoration-none text-secondary">Chi nhánh</a></li>
-                <li class="breadcrumb-item active" style="color: #d96c2c;">
+                <li class="breadcrumb-item active" style="color: #d96c2c;">${not empty room.roomId ? 'Cập nhật' : 'Thêm mới'}</li>                <li class="breadcrumb-item active" style="color: #d96c2c;">
                     ${isViewMode ? 'Chi tiết' : (branch != null ? 'Cập nhật' : 'Thêm mới')}
                 </li>
             </ol>
         </nav>
 
         <form action="branches" method="post">
-            <input type="hidden" name="action" value="${branch != null ? 'update' : 'create'}">
-            <c:if test="${branch != null}">
-                <input type="hidden" name="branchId" value="${branch.branchId}">
+            <input type="hidden" name="action" value="${not empty room.roomId ? 'update' : 'create'}">
+            <c:if test="${not empty room.roomId}">
+                <input type="hidden" name="roomId" value="${room.roomId}">
             </c:if>
 
             <div class="card card-custom">
                 <div class="card-header-custom">
                     <h5 class="mb-0 fw-bold">
-                        <i class="fa ${isViewMode ? 'fa-eye' : (branch != null ? 'fa-edit' : 'fa-plus-circle')} me-2" style="color: #d96c2c;"></i>
-                        ${isViewMode ? 'Thông tin chi tiết' : (branch != null ? 'Cập nhật thông tin' : 'Tạo chi nhánh mới')}
+                        <i class="fa ${isViewMode ? 'fa-eye' : (not empty branch.branchId ? 'fa-edit' : 'fa-plus-circle')} me-2" style="color: #d96c2c;"></i>
+                        ${isViewMode ? 'Thông tin chi tiết' : (not empty branch.branchId ? 'Cập nhật thông tin' : 'Tạo chi nhánh mới')}
                     </h5>
                 </div>
 

@@ -83,12 +83,10 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Áp dụng từ ngày <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" name="effectiveFrom" value="${priceObj.effectiveFrom}" required ${disabledAttr}>
-                        </div>
+                            <input type="date" class="form-control" name="effectiveFrom" value="${priceObj.effectiveFrom}" max="2100-12-31" required ${disabledAttr}>                        </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Kết thúc ngày (Tùy chọn)</label>
-                            <input type="date" class="form-control" name="effectiveTo" value="${priceObj.effectiveTo}" ${disabledAttr}>
-                        </div>
+                            <input type="date" class="form-control" name="effectiveTo" value="${priceObj.effectiveTo}" max="2100-12-31" ${disabledAttr}>                        </div>
                         <div class="col-12 mt-4">
                             <div class="form-check form-switch ps-5">
                                 <input class="form-check-input" type="checkbox" name="isActive"

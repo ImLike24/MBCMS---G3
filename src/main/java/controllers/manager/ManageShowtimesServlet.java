@@ -451,13 +451,43 @@ public class ManageShowtimesServlet extends HttpServlet {
         }
 
         // Dynamically compute base price
-        if (showtime.getShowDate() != null && showtime.getStartTime() != null) {
-            BigDecimal price = ticketPriceService.getBasePriceForShowtime(branchId, showtime.getShowDate(),
-                    showtime.getStartTime());
-            showtime.setBasePrice(price);
-        }
-
+        // Lấy thông tin chi tiết (Map) từ Database lên trước
         java.util.Map<String, Object> detail = showtimesDao.getActiveShowtimeDetail(showtimeId);
+
+        // Dynamically compute base price (Tính toán lại giá động)
+        if (showtime.getShowDate() != null && showtime.getStartTime() != null) {
+            repositories.TicketPrices ticketPricesDao = new repositories.TicketPrices();
+
+            // 1. Xác định Loại ngày (WEEKDAY / WEEKEND)
+            java.time.DayOfWeek dayOfWeek = showtime.getShowDate().getDayOfWeek();
+            String dayType = (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY)
+                    ? "WEEKEND" : "WEEKDAY";
+
+            // 2. Xác định Khung giờ
+            int hour = showtime.getStartTime().getHour();
+            String timeSlot;
+            if (hour >= 6 && hour < 12) timeSlot = "MORNING";
+            else if (hour >= 12 && hour < 17) timeSlot = "AFTERNOON";
+            else if (hour >= 17 && hour < 22) timeSlot = "EVENING";
+            else timeSlot = "NIGHT";
+
+            // 3. Query Database lấy giá vé mặc định (ADULT)
+            BigDecimal dynamicPrice = ticketPricesDao.getTicketPrice(
+                    branchId,
+                    "ADULT",
+                    dayType,
+                    timeSlot,
+                    showtime.getShowDate()
+            );
+
+            // 4. Ghi đè giá trị mới vào cả 2 object để đảm bảo JSP gọi cái nào cũng đúng
+            if (dynamicPrice != null) {
+                showtime.setBasePrice(dynamicPrice);
+                if (detail != null) {
+                    detail.put("base_price", dynamicPrice); // Ghi đè vào Map
+                }
+            }
+        }
 
         request.setAttribute("showtime", showtime);
         request.setAttribute("detail", detail);
