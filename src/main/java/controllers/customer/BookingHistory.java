@@ -75,14 +75,22 @@ public class BookingHistory extends HttpServlet {
             }
         }
 
+        // Lọc theo phim (danh sách hóa đơn có vé xem phim đó)
+        String movieTitle = request.getParameter("movie");
+        if (movieTitle != null && movieTitle.isBlank()) {
+            movieTitle = null;
+        }
+
         Invoices invoicesRepo = new Invoices();
         try {
-            int totalCount = invoicesRepo.countInvoicesByUserIdInRange(userId, from, to);
+            List<String> movieList = invoicesRepo.getDistinctMovieTitlesByUserId(userId);
+
+            int totalCount = invoicesRepo.countInvoicesByUserIdInRange(userId, from, to, movieTitle);
             int totalPages = (int) Math.ceil((double) totalCount / PAGE_SIZE);
             if (totalPages > 0 && page > totalPages) page = totalPages;
 
             int offset = (page - 1) * PAGE_SIZE;
-            List<Map<String, Object>> invoices = invoicesRepo.getInvoicesByUserIdInRange(userId, offset, PAGE_SIZE, from, to);
+            List<Map<String, Object>> invoices = invoicesRepo.getInvoicesByUserIdInRange(userId, offset, PAGE_SIZE, from, to, movieTitle);
 
             List<Integer> invoiceIds = invoices.stream()
                     .map(m -> {
@@ -107,6 +115,8 @@ public class BookingHistory extends HttpServlet {
             request.setAttribute("pageSize", PAGE_SIZE);
             request.setAttribute("totalPages", totalPages);
             request.setAttribute("range", range);
+            request.setAttribute("movieList", movieList != null ? movieList : List.of());
+            request.setAttribute("selectedMovie", movieTitle);
 
             request.getRequestDispatcher("/pages/customer/booking-history.jsp").forward(request, response);
         } finally {

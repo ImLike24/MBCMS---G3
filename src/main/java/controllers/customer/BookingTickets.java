@@ -426,7 +426,7 @@ public class BookingTickets extends HttpServlet {
             bookingData.put("concessions", bookingConcessions);
             session.setAttribute("customerBookingData", bookingData);
 
-            response.sendRedirect(request.getContextPath() + "/customer/booking-payment?showtimeId=" + showtimeId);
+            response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
 
         } catch (Exception e) {
             e.printStackTrace();

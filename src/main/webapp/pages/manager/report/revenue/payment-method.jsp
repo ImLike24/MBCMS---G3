@@ -39,9 +39,12 @@
                         <label class="form-label">Đến ngày</label>
                         <input type="date" class="form-control" name="toDate" value="${toDate}">
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
+                    <div class="col-md-4 d-flex align-items-end gap-2">
                         <button type="submit" class="btn btn-orange px-4">
                             <i class="fa fa-filter me-2"></i>Lọc
+                        </button>
+                        <button type="submit" name="generate" value="1" class="btn btn-outline-primary px-4">
+                            <i class="fa fa-file-export me-2"></i>Generate Report
                         </button>
                     </div>
                 </form>

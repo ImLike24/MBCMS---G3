@@ -133,7 +133,7 @@
                 </div>
 
                 <c:if test="${!paymentSuccess}">
-                <form method="post" action="${pageContext.request.contextPath}/customer/booking-payment">
+                <form method="post" action="${pageContext.request.contextPath}/customer/booking-summary">
                     <input type="hidden" name="showtimeId" value="${showtimeId}">
                     <div class="mb-4">
                         <h5 class="mb-3">Thông tin người nhận vé</h5>
@@ -151,12 +151,11 @@
 
                     <div class="mb-4">
                         <h5 class="mb-3">Phương thức thanh toán</h5>
-                        <p class="text-muted small mb-2">Khách hàng chỉ được thanh toán online.</p>
                         <p class="text-light"><i class="fa fa-credit-card"></i> Thanh toán online (BANKING)</p>
                     </div>
 
                     <div class="d-flex gap-3">
-                        <button type="submit" class="btn btn-primary flex-fill">Xác nhận thanh toán</button>
+                        <button type="submit" class="btn btn-primary flex-fill">Xử lý thanh toán</button>
                     </div>
                 </form>
                 </c:if>

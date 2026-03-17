@@ -103,6 +103,14 @@ public class Invoices extends DBContext {
      * from/to = null nghĩa là không giới hạn đầu/cuối.
      */
     public int countInvoicesByUserIdInRange(int userId, LocalDateTime from, LocalDateTime to) {
+        return countInvoicesByUserIdInRange(userId, from, to, null);
+    }
+
+    /**
+     * Count invoices for a user in a time range, optionally filtered by movie title (invoice_items.movie_title).
+     * movieTitle = null or blank means no movie filter.
+     */
+    public int countInvoicesByUserIdInRange(int userId, LocalDateTime from, LocalDateTime to, String movieTitle) {
         StringBuilder sql = new StringBuilder(
                 "SELECT COUNT(*) FROM invoices i INNER JOIN bookings b ON i.booking_id = b.booking_id " +
                         "WHERE b.user_id = ? AND i.status = 'ACTIVE'");
@@ -111,6 +119,9 @@ public class Invoices extends DBContext {
         }
         if (to != null) {
             sql.append(" AND i.created_at < ?");
+        }
+        if (movieTitle != null && !movieTitle.isBlank()) {
+            sql.append(" AND EXISTS (SELECT 1 FROM invoice_items ii WHERE ii.invoice_id = i.invoice_id AND ii.movie_title = ?)");
         }
 
         try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
@@ -122,6 +133,9 @@ public class Invoices extends DBContext {
             if (to != null) {
                 ps.setTimestamp(idx++, Timestamp.valueOf(to));
             }
+            if (movieTitle != null && !movieTitle.isBlank()) {
+                ps.setString(idx++, movieTitle.trim());
+            }
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
@@ -129,6 +143,32 @@ public class Invoices extends DBContext {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    /**
+     * Get distinct movie titles that appear in this user's invoice items (for filter dropdown).
+     */
+    public List<String> getDistinctMovieTitlesByUserId(int userId) {
+        List<String> list = new ArrayList<>();
+        String sql = """
+                SELECT DISTINCT ii.movie_title
+                FROM invoice_items ii
+                INNER JOIN invoices i ON ii.invoice_id = i.invoice_id
+                INNER JOIN bookings b ON i.booking_id = b.booking_id
+                WHERE b.user_id = ? AND i.status = 'ACTIVE' AND ii.movie_title IS NOT NULL AND ii.movie_title != ''
+                ORDER BY ii.movie_title
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(rs.getString("movie_title"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     /**
@@ -143,6 +183,15 @@ public class Invoices extends DBContext {
      */
     public List<Map<String, Object>> getInvoicesByUserIdInRange(int userId, int offset, int limit,
                                                                 LocalDateTime from, LocalDateTime to) {
+        return getInvoicesByUserIdInRange(userId, offset, limit, from, to, null);
+    }
+
+    /**
+     * Get paged list of invoices in a time range, optionally filtered by movie title.
+     * movieTitle = null or blank means no movie filter.
+     */
+    public List<Map<String, Object>> getInvoicesByUserIdInRange(int userId, int offset, int limit,
+                                                                LocalDateTime from, LocalDateTime to, String movieTitle) {
         List<Map<String, Object>> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder("""
                 SELECT i.invoice_id, i.invoice_code, i.created_at, i.total_amount, i.discount_amount, i.final_amount,
@@ -158,6 +207,9 @@ public class Invoices extends DBContext {
         if (to != null) {
             sql.append(" AND i.created_at < ?");
         }
+        if (movieTitle != null && !movieTitle.isBlank()) {
+            sql.append(" AND EXISTS (SELECT 1 FROM invoice_items ii WHERE ii.invoice_id = i.invoice_id AND ii.movie_title = ?)");
+        }
         sql.append(" ORDER BY i.created_at DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
 
         try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
@@ -168,6 +220,9 @@ public class Invoices extends DBContext {
             }
             if (to != null) {
                 ps.setTimestamp(idx++, Timestamp.valueOf(to));
+            }
+            if (movieTitle != null && !movieTitle.isBlank()) {
+                ps.setString(idx++, movieTitle.trim());
             }
             ps.setInt(idx++, offset);
             ps.setInt(idx, limit);

@@ -33,10 +33,10 @@ import java.util.logging.Logger;
 import models.User;
 import repositories.Bookings;
 
-@WebServlet(name = "BookingPayment", urlPatterns = { "/customer/booking-payment" })
-public class BookingPayment extends HttpServlet {
+@WebServlet(name = "BookingSummary", urlPatterns = { "/customer/booking-summary" })
+public class BookingSummary extends HttpServlet {
 
-    private static final Logger LOGGER = Logger.getLogger(BookingPayment.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(BookingSummary.class.getName());
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -152,14 +152,14 @@ public class BookingPayment extends HttpServlet {
                 session.removeAttribute("receiptTotal");
             }
 
-            request.getRequestDispatcher("/pages/customer/booking-payment.jsp").forward(request, response);
+            request.getRequestDispatcher("/pages/customer/booking-summary.jsp").forward(request, response);
         } catch (Exception e) {
 
             e.printStackTrace();
 
             request.setAttribute("error", e.getMessage());
 
-            request.getRequestDispatcher("/pages/customer/booking-payment.jsp")
+            request.getRequestDispatcher("/pages/customer/booking-summary.jsp")
                     .forward(request, response);
 
         } finally {
@@ -234,7 +234,7 @@ public class BookingPayment extends HttpServlet {
                 int bookingId = bookingsRepo.createOnlineBooking(customerId, showtimeId, paymentMethod, bookingCode);
             if (bookingId <= 0) {
                 session.setAttribute("paymentError", "Không thể tạo đơn đặt vé.");
-                response.sendRedirect(request.getContextPath() + "/customer/booking-payment?showtimeId=" + showtimeId);
+                response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
                 return;
             }
 
@@ -259,7 +259,7 @@ public class BookingPayment extends HttpServlet {
 
                 if (!showtimesRepo.isSeatAvailable(showtimeId, seatId)) {
                     session.setAttribute("paymentError", "Ghế " + (seatCode != null ? seatCode : seatId) + " đã được đặt trước.");
-                    response.sendRedirect(request.getContextPath() + "/customer/booking-payment?showtimeId=" + showtimeId);
+                    response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
                     return;
                 }
 
@@ -344,7 +344,7 @@ public class BookingPayment extends HttpServlet {
                             }
                         }
                     } catch (Exception ex) {
-                        LOGGER.log(Level.WARNING, "[BookingPayment] Loyalty points failed", ex);
+                        LOGGER.log(Level.WARNING, "[BookingSummary] Loyalty points failed", ex);
                     } finally {
                         if (pointHistoriesRepo != null) pointHistoriesRepo.closeConnection();
                         if (usersRepoLoyalty != null) usersRepoLoyalty.closeConnection();
@@ -360,14 +360,14 @@ public class BookingPayment extends HttpServlet {
             session.setAttribute("receiptSeats", receiptSeatsStr.toString());
             session.setAttribute("receiptTotal", totalAmount);
 
-            response.sendRedirect(request.getContextPath() + "/customer/booking-payment?showtimeId=" + showtimeId + "&success=1");
+            response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId + "&success=1");
 
         } catch (Exception e) {
 
             e.printStackTrace();
             LOGGER.log(Level.SEVERE, "[OnlineBookingPayment] Payment error", e);
             session.setAttribute("paymentError", "Lỗi thanh toán: " + e.getMessage());
-            response.sendRedirect(request.getContextPath() + "/customer/booking-payment?showtimeId=" + showtimeId);
+            response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
         } finally {
             if (invoicesRepo != null) {
                 invoicesRepo.closeConnection();
