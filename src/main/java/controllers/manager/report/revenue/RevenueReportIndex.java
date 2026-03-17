@@ -1,10 +1,5 @@
 package controllers.manager.report.revenue;
 
-import java.io.IOException;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -15,8 +10,14 @@ import models.User;
 import repositories.CinemaBranches;
 import repositories.RevenueReportRepository;
 
-@WebServlet(name = "BranchRevenue", urlPatterns = {"/manager/report/revenue/branch-report"})
-public class BranchRevenue extends HttpServlet {
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+@WebServlet(name = "RevenueReportIndex", urlPatterns = {"/manager/report/revenue"})
+public class RevenueReportIndex extends HttpServlet {
 
     private final CinemaBranches branchDao = new CinemaBranches();
     private final RevenueReportRepository revenueRepo = new RevenueReportRepository();
@@ -40,25 +41,16 @@ public class BranchRevenue extends HttpServlet {
             branchIds.add(b.getBranchId());
         }
 
-        LocalDate fromDate = parseDate(request.getParameter("fromDate"), LocalDate.now().minusDays(30));
-        LocalDate toDate = parseDate(request.getParameter("toDate"), LocalDate.now());
+        LocalDate toDate = LocalDate.now();
+        LocalDate fromDate = toDate.minusDays(30);
 
-        var rows = revenueRepo.getRevenueByBranch(branchIds, fromDate, toDate);
+        BigDecimal totalRevenue = revenueRepo.getTotalRevenue(branchIds, fromDate, toDate);
 
         request.setAttribute("managedBranches", managedBranches);
-        request.setAttribute("rows", rows);
+        request.setAttribute("totalRevenue", totalRevenue);
         request.setAttribute("fromDate", fromDate);
         request.setAttribute("toDate", toDate);
 
-        request.getRequestDispatcher("/pages/manager/report/revenue/branch-report.jsp").forward(request, response);
-    }
-
-    private LocalDate parseDate(String value, LocalDate defaultVal) {
-        if (value == null || value.trim().isEmpty()) return defaultVal;
-        try {
-            return LocalDate.parse(value);
-        } catch (Exception e) {
-            return defaultVal;
-        }
+        request.getRequestDispatcher("/pages/manager/report/revenue/index.jsp").forward(request, response);
     }
 }

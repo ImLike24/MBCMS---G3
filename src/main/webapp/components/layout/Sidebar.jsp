@@ -11,6 +11,8 @@
                         Trang chủ</a></li>
                 <li><a href="${pageContext.request.contextPath}/showtimes" onclick="toggleSidebar()"><i
                             class="fa fa-calendar"></i> Lịch chiếu</a></li>
+                <li><a href="${pageContext.request.contextPath}/movies" onclick="toggleSidebar()"><i
+                            class="fa fa-film"></i> Phim đang chiếu / Sắp chiếu</a></li>
 
                 <c:if test="${not empty sessionScope.user}">
                     <!-- Customer menu -->

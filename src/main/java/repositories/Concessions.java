@@ -8,12 +8,30 @@ import java.util.List;
 
 public class Concessions extends DBContext {
 
+    /** Danh sách đồ ăn/thức uống cho khách đặt (trang chọn ghế). */
+    public List<Concession> getConcessionsForSale() {
+        List<Concession> list = new ArrayList<>();
+        String sql = """
+            SELECT concession_id, concession_name, concession_type, price_base, quantity
+            FROM concessions
+            ORDER BY concession_type, concession_name
+            """;
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapRowForSale(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
     // Lấy tất cả
     public List<Concession> getAllConcessions() {
         List<Concession> list = new ArrayList<>();
         String sql = """
-            SELECT concession_type, quantity, price_base,
-                   concession_name, added_by, created_at
+            SELECT concession_id, concession_type, quantity, price_base, concession_name
             FROM concessions
             ORDER BY concession_name, concession_type
             """;
@@ -108,16 +126,28 @@ public class Concessions extends DBContext {
         }
     }
 
+    private Concession mapRowForSale(ResultSet rs) throws SQLException {
+        Concession c = new Concession();
+        c.setConcessionId(rs.getInt("concession_id"));
+        c.setConcessionName(rs.getString("concession_name"));
+        c.setConcessionType(rs.getString("concession_type"));
+        c.setPriceBase(rs.getDouble("price_base"));
+        c.setQuantity(rs.getObject("quantity", Integer.class));
+        return c;
+    }
+
     private Concession mapRowToConcession(ResultSet rs) throws SQLException {
         Concession c = new Concession();
         c.setConcessionType(rs.getString("concession_type"));
         c.setQuantity(rs.getObject("quantity", Integer.class));
+        c.setPriceBase(rs.getDouble("price_base"));
         c.setConcessionName(rs.getString("concession_name"));
-        // DB lưu theo nghìn -> nhân lại 1000
-        c.setPriceBase(rs.getDouble("price_base") * 1000);
-        c.setAddedBy(rs.getInt("added_by"));
-        Timestamp ts = rs.getTimestamp("created_at");
-        c.setCreatedAt(ts != null ? ts.toLocalDateTime() : null);
+        try {
+            c.setAddedBy(rs.getObject("added_by") != null ? rs.getInt("added_by") : null);
+        } catch (SQLException ignored) { }
+        try {
+            c.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
+        } catch (SQLException ignored) { }
         return c;
     }
 }

@@ -1,9 +1,4 @@
-package controllers.manager.report.revenue;
-
-import java.io.IOException;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+package controllers.manager.report.performance;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,13 +8,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import models.CinemaBranch;
 import models.User;
 import repositories.CinemaBranches;
-import repositories.RevenueReportRepository;
+import repositories.PerformanceReportRepository;
 
-@WebServlet(name = "BranchRevenue", urlPatterns = {"/manager/report/revenue/branch-report"})
-public class BranchRevenue extends HttpServlet {
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+@WebServlet(name = "PerformanceReportIndex", urlPatterns = {"/manager/report/performance"})
+public class PerformanceReportIndex extends HttpServlet {
 
     private final CinemaBranches branchDao = new CinemaBranches();
-    private final RevenueReportRepository revenueRepo = new RevenueReportRepository();
+    private final PerformanceReportRepository perfRepo = new PerformanceReportRepository();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -40,25 +40,16 @@ public class BranchRevenue extends HttpServlet {
             branchIds.add(b.getBranchId());
         }
 
-        LocalDate fromDate = parseDate(request.getParameter("fromDate"), LocalDate.now().minusDays(30));
-        LocalDate toDate = parseDate(request.getParameter("toDate"), LocalDate.now());
+        LocalDate toDate = LocalDate.now();
+        LocalDate fromDate = toDate.minusDays(30);
 
-        var rows = revenueRepo.getRevenueByBranch(branchIds, fromDate, toDate);
+        var operational = perfRepo.getOperationalReport(branchIds, fromDate, toDate);
 
         request.setAttribute("managedBranches", managedBranches);
-        request.setAttribute("rows", rows);
+        request.setAttribute("operational", operational);
         request.setAttribute("fromDate", fromDate);
         request.setAttribute("toDate", toDate);
 
-        request.getRequestDispatcher("/pages/manager/report/revenue/branch-report.jsp").forward(request, response);
-    }
-
-    private LocalDate parseDate(String value, LocalDate defaultVal) {
-        if (value == null || value.trim().isEmpty()) return defaultVal;
-        try {
-            return LocalDate.parse(value);
-        } catch (Exception e) {
-            return defaultVal;
-        }
+        request.getRequestDispatcher("/pages/manager/report/performance/index.jsp").forward(request, response);
     }
 }

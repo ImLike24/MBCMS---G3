@@ -6,9 +6,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import models.LoyaltyConfig;
 import models.MembershipTier;
 import models.PointHistory;
 import models.User;
+import repositories.LoyaltyConfigs;
 import repositories.MembershipTiers;
 import repositories.PointHistories;
 import repositories.Users;
@@ -33,6 +35,10 @@ public class MembershipServlet extends HttpServlet {
         Users userRepo = new Users();
         MembershipTiers tierRepo = new MembershipTiers();
         PointHistories historyRepo = new PointHistories();
+        LoyaltyConfigs loyaltyConfigsRepo = new LoyaltyConfigs();
+
+        // Cấu hình tích điểm từ Admin (thành viên tính điểm thăng hạng)
+        LoyaltyConfig loyaltyConfig = loyaltyConfigsRepo.getConfig();
 
         // Freshen user data from DB
         User user = userRepo.getUserById(sessionUser.getUserId());
@@ -72,6 +78,7 @@ public class MembershipServlet extends HttpServlet {
         request.setAttribute("allTiers", allTiers);
         request.setAttribute("progress", Math.round(progress * 100.0) / 100.0);
         request.setAttribute("pointHistory", history);
+        request.setAttribute("loyaltyConfig", loyaltyConfig);
 
         request.getRequestDispatcher("/pages/customer/membership.jsp").forward(request, response);
     }

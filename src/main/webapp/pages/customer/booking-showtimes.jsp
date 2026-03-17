@@ -145,98 +145,11 @@
                 </div>
             </c:when>
             <c:otherwise>
-                <p class="text-muted mt-2">
+                <div class="alert alert-info mt-3">
+                    <i class="fa fa-info-circle"></i>
                     Hiện chưa có suất chiếu nào cho ngày
-                    <fmt:formatDate value="${java.sql.Date.valueOf(selectedDate)}" pattern="dd/MM/yyyy"/>.
-                </p>
-
-                <!-- Dữ liệu thử nghiệm khi chưa có suất chiếu trong DB -->
-                <div class="showtimes-grid mt-3">
-                    <div class="showtime-card">
-                        <div class="showtime-time">
-                            <i class="fa fa-clock-o"></i>
-                            <span>09:10</span>
-                        </div>
-                        <div class="seat-availability">
-                            <div class="seat-availability-label">
-                                <i class="fa fa-chair"></i>
-                                <span>Suất chiếu thử nghiệm</span>
-                            </div>
-                            <div class="seat-count">Demo</div>
-                        </div>
-                        <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=1"
-                           class="btn-select-showtime">
-                            Chọn suất này
-                        </a>
-                    </div>
-                    <div class="showtime-card">
-                        <div class="showtime-time">
-                            <i class="fa fa-clock-o"></i>
-                            <span>11:00</span>
-                        </div>
-                        <div class="seat-availability">
-                            <div class="seat-availability-label">
-                                <i class="fa fa-chair"></i>
-                                <span>Suất chiếu thử nghiệm</span>
-                            </div>
-                            <div class="seat-count">Demo</div>
-                        </div>
-                        <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=2"
-                           class="btn-select-showtime">
-                            Chọn suất này
-                        </a>
-                    </div>
-                    <div class="showtime-card">
-                        <div class="showtime-time">
-                            <i class="fa fa-clock-o"></i>
-                            <span>13:00</span>
-                        </div>
-                        <div class="seat-availability">
-                            <div class="seat-availability-label">
-                                <i class="fa fa-chair"></i>
-                                <span>Suất chiếu thử nghiệm</span>
-                            </div>
-                            <div class="seat-count">Demo</div>
-                        </div>
-                        <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=3"
-                           class="btn-select-showtime">
-                            Chọn suất này
-                        </a>
-                    </div>
-                    <div class="showtime-card">
-                        <div class="showtime-time">
-                            <i class="fa fa-clock-o"></i>
-                            <span>15:30</span>
-                        </div>
-                        <div class="seat-availability">
-                            <div class="seat-availability-label">
-                                <i class="fa fa-chair"></i>
-                                <span>Suất chiếu thử nghiệm</span>
-                            </div>
-                            <div class="seat-count">Demo</div>
-                        </div>
-                        <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=4"
-                           class="btn-select-showtime">
-                            Chọn suất này
-                        </a>
-                    </div>
-                    <div class="showtime-card">
-                        <div class="showtime-time">
-                            <i class="fa fa-clock-o"></i>
-                            <span>19:45</span>
-                        </div>
-                        <div class="seat-availability">
-                            <div class="seat-availability-label">
-                                <i class="fa fa-chair"></i>
-                                <span>Suất chiếu thử nghiệm</span>
-                            </div>
-                            <div class="seat-count">Demo</div>
-                        </div>
-                        <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=5"
-                           class="btn-select-showtime">
-                            Chọn suất này
-                        </a>
-                    </div>
+                    <strong><fmt:formatDate value="${java.sql.Date.valueOf(selectedDate)}" pattern="dd/MM/yyyy"/></strong>.
+                    Vui lòng chọn ngày khác trong tuần.
                 </div>
             </c:otherwise>
         </c:choose>
@@ -250,25 +163,6 @@
 </div>
 
 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
-<script>
-    // Chan viec chon suat chieu da qua thoi gian chieu
-    document.addEventListener('click', function (e) {
-        const btn = e.target.closest('.btn-select-showtime');
-        if (!btn) return;
-
-        const dtStr = btn.getAttribute('data-start-datetime');
-        if (!dtStr) return;
-
-        const startTime = new Date(dtStr);
-        if (isNaN(startTime.getTime())) return;
-
-        const now = new Date();
-        if (startTime <= now) {
-            e.preventDefault();
-            alert('Đã qua thời gian chiếu phim');
-        }
-    });
-</script>
 </body>
 </html>
 
