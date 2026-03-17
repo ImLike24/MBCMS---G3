@@ -80,7 +80,8 @@ public class ManageShowtimesServlet extends HttpServlet {
         request.setAttribute("managedBranches", managedBranches);
         request.setAttribute("selectedBranchId", selectedBranchId);
 
-        String branchName = managedBranches.stream().filter(b -> b.getBranchId() == finalSelectedId).findFirst().map(CinemaBranch::getBranchName).orElse("N/A");
+        String branchName = managedBranches.stream().filter(b -> b.getBranchId() == finalSelectedId).findFirst()
+                .map(CinemaBranch::getBranchName).orElse("N/A");
         request.setAttribute("currentBranchName", branchName);
 
         String action = request.getParameter("action");
@@ -465,15 +466,20 @@ public class ManageShowtimesServlet extends HttpServlet {
             // 1. Xác định Loại ngày (WEEKDAY / WEEKEND)
             java.time.DayOfWeek dayOfWeek = showtime.getShowDate().getDayOfWeek();
             String dayType = (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY)
-                    ? "WEEKEND" : "WEEKDAY";
+                    ? "WEEKEND"
+                    : "WEEKDAY";
 
             // 2. Xác định Khung giờ
             int hour = showtime.getStartTime().getHour();
             String timeSlot;
-            if (hour >= 6 && hour < 12) timeSlot = "MORNING";
-            else if (hour >= 12 && hour < 17) timeSlot = "AFTERNOON";
-            else if (hour >= 17 && hour < 22) timeSlot = "EVENING";
-            else timeSlot = "NIGHT";
+            if (hour >= 6 && hour < 12)
+                timeSlot = "MORNING";
+            else if (hour >= 12 && hour < 17)
+                timeSlot = "AFTERNOON";
+            else if (hour >= 17 && hour < 22)
+                timeSlot = "EVENING";
+            else
+                timeSlot = "NIGHT";
 
             // 3. Query Database lấy giá vé mặc định (ADULT)
             BigDecimal dynamicPrice = ticketPricesDao.getTicketPrice(
@@ -481,14 +487,13 @@ public class ManageShowtimesServlet extends HttpServlet {
                     "ADULT",
                     dayType,
                     timeSlot,
-                    showtime.getShowDate()
-            );
+                    showtime.getShowDate());
 
             // 4. Ghi đè giá trị mới vào cả 2 object để đảm bảo JSP gọi cái nào cũng đúng
             if (dynamicPrice != null) {
                 showtime.setBasePrice(dynamicPrice);
                 if (detail != null) {
-                    detail.put("base_price", dynamicPrice); // Ghi đè vào Map
+                    detail.put("basePrice", dynamicPrice);
                 }
             }
         }
@@ -721,6 +726,7 @@ public class ManageShowtimesServlet extends HttpServlet {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Removed: getBranchOfCurrentUser method is no longer used since branchId is taken from session attribute
+    // Removed: getBranchOfCurrentUser method is no longer used since branchId is
+    // taken from session attribute
     // ─────────────────────────────────────────────────────────────────────────
 }
