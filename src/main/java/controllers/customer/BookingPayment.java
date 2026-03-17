@@ -110,6 +110,14 @@ public class BookingPayment extends HttpServlet {
             request.setAttribute("branchName", showtimeDetails.get("branchName"));
             request.setAttribute("selectedSeats", selectedSeats != null ? selectedSeats : new ArrayList<>());
             request.setAttribute("totalAmount", totalAmount != null ? totalAmount : java.math.BigDecimal.ZERO);
+            List<Map<String, Object>> concessions = (List<Map<String, Object>>) (bookingData != null ? bookingData.get("concessions") : null);
+            request.setAttribute("selectedConcessions", concessions != null ? concessions : new ArrayList<>());
+            java.math.BigDecimal ticketTotalAttr = bookingData != null ? (java.math.BigDecimal) bookingData.get("ticketTotal") : null;
+            java.math.BigDecimal concessionTotalAttr = bookingData != null ? (java.math.BigDecimal) bookingData.get("concessionTotal") : null;
+            if (ticketTotalAttr == null) ticketTotalAttr = totalAmount;
+            if (concessionTotalAttr == null) concessionTotalAttr = java.math.BigDecimal.ZERO;
+            request.setAttribute("ticketTotal", ticketTotalAttr);
+            request.setAttribute("concessionTotal", concessionTotalAttr);
 
             Showtime st = (Showtime) showtimeDetails.get("showtime");
 

@@ -95,9 +95,33 @@ public class Invoices extends DBContext {
      * Count invoices for a user (online bookings only).
      */
     public int countInvoicesByUserId(int userId) {
-        String sql = "SELECT COUNT(*) FROM invoices i INNER JOIN bookings b ON i.booking_id = b.booking_id WHERE b.user_id = ? AND i.status = 'ACTIVE'";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, userId);
+        return countInvoicesByUserIdInRange(userId, null, null);
+    }
+
+    /**
+     * Count invoices for a user in a time range (created_at between [from, to)).
+     * from/to = null nghĩa là không giới hạn đầu/cuối.
+     */
+    public int countInvoicesByUserIdInRange(int userId, LocalDateTime from, LocalDateTime to) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*) FROM invoices i INNER JOIN bookings b ON i.booking_id = b.booking_id " +
+                        "WHERE b.user_id = ? AND i.status = 'ACTIVE'");
+        if (from != null) {
+            sql.append(" AND i.created_at >= ?");
+        }
+        if (to != null) {
+            sql.append(" AND i.created_at < ?");
+        }
+
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            int idx = 1;
+            ps.setInt(idx++, userId);
+            if (from != null) {
+                ps.setTimestamp(idx++, Timestamp.valueOf(from));
+            }
+            if (to != null) {
+                ps.setTimestamp(idx++, Timestamp.valueOf(to));
+            }
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
@@ -111,21 +135,43 @@ public class Invoices extends DBContext {
      * Get paged list of invoices for user, each with invoice header fields (no items yet).
      */
     public List<Map<String, Object>> getInvoicesByUserId(int userId, int offset, int limit) {
+        return getInvoicesByUserIdInRange(userId, offset, limit, null, null);
+    }
+
+    /**
+     * Get paged list of invoices in a time range.
+     */
+    public List<Map<String, Object>> getInvoicesByUserIdInRange(int userId, int offset, int limit,
+                                                                LocalDateTime from, LocalDateTime to) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = """
+        StringBuilder sql = new StringBuilder("""
                 SELECT i.invoice_id, i.invoice_code, i.created_at, i.total_amount, i.discount_amount, i.final_amount,
                        i.payment_method, i.branch_id, cb.branch_name, b.booking_code
                 FROM invoices i
                 INNER JOIN bookings b ON i.booking_id = b.booking_id
                 LEFT JOIN cinema_branches cb ON i.branch_id = cb.branch_id
                 WHERE b.user_id = ? AND i.status = 'ACTIVE'
-                ORDER BY i.created_at DESC
-                OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-                """;
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, userId);
-            ps.setInt(2, offset);
-            ps.setInt(3, limit);
+                """);
+        if (from != null) {
+            sql.append(" AND i.created_at >= ?");
+        }
+        if (to != null) {
+            sql.append(" AND i.created_at < ?");
+        }
+        sql.append(" ORDER BY i.created_at DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            int idx = 1;
+            ps.setInt(idx++, userId);
+            if (from != null) {
+                ps.setTimestamp(idx++, Timestamp.valueOf(from));
+            }
+            if (to != null) {
+                ps.setTimestamp(idx++, Timestamp.valueOf(to));
+            }
+            ps.setInt(idx++, offset);
+            ps.setInt(idx, limit);
+
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> row = new LinkedHashMap<>();
@@ -158,7 +204,14 @@ public class Invoices extends DBContext {
             if (i > 0) placeholders.append(",");
             placeholders.append("?");
         }
-        String sql = "SELECT invoice_id, item_description, movie_title, showtime_date, showtime_time, room_name, seat_code, ticket_type, seat_type, quantity, unit_price, amount FROM invoice_items WHERE invoice_id IN (" + placeholders + ") ORDER BY invoice_id, item_id";
+        String sql = """
+                SELECT ii.invoice_id, ii.item_description, ii.movie_title, ii.showtime_date, ii.showtime_time,
+                       ii.room_name, ii.seat_code, ii.ticket_type, ii.seat_type, ii.quantity, ii.unit_price, ii.amount,
+                       s.row_number AS seat_row, s.seat_number AS seat_col
+                FROM invoice_items ii
+                LEFT JOIN online_tickets ot ON ii.online_ticket_id = ot.ticket_id
+                LEFT JOIN seats s ON ot.seat_id = s.seat_id
+                WHERE ii.invoice_id IN (""" + placeholders + ") ORDER BY ii.invoice_id, ii.item_id";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             for (int i = 0; i < invoiceIds.size(); i++) {
                 ps.setInt(i + 1, invoiceIds.get(i));
@@ -175,6 +228,10 @@ public class Invoices extends DBContext {
                     item.put("seatCode", rs.getString("seat_code"));
                     item.put("ticketType", rs.getString("ticket_type"));
                     item.put("seatType", rs.getString("seat_type"));
+                    String rowNum = rs.getString("seat_row");
+                    Integer colNum = rs.getObject("seat_col") != null ? rs.getInt("seat_col") : null;
+                    item.put("seatRow", rowNum);
+                    item.put("seatCol", colNum);
                     item.put("quantity", rs.getInt("quantity"));
                     item.put("unitPrice", rs.getBigDecimal("unit_price"));
                     item.put("amount", rs.getBigDecimal("amount"));

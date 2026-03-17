@@ -93,6 +93,24 @@
                             </div>
                         </c:forEach>
                     </div>
+                    <c:if test="${not empty selectedConcessions}">
+                        <hr>
+                        <h5 class="mb-2">Đồ ăn / Thức uống</h5>
+                        <c:forEach var="con" items="${selectedConcessions}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>${con.concessionName} <span class="text-muted">x${con.quantity}</span></span>
+                                <span class="text-light"><fmt:formatNumber value="${con.lineTotal}" type="number" maxFractionDigits="0"/> ₫</span>
+                            </div>
+                        </c:forEach>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="text-muted">Tổng vé</span>
+                            <span><fmt:formatNumber value="${ticketTotal}" type="number" maxFractionDigits="0"/> ₫</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">Tổng đồ ăn / thức uống</span>
+                            <span><fmt:formatNumber value="${concessionTotal}" type="number" maxFractionDigits="0"/> ₫</span>
+                        </div>
+                    </c:if>
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <span class="text-muted">Tổng tiền</span>
                         <span class="total-amount" id="totalAmountText">

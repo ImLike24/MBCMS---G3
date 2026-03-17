@@ -942,12 +942,8 @@ GO
 
 -- 11/03/2026
 ALTER TABLE [MBCMS].[dbo].[concessions]
-<<<<<<< HEAD
-ADD concession_name NVARCHAR(255);
-=======
 ADD concession_name NVARCHAR(255);
 
 -- 14/03/2026
 ALTER TABLE vouchers
 Update current_usage INT DEFAULT 0;
->>>>>>> cad9b9da817621b1a64709567129f2934fdc5c8d
