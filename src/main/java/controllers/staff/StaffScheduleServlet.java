@@ -57,6 +57,10 @@ public class StaffScheduleServlet extends HttpServlet {
             StaffScheduleService service = new StaffScheduleService();
             User currentUser = (User) session.getAttribute("user");
             Integer branchId = currentUser != null ? currentUser.getBranchId() : null;
+            if (branchId == null) {
+                request.setAttribute("branchWarning",
+                        "Tài khoản nhân viên chưa được gán chi nhánh (branch). Hệ thống sẽ hiển thị lịch của tất cả chi nhánh.");
+            }
             StaffScheduleService.ScheduleResult result = service.buildSchedule(referenceDate, branchId);
 
             List<CinemaBranch> branches = result.branches;
