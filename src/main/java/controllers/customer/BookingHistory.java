@@ -10,6 +10,9 @@ import models.User;
 import repositories.Invoices;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,14 +44,45 @@ public class BookingHistory extends HttpServlet {
             } catch (NumberFormatException ignored) { }
         }
 
+        // Lọc theo khoảng thời gian
+        String range = request.getParameter("range");
+        if (range == null || range.isBlank()) {
+            range = "all";
+        }
+        LocalDateTime from = null;
+        LocalDateTime to = null;
+        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
+        switch (range) {
+            case "week" -> {
+                from = now.minusWeeks(1);
+                to = now;
+            }
+            case "month" -> {
+                LocalDate firstDay = today.withDayOfMonth(1);
+                from = firstDay.atStartOfDay();
+                to = firstDay.plusMonths(1).atStartOfDay();
+            }
+            case "year" -> {
+                LocalDate firstDayYear = today.withDayOfYear(1);
+                from = firstDayYear.atStartOfDay();
+                to = firstDayYear.plusYears(1).atStartOfDay();
+            }
+            default -> {
+                from = null;
+                to = null;
+                range = "all";
+            }
+        }
+
         Invoices invoicesRepo = new Invoices();
         try {
-            int totalCount = invoicesRepo.countInvoicesByUserId(userId);
+            int totalCount = invoicesRepo.countInvoicesByUserIdInRange(userId, from, to);
             int totalPages = (int) Math.ceil((double) totalCount / PAGE_SIZE);
             if (totalPages > 0 && page > totalPages) page = totalPages;
 
             int offset = (page - 1) * PAGE_SIZE;
-            List<Map<String, Object>> invoices = invoicesRepo.getInvoicesByUserId(userId, offset, PAGE_SIZE);
+            List<Map<String, Object>> invoices = invoicesRepo.getInvoicesByUserIdInRange(userId, offset, PAGE_SIZE, from, to);
 
             List<Integer> invoiceIds = invoices.stream()
                     .map(m -> (Integer) m.get("invoiceId"))
@@ -65,6 +99,7 @@ public class BookingHistory extends HttpServlet {
             request.setAttribute("page", page);
             request.setAttribute("pageSize", PAGE_SIZE);
             request.setAttribute("totalPages", totalPages);
+            request.setAttribute("range", range);
 
             request.getRequestDispatcher("/pages/customer/booking-history.jsp").forward(request, response);
         } finally {

@@ -74,6 +74,24 @@
         <p class="text-white-50 mb-0 mt-2">Các hóa đơn đặt vé online của bạn. Mỗi hóa đơn kèm chi tiết vé.</p>
     </div>
 
+    <!-- Bộ lọc thời gian -->
+    <form class="row g-3 mb-3" method="get" action="${pageContext.request.contextPath}/customer/booking-history">
+        <div class="col-md-4 col-sm-6">
+            <label class="form-label text-white-50 small mb-1">Khoảng thời gian</label>
+            <select name="range" class="form-select form-select-sm bg-dark text-white border-secondary">
+                <option value="all"   ${range == 'all'   ? 'selected' : ''}>Tất cả</option>
+                <option value="week"  ${range == 'week'  ? 'selected' : ''}>Gần đây (1 tuần)</option>
+                <option value="month" ${range == 'month' ? 'selected' : ''}>Tháng này</option>
+                <option value="year"  ${range == 'year'  ? 'selected' : ''}>Năm nay</option>
+            </select>
+        </div>
+        <div class="col-md-2 col-sm-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-sm btn-outline-warning px-3">
+                <i class="fa fa-filter me-1"></i> Lọc dữ liệu
+            </button>
+        </div>
+    </form>
+
     <c:choose>
         <c:when test="${not empty invoices}">
             <c:forEach var="inv" items="${invoices}" varStatus="st">
@@ -176,17 +194,17 @@
                     <ul class="pagination pagination-sm mb-0">
                         <c:if test="${page > 1}">
                             <li class="page-item">
-                                <a class="page-link" href="${pageContext.request.contextPath}/customer/booking-history?page=${page - 1}">Trước</a>
+                                <a class="page-link" href="${pageContext.request.contextPath}/customer/booking-history?page=${page - 1}&range=${range}">Trước</a>
                             </li>
                         </c:if>
                         <c:forEach begin="1" end="${totalPages}" var="p">
                             <li class="page-item ${p == page ? 'active' : ''}">
-                                <a class="page-link" href="${pageContext.request.contextPath}/customer/booking-history?page=${p}">${p}</a>
+                                <a class="page-link" href="${pageContext.request.contextPath}/customer/booking-history?page=${p}&range=${range}">${p}</a>
                             </li>
                         </c:forEach>
                         <c:if test="${page < totalPages}">
                             <li class="page-item">
-                                <a class="page-link" href="${pageContext.request.contextPath}/customer/booking-history?page=${page + 1}">Sau</a>
+                                <a class="page-link" href="${pageContext.request.contextPath}/customer/booking-history?page=${page + 1}&range=${range}">Sau</a>
                             </li>
                         </c:if>
                     </ul>
