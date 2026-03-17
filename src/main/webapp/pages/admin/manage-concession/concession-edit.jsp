@@ -72,9 +72,8 @@
                     <div class="col-md-6">
                         <label for="concessionType" class="form-label">Loại sản phẩm <span class="text-danger">*</span></label>
                         <select class="form-select" id="concessionType" name="concessionType" required>
-                            <option value="Đồ ăn"    ${concession.concessionType == 'Đồ ăn' ? 'selected' : ''}>Đồ ăn</option>
-                            <option value="Thức uống" ${concession.concessionType == 'Thức uống' ? 'selected' : ''}>Thức uống</option>
-                            <option value="Combo"    ${concession.concessionType == 'Combo' ? 'selected' : ''}>Combo</option>
+                            <option value="FOOD" ${concession.concessionType == 'FOOD' ? 'selected' : ''}>Đồ ăn</option>
+                            <option value="BEVERAGE" ${concession.concessionType == 'BEVERAGE' ? 'selected' : ''}>Thức uống</option>
                             <!-- Thêm các loại khác nếu hệ thống có -->
                         </select>
                     </div>
@@ -91,7 +90,7 @@
                     <div class="col-md-6">
                         <label for="priceBase" class="form-label">Giá cơ bản (VNĐ) <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" id="priceBase" name="priceBase"
-                               value="${concession.priceBase}" step="1000" min="1000" required>
+                               value="${concession.priceBase}" min="0"required>
                         <small class="text-muted">Nhập giá theo đơn vị nghìn đồng (ví dụ: 45000 = 45.000 ₫)</small>
                     </div>
                 </div>

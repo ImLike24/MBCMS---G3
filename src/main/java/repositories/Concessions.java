@@ -97,16 +97,14 @@ public class Concessions extends DBContext {
             UPDATE concessions
             SET concession_type = ?,
                 quantity = ?,
-                price_base = ?,
-                concession_name = ?
+                price_base = ?
             WHERE concession_id = ?
             """;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, c.getConcessionType());
             ps.setObject(2, c.getQuantity(), Types.INTEGER);
             ps.setDouble(3, c.getPriceBase());
-            ps.setString(4, c.getConcessionName());
-            ps.setInt(5, c.getConcessionId());
+            ps.setInt(4, c.getConcessionId());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

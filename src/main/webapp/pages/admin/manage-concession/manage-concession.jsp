@@ -130,7 +130,7 @@
                                 </c:choose>
                             </td>
                             <td class="text-end fw-medium">
-                                <fmt:formatNumber value="${item.priceBase}" pattern="#,##0"/> .000₫
+                                <fmt:formatNumber value="${item.priceBase}" pattern="#,##0"/>.000₫
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-2">
