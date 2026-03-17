@@ -1,87 +1,64 @@
-///*
-// * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
-// * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
-// */
-//package controllers.manager.report.revenue;
-//
-//import java.io.IOException;
-//import java.io.PrintWriter;
-//import javax.servlet.ServletException;
-//import javax.servlet.annotation.WebServlet;
-//import javax.servlet.http.HttpServlet;
-//import javax.servlet.http.HttpServletRequest;
-//import javax.servlet.http.HttpServletResponse;
-//
-///**
-// *
-// * @author Admin
-// */
-//@WebServlet(name = "DateReport", urlPatterns = {"/manager/report/revenue/date-report"})
-//public class DateReport extends HttpServlet {
-//
-//    /**
-//     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-//     * methods.
-//     *
-//     * @param request servlet request
-//     * @param response servlet response
-//     * @throws ServletException if a servlet-specific error occurs
-//     * @throws IOException if an I/O error occurs
-//     */
-//    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-//            throws ServletException, IOException {
-//        response.setContentType("text/html;charset=UTF-8");
-//        try (PrintWriter out = response.getWriter()) {
-//            /* TODO output your page here. You may use following sample code. */
-//            out.println("<!DOCTYPE html>");
-//            out.println("<html>");
-//            out.println("<head>");
-//            out.println("<title>Servlet DateReport</title>");            
-//            out.println("</head>");
-//            out.println("<body>");
-//            out.println("<h1>Servlet DateReport at " + request.getContextPath() + "</h1>");
-//            out.println("</body>");
-//            out.println("</html>");
-//        }
-//    }
-//
-//    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-//    /**
-//     * Handles the HTTP <code>GET</code> method.
-//     *
-//     * @param request servlet request
-//     * @param response servlet response
-//     * @throws ServletException if a servlet-specific error occurs
-//     * @throws IOException if an I/O error occurs
-//     */
-//    @Override
-//    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-//            throws ServletException, IOException {
-//        processRequest(request, response);
-//    }
-//
-//    /**
-//     * Handles the HTTP <code>POST</code> method.
-//     *
-//     * @param request servlet request
-//     * @param response servlet response
-//     * @throws ServletException if a servlet-specific error occurs
-//     * @throws IOException if an I/O error occurs
-//     */
-//    @Override
-//    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-//            throws ServletException, IOException {
-//        processRequest(request, response);
-//    }
-//
-//    /**
-//     * Returns a short description of the servlet.
-//     *
-//     * @return a String containing servlet description
-//     */
-//    @Override
-//    public String getServletInfo() {
-//        return "Short description";
-//    }// </editor-fold>
-//
-//}
+package controllers.manager.report.revenue;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import models.CinemaBranch;
+import models.User;
+import repositories.CinemaBranches;
+import repositories.RevenueReportRepository;
+
+@WebServlet(name = "DateReport", urlPatterns = {"/manager/report/revenue/date-report"})
+public class DateReport extends HttpServlet {
+
+    private final CinemaBranches branchDao = new CinemaBranches();
+    private final RevenueReportRepository revenueRepo = new RevenueReportRepository();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        var user = (User) request.getSession().getAttribute("user");
+        if (user == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        List<CinemaBranch> managedBranches = branchDao.findListByManagerId(user.getUserId());
+        if (managedBranches == null || managedBranches.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập.");
+            return;
+        }
+
+        List<Integer> branchIds = new ArrayList<>();
+        for (CinemaBranch b : managedBranches) {
+            branchIds.add(b.getBranchId());
+        }
+
+        LocalDate fromDate = parseDate(request.getParameter("fromDate"), LocalDate.now().minusDays(30));
+        LocalDate toDate = parseDate(request.getParameter("toDate"), LocalDate.now());
+
+        var rows = revenueRepo.getRevenueByDate(branchIds, fromDate, toDate);
+
+        request.setAttribute("managedBranches", managedBranches);
+        request.setAttribute("rows", rows);
+        request.setAttribute("fromDate", fromDate);
+        request.setAttribute("toDate", toDate);
+
+        request.getRequestDispatcher("/pages/manager/report/revenue/date-report.jsp").forward(request, response);
+    }
+
+    private LocalDate parseDate(String value, LocalDate defaultVal) {
+        if (value == null || value.trim().isEmpty()) return defaultVal;
+        try {
+            return LocalDate.parse(value);
+        } catch (Exception e) {
+            return defaultVal;
+        }
+    }
+}

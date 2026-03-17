@@ -16,7 +16,54 @@ public class Bookings {
     public Bookings() throws Exception {
         conn = new DBContext().getConnection();
     }
-    
+
+    public String generateBookingCode() {
+        String timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+
+        int randomNumber = new Random().nextInt(900) + 100; // 100-999
+
+        return "BK" + timestamp + randomNumber;
+    }
+
+    public int createOnlineBooking(int userId,
+                                   int showtimeId,
+                                   String paymentMethod,
+                                   String bookingCode) throws SQLException {
+
+        String sql = """
+                INSERT INTO bookings
+                (user_id, showtime_id, booking_code,
+                 total_amount, discount_amount, final_amount,
+                 payment_method, payment_status, status, payment_time)
+                VALUES (?, ?, ?,
+                        0, 0, 0,
+                        ?, 'PAID', 'CONFIRMED', SYSDATETIME())
+                """;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            ps.setInt(1, userId);
+            ps.setInt(2, showtimeId);
+            ps.setString(3, bookingCode);
+            ps.setString(4, paymentMethod);
+
+            int affectedRows = ps.executeUpdate();
+
+            if (affectedRows == 0) {
+                return -1;
+            }
+
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1); // booking_id
+                }
+            }
+        }
+
+        return -1;
+    }
+
     public void closeConnection() {
         try {
             if (conn != null && !conn.isClosed()) {
