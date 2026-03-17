@@ -659,20 +659,24 @@ public class Movies extends DBContext {
 
     /**
      * Get movies with showtimes (SCHEDULED/ONGOING) grouped by day of week.
-     * Returns List of DayGroup (dayName, movies) in order: Thứ 2, Thứ 3, ..., Chủ nhật.
+     * When branchId is null, all branches; otherwise only movies with showtimes at that branch.
      */
-    public List<DayGroup> getMoviesWithShowtimesGroupedByDayOfWeek(LocalDate fromDate, LocalDate toDate) {
+    public List<DayGroup> getMoviesWithShowtimesGroupedByDayOfWeek(LocalDate fromDate, LocalDate toDate, Integer branchId) {
         Map<Integer, List<Movie>> byDay = new LinkedHashMap<>();
         int[] displayOrder = {2, 3, 4, 5, 6, 7, 1};
         for (int d : displayOrder) {
             byDay.put(d, new ArrayList<>());
         }
 
+        String branchFilter = (branchId != null)
+                ? " INNER JOIN screening_rooms sr ON s.room_id = sr.room_id AND sr.branch_id = ? "
+                : "";
         String sql = """
                 SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list,
                        DATEPART(weekday, s.show_date) AS day_of_week
                 FROM movies m
                 INNER JOIN showtimes s ON m.movie_id = s.movie_id
+                """ + branchFilter + """
                 LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
                 LEFT JOIN genres g ON mg.genre_id = g.genre_id
                 WHERE m.is_active = 1
@@ -687,8 +691,12 @@ public class Movies extends DBContext {
                 """;
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setDate(1, java.sql.Date.valueOf(fromDate));
-            ps.setDate(2, java.sql.Date.valueOf(toDate));
+            int idx = 1;
+            if (branchId != null) {
+                ps.setInt(idx++, branchId);
+            }
+            ps.setDate(idx++, java.sql.Date.valueOf(fromDate));
+            ps.setDate(idx, java.sql.Date.valueOf(toDate));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     int dw = rs.getInt("day_of_week");

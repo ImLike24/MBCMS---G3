@@ -7,6 +7,10 @@ import java.sql.Statement;
 import java.sql.SQLException;
 import java.math.BigDecimal;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Random;
+
 import config.DBContext;
 
 public class Bookings {

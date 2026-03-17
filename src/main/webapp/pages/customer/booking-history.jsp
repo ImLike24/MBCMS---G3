@@ -138,14 +138,18 @@
                                             <tr>
                                                 <td><c:out value="${item.movieTitle}"/></td>
                                                 <td>
-                                                    <fmt:formatDate value="${item.showtimeDate}" pattern="dd/MM/yyyy"/>
+                                                    <c:if test="${not empty item.showtimeDate}"><fmt:formatDate value="${item.showtimeDate}" pattern="dd/MM/yyyy"/></c:if>
                                                     <c:if test="${not empty item.showtimeTime}"> — <fmt:formatDate value="${item.showtimeTime}" type="time" timeStyle="short"/></c:if>
+                                                    <c:if test="${empty item.showtimeDate && empty item.showtimeTime}">—</c:if>
                                                 </td>
                                                 <td><c:out value="${item.roomName}"/></td>
                                                 <td class="text-end"><fmt:formatNumber value="${item.unitPrice}" type="currency" currencyCode="VND" currencySymbol="₫"/></td>
                                                 <td class="text-end"><fmt:formatNumber value="${item.amount}" type="currency" currencyCode="VND" currencySymbol="₫"/></td>
                                             </tr>
                                         </c:forEach>
+                                        <c:if test="${empty inv.items}">
+                                            <tr><td colspan="5" class="text-center text-muted py-3">Chưa có chi tiết vé.</td></tr>
+                                        </c:if>
                                     </tbody>
                                 </table>
                             </div>
@@ -171,13 +175,16 @@
                                                         <c:when test="${not empty item.seatRow || item.seatCol != null}">
                                                             Hàng <c:out value="${item.seatRow}"/><c:if test="${item.seatCol != null}">, Số ${item.seatCol}</c:if>
                                                         </c:when>
-                                                        <c:otherwise>${item.seatCode}</c:otherwise>
+                                                        <c:otherwise><c:out value="${item.seatCode}"/></c:otherwise>
                                                     </c:choose>
                                                 </td>
-                                                <td>${item.seatType}</td>
+                                                <td><c:out value="${item.seatType != null ? item.seatType : '—'}"/></td>
                                                 <td>${item.ticketType == 'ADULT' ? 'Người lớn' : 'Trẻ em'}</td>
                                             </tr>
                                         </c:forEach>
+                                        <c:if test="${empty inv.items}">
+                                            <tr><td colspan="4" class="text-center text-muted py-3">Chưa có ghế nào.</td></tr>
+                                        </c:if>
                                     </tbody>
                                 </table>
                             </div>

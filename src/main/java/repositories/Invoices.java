@@ -194,16 +194,75 @@ public class Invoices extends DBContext {
     }
 
     /**
-     * Get invoice items (ticket details) for given invoice IDs. Returns map: invoiceId -> list of item maps.
+     * Get booking_id for an invoice (to fallback load items from online_tickets when invoice_items is empty).
      */
-    public Map<Integer, List<Map<String, Object>>> getInvoiceItemsByInvoiceIds(List<Integer> invoiceIds) {
-        Map<Integer, List<Map<String, Object>>> result = new HashMap<>();
-        if (invoiceIds == null || invoiceIds.isEmpty()) return result;
-        StringBuilder placeholders = new StringBuilder();
-        for (int i = 0; i < invoiceIds.size(); i++) {
-            if (i > 0) placeholders.append(",");
-            placeholders.append("?");
+    public Integer getBookingIdByInvoiceId(int invoiceId) {
+        String sql = "SELECT booking_id FROM invoices WHERE invoice_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, invoiceId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int id = rs.getInt("booking_id");
+                    return rs.wasNull() ? null : id;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
+        return null;
+    }
+
+    /**
+     * Get ticket details for a booking (from online_tickets + showtimes/movies/rooms/seats) for backfilling invoice_items.
+     */
+    public List<Map<String, Object>> getTicketDetailsByBookingId(int bookingId) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = """
+                SELECT ot.ticket_id, ot.ticket_type, ot.seat_type, ot.price,
+                       st.show_date AS showtime_date, st.start_time AS showtime_time,
+                       m.title AS movie_title, sr.room_name,
+                       s.seat_code, s.row_number AS seat_row, s.seat_number AS seat_col
+                FROM online_tickets ot
+                INNER JOIN showtimes st ON ot.showtime_id = st.showtime_id
+                INNER JOIN movies m ON st.movie_id = m.movie_id
+                INNER JOIN screening_rooms sr ON st.room_id = sr.room_id
+                INNER JOIN seats s ON ot.seat_id = s.seat_id
+                WHERE ot.booking_id = ?
+                ORDER BY ot.ticket_id
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, bookingId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("ticketId", rs.getInt("ticket_id"));
+                    row.put("movieTitle", rs.getString("movie_title"));
+                    row.put("showtimeDate", rs.getDate("showtime_date")); // alias from st.show_date
+                    row.put("showtimeTime", rs.getTime("showtime_time")); // alias from st.start_time
+                    row.put("roomName", rs.getString("room_name"));
+                    row.put("seatCode", rs.getString("seat_code"));
+                    row.put("ticketType", rs.getString("ticket_type"));
+                    row.put("seatType", rs.getString("seat_type"));
+                    java.math.BigDecimal price = rs.getBigDecimal("price");
+                    row.put("unitPrice", price);
+                    row.put("amount", price);
+                    row.put("seatRow", rs.getString("seat_row"));
+                    Object sc = rs.getObject("seat_col");
+                    row.put("seatCol", sc != null ? rs.getInt("seat_col") : null);
+                    list.add(row);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * Get invoice items (ticket details) for a single invoice from invoice_items table.
+     */
+    public List<Map<String, Object>> getInvoiceItemsByInvoiceId(int invoiceId) {
+        List<Map<String, Object>> list = new ArrayList<>();
         String sql = """
                 SELECT ii.invoice_id, ii.item_description, ii.movie_title, ii.showtime_date, ii.showtime_time,
                        ii.room_name, ii.seat_code, ii.ticket_type, ii.seat_type, ii.quantity, ii.unit_price, ii.amount,
@@ -211,14 +270,13 @@ public class Invoices extends DBContext {
                 FROM invoice_items ii
                 LEFT JOIN online_tickets ot ON ii.online_ticket_id = ot.ticket_id
                 LEFT JOIN seats s ON ot.seat_id = s.seat_id
-                WHERE ii.invoice_id IN (""" + placeholders + ") ORDER BY ii.invoice_id, ii.item_id";
+                WHERE ii.invoice_id = ? AND ii.item_type = 'ONLINE_TICKET'
+                ORDER BY ii.item_id
+                """;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            for (int i = 0; i < invoiceIds.size(); i++) {
-                ps.setInt(i + 1, invoiceIds.get(i));
-            }
+            ps.setInt(1, invoiceId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    int invId = rs.getInt("invoice_id");
                     Map<String, Object> item = new LinkedHashMap<>();
                     item.put("itemDescription", rs.getString("item_description"));
                     item.put("movieTitle", rs.getString("movie_title"));
@@ -235,11 +293,87 @@ public class Invoices extends DBContext {
                     item.put("quantity", rs.getInt("quantity"));
                     item.put("unitPrice", rs.getBigDecimal("unit_price"));
                     item.put("amount", rs.getBigDecimal("amount"));
-                    result.computeIfAbsent(invId, k -> new ArrayList<>()).add(item);
+                    list.add(item);
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * Get or build invoice items: from invoice_items if present, else from online_tickets and backfill invoice_items.
+     */
+    public List<Map<String, Object>> getOrBuildInvoiceItemsForInvoice(int invoiceId) {
+        List<Map<String, Object>> items = getInvoiceItemsByInvoiceId(invoiceId);
+        if (items != null && !items.isEmpty()) return items;
+
+        Integer bookingId = getBookingIdByInvoiceId(invoiceId);
+        if (bookingId == null) return new ArrayList<>();
+
+        List<Map<String, Object>> tickets = getTicketDetailsByBookingId(bookingId);
+        if (tickets.isEmpty()) return new ArrayList<>();
+
+        for (Map<String, Object> t : tickets) {
+            int ticketId = ((Number) t.get("ticketId")).intValue();
+            String movieTitle = (String) t.get("movieTitle");
+            String roomName = (String) t.get("roomName");
+            String seatCode = (String) t.get("seatCode");
+            String ticketType = (String) t.get("ticketType");
+            String seatType = (String) t.get("seatType");
+            java.math.BigDecimal price = (java.math.BigDecimal) t.get("unitPrice");
+            if (price == null) price = java.math.BigDecimal.ZERO;
+            java.sql.Date sd = (java.sql.Date) t.get("showtimeDate");
+            java.sql.Time st = (java.sql.Time) t.get("showtimeTime");
+            LocalDate showtimeDate = sd != null ? sd.toLocalDate() : null;
+            LocalTime showtimeTime = st != null ? st.toLocalTime() : null;
+            String itemDesc = (movieTitle != null ? movieTitle : "") + " - " + (seatType != null ? seatType : "") + " - " + (seatCode != null ? seatCode : "");
+            try {
+                insertInvoiceItem(invoiceId, ticketId, itemDesc, movieTitle, showtimeDate, showtimeTime,
+                        roomName, seatCode, ticketType, seatType, price, price);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return buildItemListFromTickets(tickets);
+    }
+
+    private List<Map<String, Object>> buildItemListFromTickets(List<Map<String, Object>> tickets) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (Map<String, Object> t : tickets) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            String movieTitle = (String) t.get("movieTitle");
+            String seatType = (String) t.get("seatType");
+            String seatCode = (String) t.get("seatCode");
+            item.put("itemDescription", (movieTitle != null ? movieTitle : "") + " - " + (seatType != null ? seatType : "") + " - " + (seatCode != null ? seatCode : ""));
+            item.put("movieTitle", movieTitle);
+            item.put("showtimeDate", t.get("showtimeDate"));
+            item.put("showtimeTime", t.get("showtimeTime"));
+            item.put("roomName", t.get("roomName"));
+            item.put("seatCode", seatCode);
+            item.put("ticketType", t.get("ticketType"));
+            item.put("seatType", seatType);
+            item.put("seatRow", t.get("seatRow"));
+            item.put("seatCol", t.get("seatCol"));
+            item.put("quantity", 1);
+            item.put("unitPrice", t.get("unitPrice"));
+            item.put("amount", t.get("amount"));
+            list.add(item);
+        }
+        return list;
+    }
+
+    /**
+     * Get invoice items (ticket details) for given invoice IDs. Uses getOrBuild so missing invoice_items are backfilled from online_tickets.
+     */
+    public Map<Integer, List<Map<String, Object>>> getInvoiceItemsByInvoiceIds(List<Integer> invoiceIds) {
+        Map<Integer, List<Map<String, Object>>> result = new HashMap<>();
+        if (invoiceIds == null || invoiceIds.isEmpty()) return result;
+        for (Integer invId : invoiceIds) {
+            if (invId != null) {
+                result.put(invId, getOrBuildInvoiceItemsForInvoice(invId));
+            }
         }
         return result;
     }

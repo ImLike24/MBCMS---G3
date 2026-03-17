@@ -85,13 +85,20 @@ public class BookingHistory extends HttpServlet {
             List<Map<String, Object>> invoices = invoicesRepo.getInvoicesByUserIdInRange(userId, offset, PAGE_SIZE, from, to);
 
             List<Integer> invoiceIds = invoices.stream()
-                    .map(m -> (Integer) m.get("invoiceId"))
+                    .map(m -> {
+                        Object id = m.get("invoiceId");
+                        if (id instanceof Number) return ((Number) id).intValue();
+                        return id != null ? Integer.parseInt(id.toString()) : 0;
+                    })
+                    .filter(id -> id > 0)
                     .collect(Collectors.toList());
             Map<Integer, List<Map<String, Object>>> itemsByInvoice = invoicesRepo.getInvoiceItemsByInvoiceIds(invoiceIds);
 
             for (Map<String, Object> inv : invoices) {
-                int invId = (Integer) inv.get("invoiceId");
-                inv.put("items", itemsByInvoice.getOrDefault(invId, List.of()));
+                Object idObj = inv.get("invoiceId");
+                int invId = idObj instanceof Number ? ((Number) idObj).intValue() : (idObj != null ? Integer.parseInt(idObj.toString()) : 0);
+                List<Map<String, Object>> items = itemsByInvoice.getOrDefault(invId, List.of());
+                inv.put("items", items != null ? items : List.of());
             }
 
             request.setAttribute("invoices", invoices);

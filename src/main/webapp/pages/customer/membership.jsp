@@ -267,7 +267,23 @@
                         </div>
                     </div>
 
-                    <!-- Point History Section -->
+                    <!-- Quy tắc tích điểm (từ cấu hình Admin) -->
+                    <c:if test="${not empty loyaltyConfig}">
+                        <div class="row justify-content-center mb-4">
+                            <div class="col-lg-10">
+                                <div class="alert alert-light border border-secondary d-flex align-items-center" role="alert">
+                                    <i class="fa fa-info-circle me-3" style="font-size: 1.5rem; color: #d96c2c;"></i>
+                                    <div>
+                                        <strong>Quy tắc tích điểm (cấu hình từ Admin):</strong>
+                                        Mỗi <fmt:formatNumber value="${loyaltyConfig.earnRateAmount}" type="number" groupingUsed="true"/> VND thanh toán (từ hóa đơn đặt vé), bạn nhận <strong>${loyaltyConfig.earnPoints}</strong> điểm.
+                                        Điểm tối thiểu để đổi ưu đãi: <strong>${loyaltyConfig.minRedeemPoints}</strong> điểm.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </c:if>
+
+                    <!-- Point History Section - Lịch sử điểm từ hóa đơn & giao dịch -->
                     <div class="history-section">
                         <div class="row justify-content-center">
                             <div class="col-lg-10">
@@ -275,7 +291,10 @@
                                     <div class="icon-box me-3" style="font-size: 1.5rem; color: #d96c2c;">
                                         <i class="fa fa-history"></i>
                                     </div>
-                                    <h3 class="fw-bold m-0">Lịch sử điểm</h3>
+                                    <div>
+                                        <h3 class="fw-bold m-0">Lịch sử điểm thành viên</h3>
+                                        <p class="text-muted small mb-0 mt-1">Từ hóa đơn đặt vé online và giao dịch tại quầy.</p>
+                                    </div>
                                 </div>
 
                                 <div class="table-responsive">
@@ -286,6 +305,7 @@
                                                 <th>Loại giao dịch</th>
                                                 <th>Số điểm</th>
                                                 <th>Nội dung</th>
+                                                <th>Hóa đơn</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -319,11 +339,19 @@
                                                     <td>
                                                         <div class="text-muted small">${item.description}</div>
                                                     </td>
+                                                    <td>
+                                                        <c:if test="${item.transactionType == 'EARN' && item.referenceId != null}">
+                                                            <a href="${pageContext.request.contextPath}/customer/booking-history" class="btn btn-sm btn-outline-secondary">Xem hóa đơn</a>
+                                                        </c:if>
+                                                        <c:if test="${item.transactionType != 'EARN' || item.referenceId == null}">
+                                                            <span class="text-muted">—</span>
+                                                        </c:if>
+                                                    </td>
                                                 </tr>
                                             </c:forEach>
                                             <c:if test="${empty pointHistory}">
                                                 <tr>
-                                                    <td colspan="4" class="text-center py-5 text-muted">
+                                                    <td colspan="5" class="text-center py-5 text-muted">
                                                         <i class="fa fa-info-circle me-2"></i> Bạn chưa có lịch sử giao
                                                         dịch điểm.
                                                     </td>

@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.DayOfWeek;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -23,11 +23,10 @@ import models.Showtime;
 import repositories.Concessions;
 import repositories.SeatTypeSurcharges;
 import repositories.Showtimes;
+import repositories.TicketPrices;
 
 @WebServlet(name = "TicketsOfChosenMovie", urlPatterns = { "/customer/booking-tickets" })
 public class BookingTickets extends HttpServlet {
-
-    private static final double CHILD_DISCOUNT_RATE = 0.7; // Trẻ em giảm 30%
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -120,11 +119,25 @@ public class BookingTickets extends HttpServlet {
             }
             request.setAttribute("surchargeList", surchargeList);
 
-            double basePriceValue = 0.0;
-            if (showtimeDetails.get("showtime") != null) {
-                Showtime st = (Showtime) showtimeDetails.get("showtime");
-                basePriceValue = st.getBasePrice() != null ? st.getBasePrice().doubleValue() : 0.0;
+            // Giá vé theo cấu hình manager (ticket_prices), không dùng giá suất chiếu
+            Showtime st = (Showtime) showtimeDetails.get("showtime");
+            double adultPriceValue = 0.0;
+            double childPriceValue = 0.0;
+            if (branchId != null && st != null && st.getShowDate() != null && st.getStartTime() != null) {
+                DayOfWeek dayOfWeek = st.getShowDate().getDayOfWeek();
+                String dayType = (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) ? "WEEKEND" : "WEEKDAY";
+                int hour = st.getStartTime().getHour();
+                String timeSlot = (hour >= 6 && hour < 12) ? "MORNING" : (hour >= 12 && hour < 17) ? "AFTERNOON" : (hour >= 17 && hour < 22) ? "EVENING" : "NIGHT";
+                TicketPrices ticketPricesDao = new TicketPrices();
+                BigDecimal adultBd = ticketPricesDao.getTicketPrice(branchId, "ADULT", dayType, timeSlot, st.getShowDate());
+                BigDecimal childBd = ticketPricesDao.getTicketPrice(branchId, "CHILD", dayType, timeSlot, st.getShowDate());
+                adultPriceValue = adultBd != null ? adultBd.doubleValue() : 0.0;
+                childPriceValue = childBd != null ? childBd.doubleValue() : 0.0;
+                ticketPricesDao.closeConnection();
             }
+            request.setAttribute("adultPrice", adultPriceValue);
+            request.setAttribute("childPrice", childPriceValue);
+            request.setAttribute("basePrice", adultPriceValue);
 
             String[] seatIdsParam = request.getParameterValues("seatIds");
             List<Integer> selectedSeatIds = new ArrayList<>();
@@ -145,10 +158,8 @@ public class BookingTickets extends HttpServlet {
 
                             String seatType = seat.getSeatType() != null ? seat.getSeatType() : "NORMAL";
                             double rate = surchargeRates.getOrDefault(seatType, 0.0);
-                            double price = basePriceValue * (1 + rate / 100);
-                            if ("CHILD".equals(ticketType)) {
-                                price *= CHILD_DISCOUNT_RATE;
-                            }
+                            double baseByType = "CHILD".equals(ticketType) ? childPriceValue : adultPriceValue;
+                            double price = baseByType * (1 + rate / 100);
                             BigDecimal seatPrice = BigDecimal.valueOf(price);
                             totalAmount = totalAmount.add(seatPrice);
 
@@ -232,15 +243,7 @@ public class BookingTickets extends HttpServlet {
                             showtime.getShowDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
                 }
 
-                // Lấy giá vé cơ bản trực tiếp từ showtime (giống flow staff)
-                double basePrice = showtime.getBasePrice() != null ? showtime.getBasePrice().doubleValue() : 0.0;
-                request.setAttribute("basePrice", basePrice);
-            } else {
-                request.setAttribute("basePrice", 0.0);
             }
-
-            // Đưa tỉ lệ giảm giá trẻ em xuống view để dùng lại trong JS
-            request.setAttribute("childDiscountRate", CHILD_DISCOUNT_RATE);
 
             request.getRequestDispatcher("/pages/customer/booking-tickets.jsp")
                     .forward(request, response);
@@ -293,10 +296,24 @@ public class BookingTickets extends HttpServlet {
             }
 
             Showtime showtime = (Showtime) showtimeDetails.get("showtime");
-            double basePrice = showtime != null && showtime.getBasePrice() != null
-                    ? showtime.getBasePrice().doubleValue() : 0.0;
-
             Integer branchId = (Integer) showtimeDetails.get("branchId");
+
+            // Giá vé theo cấu hình manager (ticket_prices)
+            double adultPriceVal = 0.0;
+            double childPriceVal = 0.0;
+            if (branchId != null && showtime != null && showtime.getShowDate() != null && showtime.getStartTime() != null) {
+                DayOfWeek dayOfWeek = showtime.getShowDate().getDayOfWeek();
+                String dayType = (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) ? "WEEKEND" : "WEEKDAY";
+                int hour = showtime.getStartTime().getHour();
+                String timeSlot = (hour >= 6 && hour < 12) ? "MORNING" : (hour >= 12 && hour < 17) ? "AFTERNOON" : (hour >= 17 && hour < 22) ? "EVENING" : "NIGHT";
+                TicketPrices ticketPricesRepo = new TicketPrices();
+                BigDecimal adultBd = ticketPricesRepo.getTicketPrice(branchId, "ADULT", dayType, timeSlot, showtime.getShowDate());
+                BigDecimal childBd = ticketPricesRepo.getTicketPrice(branchId, "CHILD", dayType, timeSlot, showtime.getShowDate());
+                adultPriceVal = adultBd != null ? adultBd.doubleValue() : 0.0;
+                childPriceVal = childBd != null ? childBd.doubleValue() : 0.0;
+                ticketPricesRepo.closeConnection();
+            }
+
             Map<String, Double> surchargeRates = new java.util.HashMap<>();
             if (branchId != null) {
                 SeatTypeSurcharges surchargesRepo = new SeatTypeSurcharges();
@@ -352,10 +369,8 @@ public class BookingTickets extends HttpServlet {
                 Seat seat = (Seat) sws.get("seat");
                 String seatType = seat.getSeatType() != null ? seat.getSeatType() : "NORMAL";
                 double rate = surchargeRates.getOrDefault(seatType, 0.0);
-                double price = basePrice * (1 + rate / 100);
-                if ("CHILD".equals(ticketType)) {
-                    price *= CHILD_DISCOUNT_RATE;
-                }
+                double baseByType = "CHILD".equals(ticketType) ? childPriceVal : adultPriceVal;
+                double price = baseByType * (1 + rate / 100);
 
                 Map<String, Object> seatData = new java.util.HashMap<>();
                 seatData.put("seatId", seatId);

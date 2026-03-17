@@ -2,12 +2,16 @@ package controllers.customer;
 
 import java.io.IOException;
 
+import models.PointHistory;
 import models.User;
 import models.Showtime;
 import repositories.Showtimes;
 import repositories.OnlineTickets;
 import repositories.Bookings;
 import repositories.Invoices;
+import repositories.LoyaltyConfigs;
+import repositories.PointHistories;
+import repositories.Users;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -17,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -294,14 +299,56 @@ public class BookingPayment extends HttpServlet {
                         String seatType = (String) ticket.get("seatType");
                         String ticketType = (String) ticket.get("ticketType");
                         BigDecimal price = (BigDecimal) ticket.get("price");
+                        if (price == null) price = BigDecimal.ZERO;
 
-                        String itemDesc = (movieTitle != null ? movieTitle : "") + " - " + seatType + " - " + seatCode;
-                        invoicesRepo.insertInvoiceItem(
-                                invoiceId, ticketId, itemDesc,
-                                movieTitle, showDate, startTime,
-                                roomName, seatCode, ticketType, seatType,
-                                price, price
-                        );
+                        String itemDesc = (movieTitle != null ? movieTitle : "") + " - " + (seatType != null ? seatType : "") + " - " + (seatCode != null ? seatCode : "");
+                        try {
+                            invoicesRepo.insertInvoiceItem(
+                                    invoiceId, ticketId, itemDesc,
+                                    movieTitle, showDate, startTime,
+                                    roomName, seatCode, ticketType, seatType,
+                                    price, price
+                            );
+                        } catch (Exception ex) {
+                            LOGGER.log(Level.WARNING, "insertInvoiceItem failed for ticketId=" + ticketId + ", invoiceId=" + invoiceId, ex);
+                        }
+                    }
+                }
+
+                // Tích điểm thành viên từ hóa đơn (theo cấu hình admin)
+                if (invoiceId > 0 && totalAmount != null && totalAmount.compareTo(BigDecimal.ZERO) > 0) {
+                    LoyaltyConfigs loyaltyConfigs = null;
+                    Users usersRepoLoyalty = null;
+                    PointHistories pointHistoriesRepo = null;
+                    try {
+                        loyaltyConfigs = new LoyaltyConfigs();
+                        var config = loyaltyConfigs.getConfig();
+                        if (config != null && config.getEarnRateAmount() != null
+                                && config.getEarnRateAmount().compareTo(BigDecimal.ZERO) > 0
+                                && config.getEarnPoints() != null && config.getEarnPoints() > 0) {
+                            BigDecimal rate = config.getEarnRateAmount();
+                            int earnPointsPerRate = config.getEarnPoints();
+                            int earnedPoints = totalAmount.divide(rate, 0, RoundingMode.FLOOR).intValue() * earnPointsPerRate;
+                            if (earnedPoints > 0) {
+                                usersRepoLoyalty = new Users();
+                                if (usersRepoLoyalty.addPoints(customerId, earnedPoints)) {
+                                    pointHistoriesRepo = new PointHistories();
+                                    PointHistory ph = new PointHistory();
+                                    ph.setUserId(customerId);
+                                    ph.setPointsChanged(earnedPoints);
+                                    ph.setTransactionType("EARN");
+                                    ph.setDescription("Tích điểm từ hóa đơn #" + invoiceCode);
+                                    ph.setReferenceId(invoiceId);
+                                    pointHistoriesRepo.insert(ph);
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        LOGGER.log(Level.WARNING, "[BookingPayment] Loyalty points failed", ex);
+                    } finally {
+                        if (pointHistoriesRepo != null) pointHistoriesRepo.closeConnection();
+                        if (usersRepoLoyalty != null) usersRepoLoyalty.closeConnection();
+                        if (loyaltyConfigs != null) loyaltyConfigs.closeConnection();
                     }
                 }
             }

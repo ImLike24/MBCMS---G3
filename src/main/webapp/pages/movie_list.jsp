@@ -171,6 +171,18 @@
             Phim có suất chiếu trong tuần — chọn ngày và đặt vé
             <span class="text-white">(từ ${fromDateStr} đến ${toDateStr})</span>
         </p>
+        <form method="get" action="${pageContext.request.contextPath}/movies" class="mt-4 d-flex flex-wrap align-items-center gap-3">
+            <label class="text-white-50 mb-0 fw-bold"><i class="fa fa-building me-1"></i> Chi nhánh:</label>
+            <select name="branchId" class="form-select form-select-sm bg-dark text-white border-secondary" style="max-width: 280px;" onchange="this.form.submit()">
+                <option value="">Tất cả chi nhánh</option>
+                <c:forEach var="branch" items="${branches}">
+                    <option value="${branch.branchId}" ${selectedBranchId != null && selectedBranchId == branch.branchId ? 'selected' : ''}><c:out value="${branch.branchName}"/></option>
+                </c:forEach>
+            </select>
+            <c:if test="${not empty selectedBranchName}">
+                <span class="badge bg-secondary align-middle">Đang xem: <c:out value="${selectedBranchName}"/></span>
+            </c:if>
+        </form>
     </div>
 
     <c:forEach var="dayGroup" items="${dayGroups}">
