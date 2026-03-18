@@ -57,17 +57,12 @@ public class AddConcession extends HttpServlet {
         try {
             double price = (priceStr != null && !priceStr.trim().isEmpty()) 
                         ? Double.parseDouble(priceStr.trim()) : 0;
-            c.setPriceBase(price / 1000);
+            c.setPriceBase(price);
         } catch (NumberFormatException e) {
             request.setAttribute("error", "Giá cơ bản không hợp lệ.");
             forwardWithConcession(request, response, concessionName, type, qtyStr, priceStr);
             return;
         }
-
-        // Giả sử bạn cần set addedBy từ session (user đang đăng nhập)
-        // Ví dụ: 
-        // Integer userId = (Integer) request.getSession().getAttribute("userId");
-        // c.setAddedBy(userId != null ? userId : 1); // fallback
 
         if (service.addConcession(c)) {
             response.sendRedirect(request.getContextPath() + "/admin/concessions?success=add");
