@@ -193,7 +193,14 @@ public class Branch extends HttpServlet {
             response.sendRedirect("branches?message=updated");
         } catch (Exception e) {
             request.setAttribute("error", e.getMessage());
-            request.setAttribute("branch", extractBranchFromRequest(request));
+
+            CinemaBranch b = extractBranchFromRequest(request);
+
+            String idStr = request.getParameter("branchId");
+            if (idStr != null && !idStr.isEmpty()) {
+                b.setBranchId(Integer.parseInt(idStr));
+            }
+            request.setAttribute("branch", b);
             request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
         }
     }

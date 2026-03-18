@@ -26,9 +26,9 @@
         </nav>
 
         <form action="branches" method="post">
-            <input type="hidden" name="action" value="${not empty room.roomId ? 'update' : 'create'}">
-            <c:if test="${not empty room.roomId}">
-                <input type="hidden" name="roomId" value="${room.roomId}">
+            <input type="hidden" name="action" value="${not empty branch.branchId ? 'update' : 'create'}">
+            <c:if test="${not empty branch.branchId}">
+                <input type="hidden" name="branchId" value="${branch.branchId}">
             </c:if>
 
             <div class="card card-custom">

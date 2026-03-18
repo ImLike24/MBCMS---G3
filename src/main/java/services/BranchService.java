@@ -55,7 +55,7 @@ public class BranchService {
 
         // Validate Email
         if (branch.getEmail() != null && !branch.getEmail().trim().isEmpty()) {
-            if (!branch.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            if (!branch.getEmail().matches("^[A-Za-z0-9+_.-]+@gmail\\.com$")) {
                 throw new Exception("Email không đúng định dạng.");
             }
         }
