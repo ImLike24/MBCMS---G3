@@ -15,6 +15,7 @@ UPDATE cinema_branches SET manager_id = NULL;
 UPDATE users SET branch_id = NULL;
 
 -- 2) Xóa dữ liệu từ bảng con lên bảng cha theo FK
+DELETE FROM staff_schedules;
 DELETE FROM reported_comments;
 DELETE FROM invoice_items;
 DELETE FROM invoices;
@@ -58,6 +59,7 @@ DBCC CHECKIDENT ('vouchers', RESEED, 0);
 DBCC CHECKIDENT ('user_vouchers', RESEED, 0);
 DBCC CHECKIDENT ('point_history', RESEED, 0);
 DBCC CHECKIDENT ('reviews', RESEED, 0);
+DBCC CHECKIDENT ('staff_schedules', RESEED, 0);
 GO
 
 -- Mật khẩu mẫu cho tất cả user: 123456 (bcrypt hash bên dưới)
@@ -377,3 +379,417 @@ INSERT INTO showtimes (showtime_id, movie_id, room_id, show_date, start_time, en
 SET IDENTITY_INSERT showtimes OFF;
 GO
 
+-- =============================================
+-- DỮ LIỆU MẪU: 18/03/2026 → 01/04/2026
+-- Bao gồm: Showtimes, Counter Tickets, Invoices, Staff Schedules
+-- =============================================
+
+-- =============================================
+-- A. SHOWTIMES: 18/03 → 01/04/2026
+-- Branch 1 (rooms 1,2,3) và Branch 2 (rooms 4,5)
+-- Mỗi ngày 2–3 suất mỗi branch, đa dạng phim và giờ
+-- showtime_id bắt đầu từ 19
+-- =============================================
+SET IDENTITY_INSERT showtimes ON;
+
+INSERT INTO showtimes (showtime_id, movie_id, room_id, show_date, start_time, end_time, base_price, status) VALUES
+-- ===== BRANCH 1 =====
+-- 18/03 (Thứ 4 - WEEKDAY)
+(19, 1, 1, '2026-03-18', '08:30', '10:20', 65000, 'COMPLETED'),
+(20, 3, 2, '2026-03-18', '14:00', '16:46', 75000, 'COMPLETED'),
+(21, 5, 3, '2026-03-18', '19:00', '20:36', 85000, 'COMPLETED'),
+-- 19/03 (Thứ 5 - WEEKDAY)
+(22, 2, 1, '2026-03-19', '09:00', '11:00', 65000, 'COMPLETED'),
+(23, 4, 2, '2026-03-19', '14:30', '16:41', 75000, 'COMPLETED'),
+(24, 1, 3, '2026-03-19', '20:00', '21:50', 85000, 'COMPLETED'),
+-- 20/03 (Thứ 6 - WEEKDAY)
+(25, 3, 1, '2026-03-20', '10:00', '12:46', 65000, 'COMPLETED'),
+(26, 5, 2, '2026-03-20', '15:00', '16:36', 75000, 'COMPLETED'),
+(27, 2, 3, '2026-03-20', '19:30', '21:30', 85000, 'COMPLETED'),
+-- 21/03 (Thứ 7 - WEEKEND)
+(28, 1, 1, '2026-03-21', '09:00', '10:50', 75000, 'COMPLETED'),
+(29, 3, 2, '2026-03-21', '13:00', '15:46', 85000, 'COMPLETED'),
+(30, 4, 3, '2026-03-21', '18:00', '20:11', 95000, 'COMPLETED'),
+-- 22/03 (Chủ nhật - WEEKEND)
+(31, 5, 1, '2026-03-22', '10:00', '11:36', 75000, 'COMPLETED'),
+(32, 2, 2, '2026-03-22', '14:00', '16:00', 85000, 'COMPLETED'),
+(33, 1, 3, '2026-03-22', '19:00', '20:50', 95000, 'COMPLETED'),
+-- 23/03 (Thứ 2 - WEEKDAY)
+(34, 4, 1, '2026-03-23', '09:00', '11:11', 65000, 'COMPLETED'),
+(35, 3, 2, '2026-03-23', '15:00', '17:46', 75000, 'COMPLETED'),
+(36, 5, 3, '2026-03-23', '19:00', '20:36', 85000, 'COMPLETED'),
+-- 24/03 (Thứ 3 - WEEKDAY)
+(37, 1, 1, '2026-03-24', '08:30', '10:20', 65000, 'COMPLETED'),
+(38, 2, 2, '2026-03-24', '14:00', '16:00', 75000, 'COMPLETED'),
+(39, 3, 3, '2026-03-24', '20:00', '22:46', 85000, 'COMPLETED'),
+-- 25/03 (Thứ 4 - WEEKDAY)
+(40, 5, 1, '2026-03-25', '09:00', '10:36', 65000, 'COMPLETED'),
+(41, 4, 2, '2026-03-25', '14:30', '16:41', 75000, 'COMPLETED'),
+(42, 1, 3, '2026-03-25', '19:00', '20:50', 85000, 'COMPLETED'),
+-- 26/03 (Thứ 5 - WEEKDAY)
+(43, 2, 1, '2026-03-26', '10:00', '12:00', 65000, 'COMPLETED'),
+(44, 3, 2, '2026-03-26', '15:00', '17:46', 75000, 'COMPLETED'),
+(45, 5, 3, '2026-03-26', '19:30', '21:06', 85000, 'COMPLETED'),
+-- 27/03 (Thứ 6 - WEEKDAY)
+(46, 4, 1, '2026-03-27', '09:00', '11:11', 65000, 'COMPLETED'),
+(47, 1, 2, '2026-03-27', '14:00', '15:50', 75000, 'COMPLETED'),
+(48, 2, 3, '2026-03-27', '20:00', '22:00', 85000, 'COMPLETED'),
+-- 28/03 (Thứ 7 - WEEKEND)
+(49, 3, 1, '2026-03-28', '09:30', '12:16', 75000, 'COMPLETED'),
+(50, 5, 2, '2026-03-28', '13:00', '14:36', 85000, 'COMPLETED'),
+(51, 1, 3, '2026-03-28', '18:30', '20:20', 95000, 'COMPLETED'),
+-- 29/03 (Chủ nhật - WEEKEND)
+(52, 2, 1, '2026-03-29', '10:00', '12:00', 75000, 'COMPLETED'),
+(53, 4, 2, '2026-03-29', '14:00', '16:11', 85000, 'COMPLETED'),
+(54, 3, 3, '2026-03-29', '19:00', '21:46', 95000, 'COMPLETED'),
+-- 30/03 (Thứ 2 - WEEKDAY)
+(55, 5, 1, '2026-03-30', '09:00', '10:36', 65000, 'COMPLETED'),
+(56, 1, 2, '2026-03-30', '14:00', '15:50', 75000, 'COMPLETED'),
+(57, 2, 3, '2026-03-30', '19:00', '21:00', 85000, 'COMPLETED'),
+-- 31/03 (Thứ 3 - WEEKDAY)
+(58, 4, 1, '2026-03-31', '10:00', '12:11', 65000, 'SCHEDULED'),
+(59, 3, 2, '2026-03-31', '15:00', '17:46', 75000, 'SCHEDULED'),
+(60, 5, 3, '2026-03-31', '19:00', '20:36', 85000, 'SCHEDULED'),
+-- 01/04 (Thứ 4 - WEEKDAY)
+(61, 1, 1, '2026-04-01', '09:00', '10:50', 65000, 'SCHEDULED'),
+(62, 2, 2, '2026-04-01', '14:00', '16:00', 75000, 'SCHEDULED'),
+(63, 3, 3, '2026-04-01', '19:30', '22:16', 85000, 'SCHEDULED'),
+
+-- ===== BRANCH 2 (rooms 4,5) =====
+-- 18/03
+(64, 1, 4, '2026-03-18', '09:00', '10:50', 65000, 'COMPLETED'),
+(65, 5, 5, '2026-03-18', '14:00', '15:36', 75000, 'COMPLETED'),
+(66, 2, 4, '2026-03-18', '19:00', '21:00', 85000, 'COMPLETED'),
+-- 19/03
+(67, 3, 4, '2026-03-19', '10:00', '12:46', 65000, 'COMPLETED'),
+(68, 4, 5, '2026-03-19', '15:00', '17:11', 75000, 'COMPLETED'),
+-- 20/03
+(69, 5, 4, '2026-03-20', '09:30', '11:06', 65000, 'COMPLETED'),
+(70, 1, 5, '2026-03-20', '19:00', '20:50', 85000, 'COMPLETED'),
+-- 21/03 (WEEKEND)
+(71, 2, 4, '2026-03-21', '10:00', '12:00', 75000, 'COMPLETED'),
+(72, 3, 5, '2026-03-21', '14:00', '16:46', 85000, 'COMPLETED'),
+(73, 4, 4, '2026-03-21', '19:00', '21:11', 95000, 'COMPLETED'),
+-- 22/03 (WEEKEND)
+(74, 5, 5, '2026-03-22', '09:00', '10:36', 75000, 'COMPLETED'),
+(75, 1, 4, '2026-03-22', '15:00', '16:50', 85000, 'COMPLETED'),
+-- 23/03–27/03 (WEEKDAY)
+(76, 2, 4, '2026-03-23', '14:00', '16:00', 75000, 'COMPLETED'),
+(77, 4, 5, '2026-03-24', '19:00', '21:11', 85000, 'COMPLETED'),
+(78, 3, 4, '2026-03-25', '10:00', '12:46', 65000, 'COMPLETED'),
+(79, 5, 5, '2026-03-26', '14:00', '15:36', 75000, 'COMPLETED'),
+(80, 1, 4, '2026-03-27', '19:00', '20:50', 85000, 'COMPLETED'),
+-- 28/03–29/03 (WEEKEND)
+(81, 2, 4, '2026-03-28', '11:00', '13:00', 75000, 'COMPLETED'),
+(82, 3, 5, '2026-03-28', '18:00', '20:46', 95000, 'COMPLETED'),
+(83, 4, 4, '2026-03-29', '10:00', '12:11', 75000, 'COMPLETED'),
+(84, 5, 5, '2026-03-29', '19:00', '20:36', 95000, 'COMPLETED'),
+-- 30/03–01/04
+(85, 1, 4, '2026-03-30', '14:00', '15:50', 75000, 'COMPLETED'),
+(86, 2, 5, '2026-03-31', '19:00', '21:00', 85000, 'SCHEDULED'),
+(87, 3, 4, '2026-04-01', '10:00', '12:46', 65000, 'SCHEDULED');
+
+SET IDENTITY_INSERT showtimes OFF;
+GO
+
+-- Cập nhật total_seats cho các phòng
+UPDATE screening_rooms SET total_seats = (SELECT COUNT(*) FROM seats WHERE seats.room_id = screening_rooms.room_id);
+GO
+
+-- =============================================
+-- B. COUNTER TICKETS: 18/03 → 30/03/2026
+-- Branch 1: sold_by staff1 (user_id=2) và staff2 (user_id=3)
+-- Branch 2: sold_by staff3 (user_id=9)
+-- Seat IDs: Room 1 (1-24), Room 2 (25-39), Room 3 (40-59), Room 4 (60-77), Room 5 (78-92)
+-- =============================================
+INSERT INTO counter_tickets (showtime_id, seat_id, ticket_type, seat_type, price, sold_by, payment_method, customer_name, customer_phone, sold_at) VALUES
+-- 18/03 branch 1, showtime 19 (room 1, 08:30)
+(19, 3,  'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Trần Văn Nam',      '0901111001', '2026-03-18 08:15:00'),
+(19, 4,  'CHILD',  'NORMAL', 45000, 2, 'CASH',    N'Trần Văn Nam',      '0901111001', '2026-03-18 08:15:00'),
+(19, 7,  'ADULT',  'NORMAL', 65000, 2, 'BANKING', N'Lê Thị Hoa',        '0902222002', '2026-03-18 08:20:00'),
+-- 18/03 branch 1, showtime 21 (room 3, 19:00)
+(21, 41, 'ADULT',  'NORMAL', 85000, 3, 'CASH',    N'Phạm Minh Đức',     '0903333003', '2026-03-18 18:45:00'),
+(21, 42, 'ADULT',  'NORMAL', 85000, 3, 'CASH',    N'Phạm Minh Đức',     '0903333003', '2026-03-18 18:45:00'),
+(21, 50, 'ADULT',  'NORMAL', 85000, 3, 'BANKING', N'Ngô Thị Bích',      '0904444004', '2026-03-18 18:50:00'),
+-- 18/03 branch 2, showtime 64 (room 4, 09:00)
+(64, 60, 'ADULT',  'NORMAL', 65000, 9, 'CASH',    N'Huỳnh Văn Tài',     '0905555005', '2026-03-18 08:50:00'),
+(64, 61, 'CHILD',  'NORMAL', 45000, 9, 'CASH',    N'Huỳnh Văn Tài',     '0905555005', '2026-03-18 08:50:00'),
+-- 18/03 branch 2, showtime 66 (room 4, 19:00)
+(66, 63, 'ADULT',  'NORMAL', 85000, 9, 'BANKING', N'Võ Thị Kim',        '0906666006', '2026-03-18 18:40:00'),
+(66, 64, 'ADULT',  'NORMAL', 85000, 9, 'CASH',    N'Bùi Văn Hùng',      '0907777007', '2026-03-18 18:55:00'),
+
+-- 19/03 branch 1, showtime 22 (room 1, 09:00)
+(22, 5,  'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Đặng Thị Lan',      '0908888008', '2026-03-19 08:45:00'),
+(22, 8,  'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Đặng Thị Lan',      '0908888008', '2026-03-19 08:45:00'),
+-- 19/03 branch 1, showtime 24 (room 3, 20:00)
+(24, 40, 'ADULT',  'NORMAL', 85000, 3, 'BANKING', N'Trương Quốc Bảo',   '0909999009', '2026-03-19 19:45:00'),
+(24, 52, 'ADULT',  'NORMAL', 85000, 3, 'CASH',    N'Lý Thị Mai',        '0910000010', '2026-03-19 19:50:00'),
+
+-- 20/03 branch 1, showtime 25 (room 1, 10:00)
+(25, 9,  'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Phan Văn Khoa',     '0911111011', '2026-03-20 09:50:00'),
+(25, 10, 'CHILD',  'NORMAL', 45000, 2, 'CASH',    N'Phan Văn Khoa',     '0911111011', '2026-03-20 09:50:00'),
+(25, 17, 'ADULT',  'VIP',    75000, 2, 'BANKING', N'Đinh Thị Thu',      '0912222012', '2026-03-20 09:55:00'),
+-- 20/03 branch 1, showtime 27 (room 3, 19:30)
+(27, 43, 'ADULT',  'NORMAL', 85000, 3, 'CASH',    N'Nguyễn Bá Thắng',   '0913333013', '2026-03-20 19:20:00'),
+(27, 55, 'ADULT',  'NORMAL', 85000, 3, 'BANKING', N'Trần Mỹ Linh',      '0914444014', '2026-03-20 19:25:00'),
+
+-- 21/03 (WEEKEND) branch 1, showtime 28 (room 1, 09:00)
+(28, 11, 'ADULT',  'NORMAL', 75000, 2, 'CASH',    N'Vũ Đức Thịnh',      '0915555015', '2026-03-21 08:50:00'),
+(28, 12, 'ADULT',  'NORMAL', 75000, 2, 'CASH',    N'Vũ Đức Thịnh',      '0915555015', '2026-03-21 08:50:00'),
+(28, 19, 'ADULT',  'COUPLE', 95000, 2, 'BANKING', N'Hoàng Văn Phúc',    '0916666016', '2026-03-21 08:55:00'),
+(28, 20, 'ADULT',  'COUPLE', 95000, 2, 'BANKING', N'Hoàng Văn Phúc',    '0916666016', '2026-03-21 08:55:00'),
+-- 21/03 branch 1, showtime 30 (room 3, 18:00)
+(30, 44, 'ADULT',  'NORMAL', 95000, 3, 'CASH',    N'Lê Phương Thảo',    '0917777017', '2026-03-21 17:50:00'),
+(30, 56, 'ADULT',  'NORMAL', 95000, 3, 'CASH',    N'Dương Văn Long',    '0918888018', '2026-03-21 17:55:00'),
+(30, 57, 'CHILD',  'NORMAL', 65000, 3, 'BANKING', N'Dương Văn Long',    '0918888018', '2026-03-21 17:55:00'),
+
+-- 22/03 (WEEKEND) branch 1, showtime 31 (room 1, 10:00)
+(31, 13, 'ADULT',  'NORMAL', 75000, 2, 'CASH',    N'Mai Quốc Hưng',     '0919999019', '2026-03-22 09:50:00'),
+(31, 14, 'CHILD',  'NORMAL', 55000, 2, 'CASH',    N'Mai Quốc Hưng',     '0919999019', '2026-03-22 09:50:00'),
+-- 22/03 branch 1, showtime 33 (room 3, 19:00)
+(33, 45, 'ADULT',  'NORMAL', 95000, 3, 'BANKING', N'Cao Thị Ngọc',      '0920000020', '2026-03-22 18:45:00'),
+(33, 46, 'ADULT',  'NORMAL', 95000, 3, 'CASH',    N'Tăng Văn Bình',     '0921111021', '2026-03-22 18:50:00'),
+
+-- 23/03 branch 1, showtime 34 (room 1, 09:00)
+(34, 15, 'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Quách Minh Tuấn',   '0922222022', '2026-03-23 08:50:00'),
+(34, 16, 'ADULT',  'NORMAL', 65000, 2, 'BANKING', N'Trịnh Thị Hạnh',    '0923333023', '2026-03-23 08:55:00'),
+-- 23/03 branch 1, showtime 36 (room 3, 19:00)
+(36, 47, 'ADULT',  'NORMAL', 85000, 3, 'CASH',    N'Đỗ Văn Tiến',       '0924444024', '2026-03-23 18:48:00'),
+
+-- 24/03 branch 1, showtime 37 (room 1, 08:30)
+(37, 21, 'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Phùng Thị Yến',     '0925555025', '2026-03-24 08:20:00'),
+(37, 22, 'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Lâm Quốc Khánh',    '0926666026', '2026-03-24 08:25:00'),
+-- 24/03 branch 1, showtime 39 (room 3, 20:00)
+(39, 48, 'ADULT',  'NORMAL', 85000, 3, 'BANKING', N'Hà Thị Bảo Châu',   '0927777027', '2026-03-24 19:50:00'),
+(39, 49, 'CHILD',  'NORMAL', 55000, 3, 'CASH',    N'Nguyễn Thành Đạt',  '0928888028', '2026-03-24 19:55:00'),
+
+-- 25/03 branch 1, showtime 40 (room 1, 09:00)
+(40, 23, 'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Dương Thị Kim Anh', '0929999029', '2026-03-25 08:50:00'),
+(40, 24, 'ADULT',  'NORMAL', 65000, 2, 'BANKING', N'Tô Văn Hải',        '0930000030', '2026-03-25 08:55:00'),
+-- 25/03 branch 1, showtime 42 (room 3, 19:00)
+(42, 51, 'ADULT',  'NORMAL', 85000, 3, 'CASH',    N'Lưu Thị Diệu',      '0931111031', '2026-03-25 18:48:00'),
+(42, 53, 'ADULT',  'VIP',    95000, 3, 'BANKING', N'Phan Tuấn Anh',     '0932222032', '2026-03-25 18:52:00'),
+
+-- 26/03 branch 1, showtime 43 (room 1, 10:00)
+(43, 25, 'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Từ Minh Châu',      '0933333033', '2026-03-26 09:50:00'),
+(43, 26, 'CHILD',  'NORMAL', 45000, 2, 'CASH',    N'Từ Minh Châu',      '0933333033', '2026-03-26 09:50:00'),
+-- 26/03 branch 1, showtime 45 (room 3, 19:30)
+(45, 54, 'ADULT',  'NORMAL', 85000, 3, 'BANKING', N'Vương Văn Đức',     '0934444034', '2026-03-26 19:20:00'),
+
+-- 27/03 branch 1, showtime 46 (room 1, 09:00)
+(46, 27, 'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Hồ Thị Bảo Trân',   '0935555035', '2026-03-27 08:50:00'),
+(46, 28, 'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Bùi Đình Toàn',     '0936666036', '2026-03-27 08:55:00'),
+-- 27/03 branch 1, showtime 48 (room 3, 20:00)
+(48, 58, 'ADULT',  'NORMAL', 85000, 3, 'CASH',    N'Kiều Thị Thanh',    '0937777037', '2026-03-27 19:50:00'),
+(48, 59, 'ADULT',  'NORMAL', 85000, 3, 'BANKING', N'Nghiêm Xuân Hùng',  '0938888038', '2026-03-27 19:55:00'),
+
+-- 28/03 (WEEKEND) branch 1, showtime 49 (room 1, 09:30)
+(49, 29, 'ADULT',  'NORMAL', 75000, 2, 'CASH',    N'Chu Văn Tùng',      '0939999039', '2026-03-28 09:20:00'),
+(49, 30, 'ADULT',  'NORMAL', 75000, 2, 'BANKING', N'Trần Ngọc Hiếu',    '0940000040', '2026-03-28 09:25:00'),
+(49, 18, 'ADULT',  'VIP',    95000, 2, 'BANKING', N'Phạm Bảo Ngọc',     '0941111041', '2026-03-28 09:28:00'),
+-- 28/03 branch 1, showtime 51 (room 3, 18:30)
+(51, 40, 'ADULT',  'NORMAL', 95000, 3, 'CASH',    N'Lưu Ngọc Quỳnh',    '0942222042', '2026-03-28 18:20:00'),
+(51, 41, 'ADULT',  'NORMAL', 95000, 3, 'CASH',    N'Đoàn Văn Phong',    '0943333043', '2026-03-28 18:25:00'),
+(51, 42, 'CHILD',  'NORMAL', 65000, 3, 'BANKING', N'Đoàn Văn Phong',    '0943333043', '2026-03-28 18:25:00'),
+
+-- 29/03 (WEEKEND) branch 1, showtime 52 (room 1, 10:00)
+(52, 31, 'ADULT',  'NORMAL', 75000, 2, 'CASH',    N'Lý Minh Phúc',      '0944444044', '2026-03-29 09:50:00'),
+(52, 32, 'CHILD',  'NORMAL', 55000, 2, 'CASH',    N'Lý Minh Phúc',      '0944444044', '2026-03-29 09:50:00'),
+-- 29/03 branch 1, showtime 54 (room 3, 19:00)
+(54, 43, 'ADULT',  'NORMAL', 95000, 3, 'BANKING', N'Cao Văn Tuấn',      '0945555045', '2026-03-29 18:50:00'),
+(54, 44, 'ADULT',  'NORMAL', 95000, 3, 'CASH',    N'Ninh Thị Thu Hà',   '0946666046', '2026-03-29 18:55:00'),
+
+-- 30/03 branch 1, showtime 55 (room 1, 09:00)
+(55, 33, 'ADULT',  'NORMAL', 65000, 2, 'CASH',    N'Triệu Văn An',      '0947777047', '2026-03-30 08:50:00'),
+(55, 34, 'ADULT',  'NORMAL', 65000, 2, 'BANKING', N'Phùng Ngọc Lan',    '0948888048', '2026-03-30 08:55:00'),
+-- 30/03 branch 1, showtime 57 (room 3, 19:00)
+(57, 45, 'ADULT',  'NORMAL', 85000, 3, 'CASH',    N'Diệp Hữu Nghĩa',    '0949999049', '2026-03-30 18:48:00'),
+(57, 46, 'CHILD',  'NORMAL', 55000, 3, 'CASH',    N'Diệp Hữu Nghĩa',    '0949999049', '2026-03-30 18:48:00'),
+
+-- Branch 2 counter tickets
+(67, 62, 'ADULT',  'NORMAL', 65000, 9, 'CASH',    N'Ngô Thanh Bình',    '0951111051', '2026-03-19 09:50:00'),
+(67, 63, 'ADULT',  'NORMAL', 65000, 9, 'BANKING', N'Lưu Thị Ngọc',      '0952222052', '2026-03-19 09:55:00'),
+(71, 65, 'ADULT',  'NORMAL', 75000, 9, 'CASH',    N'Trương Văn Hào',    '0953333053', '2026-03-21 09:50:00'),
+(71, 66, 'CHILD',  'NORMAL', 55000, 9, 'CASH',    N'Trương Văn Hào',    '0953333053', '2026-03-21 09:50:00'),
+(73, 68, 'ADULT',  'NORMAL', 95000, 9, 'BANKING', N'Mạc Thị Tuyết',     '0954444054', '2026-03-21 18:50:00'),
+(73, 69, 'ADULT',  'NORMAL', 95000, 9, 'CASH',    N'Phan Đình Minh',    '0955555055', '2026-03-21 18:55:00'),
+(75, 71, 'ADULT',  'NORMAL', 85000, 9, 'CASH',    N'Giang Văn Tú',      '0956666056', '2026-03-22 14:50:00'),
+(78, 73, 'ADULT',  'NORMAL', 65000, 9, 'BANKING', N'Điền Thị Hương',    '0957777057', '2026-03-25 09:50:00'),
+(78, 74, 'ADULT',  'NORMAL', 65000, 9, 'CASH',    N'Sơn Văn Dũng',      '0958888058', '2026-03-25 09:55:00'),
+(80, 75, 'ADULT',  'NORMAL', 85000, 9, 'CASH',    N'Lê Ngọc Sơn',       '0959999059', '2026-03-27 18:50:00'),
+(80, 76, 'CHILD',  'NORMAL', 55000, 9, 'BANKING', N'Lê Ngọc Sơn',       '0959999059', '2026-03-27 18:50:00'),
+(82, 78, 'ADULT',  'NORMAL', 95000, 9, 'CASH',    N'Trần Bảo Châu',     '0960000060', '2026-03-28 17:50:00'),
+(82, 79, 'ADULT',  'NORMAL', 95000, 9, 'BANKING', N'Hoàng Đức Duy',     '0961111061', '2026-03-28 17:55:00'),
+(83, 80, 'ADULT',  'NORMAL', 75000, 9, 'CASH',    N'Dư Thị Nga',        '0962222062', '2026-03-29 09:50:00'),
+(84, 81, 'ADULT',  'NORMAL', 95000, 9, 'BANKING', N'Võ Bá Huy',         '0963333063', '2026-03-29 18:50:00'),
+(85, 82, 'ADULT',  'NORMAL', 75000, 9, 'CASH',    N'Dương Quang Minh',  '0964444064', '2026-03-30 13:50:00'),
+(85, 83, 'CHILD',  'NORMAL', 55000, 9, 'CASH',    N'Dương Quang Minh',  '0964444064', '2026-03-30 13:50:00');
+GO
+
+-- =============================================
+-- C. INVOICES cho counter tickets trên (mẫu đại diện)
+-- =============================================
+SET IDENTITY_INSERT invoices ON;
+
+INSERT INTO invoices (invoice_id, invoice_code, booking_id, sale_channel, customer_name, customer_phone, customer_email, branch_id, total_amount, discount_amount, final_amount, payment_method, payment_status, status, created_by, notes) VALUES
+(3,  'INV-20260318-0001', NULL, 'COUNTER', N'Trần Văn Nam',      '0901111001', NULL, 1, 110000, 0, 110000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(4,  'INV-20260318-0002', NULL, 'COUNTER', N'Lê Thị Hoa',        '0902222002', NULL, 1,  65000, 0,  65000, 'BANKING', 'PAID', 'ACTIVE', 2, NULL),
+(5,  'INV-20260318-0003', NULL, 'COUNTER', N'Phạm Minh Đức',     '0903333003', NULL, 1, 170000, 0, 170000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(6,  'INV-20260318-0004', NULL, 'COUNTER', N'Ngô Thị Bích',      '0904444004', NULL, 1,  85000, 0,  85000, 'BANKING', 'PAID', 'ACTIVE', 3, NULL),
+(7,  'INV-20260318-0005', NULL, 'COUNTER', N'Huỳnh Văn Tài',     '0905555005', NULL, 2, 110000, 0, 110000, 'CASH',    'PAID', 'ACTIVE', 9, NULL),
+(8,  'INV-20260318-0006', NULL, 'COUNTER', N'Võ Thị Kim',        '0906666006', NULL, 2,  85000, 0,  85000, 'BANKING', 'PAID', 'ACTIVE', 9, NULL),
+(9,  'INV-20260318-0007', NULL, 'COUNTER', N'Bùi Văn Hùng',      '0907777007', NULL, 2,  85000, 0,  85000, 'CASH',    'PAID', 'ACTIVE', 9, NULL),
+(10, 'INV-20260319-0001', NULL, 'COUNTER', N'Đặng Thị Lan',      '0908888008', NULL, 1, 130000, 0, 130000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(11, 'INV-20260319-0002', NULL, 'COUNTER', N'Trương Quốc Bảo',   '0909999009', NULL, 1,  85000, 0,  85000, 'BANKING', 'PAID', 'ACTIVE', 3, NULL),
+(12, 'INV-20260319-0003', NULL, 'COUNTER', N'Lý Thị Mai',        '0910000010', NULL, 1,  85000, 0,  85000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(13, 'INV-20260319-0004', NULL, 'COUNTER', N'Ngô Thanh Bình',    '0951111051', NULL, 2,  65000, 0,  65000, 'CASH',    'PAID', 'ACTIVE', 9, NULL),
+(14, 'INV-20260319-0005', NULL, 'COUNTER', N'Lưu Thị Ngọc',      '0952222052', NULL, 2,  65000, 0,  65000, 'BANKING', 'PAID', 'ACTIVE', 9, NULL),
+(15, 'INV-20260320-0001', NULL, 'COUNTER', N'Phan Văn Khoa',     '0911111011', NULL, 1, 110000, 0, 110000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(16, 'INV-20260320-0002', NULL, 'COUNTER', N'Đinh Thị Thu',      '0912222012', NULL, 1,  75000, 0,  75000, 'BANKING', 'PAID', 'ACTIVE', 2, NULL),
+(17, 'INV-20260320-0003', NULL, 'COUNTER', N'Nguyễn Bá Thắng',   '0913333013', NULL, 1,  85000, 0,  85000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(18, 'INV-20260320-0004', NULL, 'COUNTER', N'Trần Mỹ Linh',      '0914444014', NULL, 1,  85000, 0,  85000, 'BANKING', 'PAID', 'ACTIVE', 3, NULL),
+(19, 'INV-20260321-0001', NULL, 'COUNTER', N'Vũ Đức Thịnh',      '0915555015', NULL, 1, 150000, 0, 150000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(20, 'INV-20260321-0002', NULL, 'COUNTER', N'Hoàng Văn Phúc',    '0916666016', NULL, 1, 190000, 0, 190000, 'BANKING', 'PAID', 'ACTIVE', 2, N'Cặp đôi'),
+(21, 'INV-20260321-0003', NULL, 'COUNTER', N'Lê Phương Thảo',    '0917777017', NULL, 1,  95000, 0,  95000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(22, 'INV-20260321-0004', NULL, 'COUNTER', N'Dương Văn Long',    '0918888018', NULL, 1, 160000, 0, 160000, 'BANKING', 'PAID', 'ACTIVE', 3, NULL),
+(23, 'INV-20260321-0005', NULL, 'COUNTER', N'Trương Văn Hào',    '0953333053', NULL, 2, 130000, 0, 130000, 'CASH',    'PAID', 'ACTIVE', 9, NULL),
+(24, 'INV-20260321-0006', NULL, 'COUNTER', N'Mạc Thị Tuyết',     '0954444054', NULL, 2,  95000, 0,  95000, 'BANKING', 'PAID', 'ACTIVE', 9, NULL),
+(25, 'INV-20260321-0007', NULL, 'COUNTER', N'Phan Đình Minh',    '0955555055', NULL, 2,  95000, 0,  95000, 'CASH',    'PAID', 'ACTIVE', 9, NULL),
+(26, 'INV-20260322-0001', NULL, 'COUNTER', N'Mai Quốc Hưng',     '0919999019', NULL, 1, 130000, 0, 130000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(27, 'INV-20260322-0002', NULL, 'COUNTER', N'Cao Thị Ngọc',      '0920000020', NULL, 1,  95000, 0,  95000, 'BANKING', 'PAID', 'ACTIVE', 3, NULL),
+(28, 'INV-20260322-0003', NULL, 'COUNTER', N'Tăng Văn Bình',     '0921111021', NULL, 1,  95000, 0,  95000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(29, 'INV-20260322-0004', NULL, 'COUNTER', N'Giang Văn Tú',      '0956666056', NULL, 2,  85000, 0,  85000, 'CASH',    'PAID', 'ACTIVE', 9, NULL),
+(30, 'INV-20260323-0001', NULL, 'COUNTER', N'Quách Minh Tuấn',   '0922222022', NULL, 1,  65000, 0,  65000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(31, 'INV-20260323-0002', NULL, 'COUNTER', N'Trịnh Thị Hạnh',    '0923333023', NULL, 1,  65000, 0,  65000, 'BANKING', 'PAID', 'ACTIVE', 2, NULL),
+(32, 'INV-20260323-0003', NULL, 'COUNTER', N'Đỗ Văn Tiến',       '0924444024', NULL, 1,  85000, 0,  85000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(33, 'INV-20260324-0001', NULL, 'COUNTER', N'Phùng Thị Yến',     '0925555025', NULL, 1,  65000, 0,  65000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(34, 'INV-20260324-0002', NULL, 'COUNTER', N'Lâm Quốc Khánh',    '0926666026', NULL, 1,  65000, 0,  65000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(35, 'INV-20260324-0003', NULL, 'COUNTER', N'Hà Thị Bảo Châu',   '0927777027', NULL, 1,  85000, 0,  85000, 'BANKING', 'PAID', 'ACTIVE', 3, NULL),
+(36, 'INV-20260324-0004', NULL, 'COUNTER', N'Nguyễn Thành Đạt',  '0928888028', NULL, 1,  55000, 0,  55000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(37, 'INV-20260325-0001', NULL, 'COUNTER', N'Dương Thị Kim Anh', '0929999029', NULL, 1,  65000, 0,  65000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(38, 'INV-20260325-0002', NULL, 'COUNTER', N'Tô Văn Hải',        '0930000030', NULL, 1,  65000, 0,  65000, 'BANKING', 'PAID', 'ACTIVE', 2, NULL),
+(39, 'INV-20260325-0003', NULL, 'COUNTER', N'Lưu Thị Diệu',      '0931111031', NULL, 1,  85000, 0,  85000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(40, 'INV-20260325-0004', NULL, 'COUNTER', N'Phan Tuấn Anh',     '0932222032', NULL, 1,  95000, 0,  95000, 'BANKING', 'PAID', 'ACTIVE', 3, NULL),
+(41, 'INV-20260325-0005', NULL, 'COUNTER', N'Điền Thị Hương',    '0957777057', NULL, 2,  65000, 0,  65000, 'BANKING', 'PAID', 'ACTIVE', 9, NULL),
+(42, 'INV-20260325-0006', NULL, 'COUNTER', N'Sơn Văn Dũng',      '0958888058', NULL, 2,  65000, 0,  65000, 'CASH',    'PAID', 'ACTIVE', 9, NULL),
+(43, 'INV-20260326-0001', NULL, 'COUNTER', N'Từ Minh Châu',      '0933333033', NULL, 1, 110000, 0, 110000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(44, 'INV-20260326-0002', NULL, 'COUNTER', N'Vương Văn Đức',     '0934444034', NULL, 1,  85000, 0,  85000, 'BANKING', 'PAID', 'ACTIVE', 3, NULL),
+(45, 'INV-20260327-0001', NULL, 'COUNTER', N'Hồ Thị Bảo Trân',   '0935555035', NULL, 1,  65000, 0,  65000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(46, 'INV-20260327-0002', NULL, 'COUNTER', N'Bùi Đình Toàn',     '0936666036', NULL, 1,  65000, 0,  65000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(47, 'INV-20260327-0003', NULL, 'COUNTER', N'Kiều Thị Thanh',    '0937777037', NULL, 1,  85000, 0,  85000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(48, 'INV-20260327-0004', NULL, 'COUNTER', N'Nghiêm Xuân Hùng',  '0938888038', NULL, 1,  85000, 0,  85000, 'BANKING', 'PAID', 'ACTIVE', 3, NULL),
+(49, 'INV-20260327-0005', NULL, 'COUNTER', N'Lê Ngọc Sơn',       '0959999059', NULL, 2, 140000, 0, 140000, 'BANKING', 'PAID', 'ACTIVE', 9, NULL),
+(50, 'INV-20260328-0001', NULL, 'COUNTER', N'Chu Văn Tùng',      '0939999039', NULL, 1,  75000, 0,  75000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(51, 'INV-20260328-0002', NULL, 'COUNTER', N'Trần Ngọc Hiếu',    '0940000040', NULL, 1,  75000, 0,  75000, 'BANKING', 'PAID', 'ACTIVE', 2, NULL),
+(52, 'INV-20260328-0003', NULL, 'COUNTER', N'Phạm Bảo Ngọc',     '0941111041', NULL, 1,  95000, 0,  95000, 'BANKING', 'PAID', 'ACTIVE', 2, N'VIP'),
+(53, 'INV-20260328-0004', NULL, 'COUNTER', N'Lưu Ngọc Quỳnh',    '0942222042', NULL, 1,  95000, 0,  95000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(54, 'INV-20260328-0005', NULL, 'COUNTER', N'Đoàn Văn Phong',    '0943333043', NULL, 1, 160000, 0, 160000, 'BANKING', 'PAID', 'ACTIVE', 3, NULL),
+(55, 'INV-20260328-0006', NULL, 'COUNTER', N'Trần Bảo Châu',     '0960000060', NULL, 2,  95000, 0,  95000, 'CASH',    'PAID', 'ACTIVE', 9, NULL),
+(56, 'INV-20260328-0007', NULL, 'COUNTER', N'Hoàng Đức Duy',     '0961111061', NULL, 2,  95000, 0,  95000, 'BANKING', 'PAID', 'ACTIVE', 9, NULL),
+(57, 'INV-20260329-0001', NULL, 'COUNTER', N'Lý Minh Phúc',      '0944444044', NULL, 1, 130000, 0, 130000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(58, 'INV-20260329-0002', NULL, 'COUNTER', N'Cao Văn Tuấn',      '0945555045', NULL, 1,  95000, 0,  95000, 'BANKING', 'PAID', 'ACTIVE', 3, NULL),
+(59, 'INV-20260329-0003', NULL, 'COUNTER', N'Ninh Thị Thu Hà',   '0946666046', NULL, 1,  95000, 0,  95000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(60, 'INV-20260329-0004', NULL, 'COUNTER', N'Dư Thị Nga',        '0962222062', NULL, 2,  75000, 0,  75000, 'CASH',    'PAID', 'ACTIVE', 9, NULL),
+(61, 'INV-20260329-0005', NULL, 'COUNTER', N'Võ Bá Huy',         '0963333063', NULL, 2,  95000, 0,  95000, 'BANKING', 'PAID', 'ACTIVE', 9, NULL),
+(62, 'INV-20260330-0001', NULL, 'COUNTER', N'Triệu Văn An',      '0947777047', NULL, 1,  65000, 0,  65000, 'CASH',    'PAID', 'ACTIVE', 2, NULL),
+(63, 'INV-20260330-0002', NULL, 'COUNTER', N'Phùng Ngọc Lan',    '0948888048', NULL, 1,  65000, 0,  65000, 'BANKING', 'PAID', 'ACTIVE', 2, NULL),
+(64, 'INV-20260330-0003', NULL, 'COUNTER', N'Diệp Hữu Nghĩa',    '0949999049', NULL, 1, 140000, 0, 140000, 'CASH',    'PAID', 'ACTIVE', 3, NULL),
+(65, 'INV-20260330-0004', NULL, 'COUNTER', N'Dương Quang Minh',  '0964444064', NULL, 2, 130000, 0, 130000, 'CASH',    'PAID', 'ACTIVE', 9, NULL);
+
+SET IDENTITY_INSERT invoices OFF;
+GO
+
+-- =============================================
+-- D. STAFF SCHEDULES: 18/03 → 01/04/2026
+-- Branch 1: staff1 (user_id=2), staff2 (user_id=3) - created_by manager1 (user_id=4)
+-- Branch 2: staff3 (user_id=9) - created_by manager2 (user_id=8)
+-- Ca: MORNING(06-12), AFTERNOON(12-17), EVENING(17-22), NIGHT(22-06)
+-- =============================================
+INSERT INTO staff_schedules (staff_id, branch_id, work_date, shift, status, note, created_by) VALUES
+-- ===== BRANCH 1 STAFF1 (user_id=2) =====
+(2, 1, '2026-03-18', 'MORNING',   'SCHEDULED', NULL, 4),
+(2, 1, '2026-03-19', 'AFTERNOON', 'SCHEDULED', NULL, 4),
+(2, 1, '2026-03-20', 'MORNING',   'SCHEDULED', NULL, 4),
+(2, 1, '2026-03-21', 'MORNING',   'SCHEDULED', N'Cuối tuần tăng ca', 4),
+(2, 1, '2026-03-22', 'MORNING',   'SCHEDULED', N'Cuối tuần tăng ca', 4),
+(2, 1, '2026-03-23', 'AFTERNOON', 'SCHEDULED', NULL, 4),
+(2, 1, '2026-03-24', 'MORNING',   'SCHEDULED', NULL, 4),
+(2, 1, '2026-03-25', 'MORNING',   'SCHEDULED', NULL, 4),
+(2, 1, '2026-03-26', 'AFTERNOON', 'SCHEDULED', NULL, 4),
+(2, 1, '2026-03-27', 'MORNING',   'SCHEDULED', NULL, 4),
+(2, 1, '2026-03-28', 'MORNING',   'SCHEDULED', N'Cuối tuần tăng ca', 4),
+(2, 1, '2026-03-29', 'MORNING',   'SCHEDULED', N'Cuối tuần tăng ca', 4),
+(2, 1, '2026-03-30', 'MORNING',   'SCHEDULED', NULL, 4),
+(2, 1, '2026-03-31', 'AFTERNOON', 'SCHEDULED', NULL, 4),
+(2, 1, '2026-04-01', 'MORNING',   'SCHEDULED', NULL, 4),
+-- ===== BRANCH 1 STAFF2 (user_id=3) =====
+(3, 1, '2026-03-18', 'EVENING',   'SCHEDULED', NULL, 4),
+(3, 1, '2026-03-19', 'EVENING',   'SCHEDULED', NULL, 4),
+(3, 1, '2026-03-20', 'EVENING',   'SCHEDULED', NULL, 4),
+(3, 1, '2026-03-21', 'EVENING',   'SCHEDULED', N'Cuối tuần tăng ca', 4),
+(3, 1, '2026-03-22', 'EVENING',   'SCHEDULED', N'Cuối tuần tăng ca', 4),
+(3, 1, '2026-03-23', 'EVENING',   'SCHEDULED', NULL, 4),
+(3, 1, '2026-03-24', 'AFTERNOON', 'SCHEDULED', NULL, 4),
+(3, 1, '2026-03-25', 'EVENING',   'SCHEDULED', NULL, 4),
+(3, 1, '2026-03-26', 'EVENING',   'CANCELLED', N'Nghỉ phép', 4),
+(3, 1, '2026-03-27', 'EVENING',   'SCHEDULED', NULL, 4),
+(3, 1, '2026-03-28', 'EVENING',   'SCHEDULED', N'Cuối tuần tăng ca', 4),
+(3, 1, '2026-03-29', 'EVENING',   'SCHEDULED', N'Cuối tuần tăng ca', 4),
+(3, 1, '2026-03-30', 'EVENING',   'SCHEDULED', NULL, 4),
+(3, 1, '2026-03-31', 'MORNING',   'SCHEDULED', NULL, 4),
+(3, 1, '2026-04-01', 'EVENING',   'SCHEDULED', NULL, 4),
+-- ===== BRANCH 2 STAFF3 (user_id=9) =====
+(9, 2, '2026-03-18', 'MORNING',   'SCHEDULED', NULL, 8),
+(9, 2, '2026-03-18', 'EVENING',   'SCHEDULED', NULL, 8),
+(9, 2, '2026-03-19', 'MORNING',   'SCHEDULED', NULL, 8),
+(9, 2, '2026-03-20', 'MORNING',   'SCHEDULED', NULL, 8),
+(9, 2, '2026-03-21', 'MORNING',   'SCHEDULED', N'Cuối tuần', 8),
+(9, 2, '2026-03-21', 'EVENING',   'SCHEDULED', N'Cuối tuần tăng ca', 8),
+(9, 2, '2026-03-22', 'AFTERNOON', 'SCHEDULED', N'Cuối tuần', 8),
+(9, 2, '2026-03-23', 'AFTERNOON', 'SCHEDULED', NULL, 8),
+(9, 2, '2026-03-24', 'EVENING',   'SCHEDULED', NULL, 8),
+(9, 2, '2026-03-25', 'MORNING',   'SCHEDULED', NULL, 8),
+(9, 2, '2026-03-26', 'AFTERNOON', 'SCHEDULED', NULL, 8),
+(9, 2, '2026-03-27', 'EVENING',   'SCHEDULED', NULL, 8),
+(9, 2, '2026-03-28', 'MORNING',   'SCHEDULED', N'Cuối tuần', 8),
+(9, 2, '2026-03-28', 'EVENING',   'SCHEDULED', N'Cuối tuần tăng ca', 8),
+(9, 2, '2026-03-29', 'MORNING',   'SCHEDULED', N'Cuối tuần', 8),
+(9, 2, '2026-03-29', 'EVENING',   'SCHEDULED', N'Cuối tuần tăng ca', 8),
+(9, 2, '2026-03-30', 'AFTERNOON', 'SCHEDULED', NULL, 8),
+(9, 2, '2026-03-31', 'EVENING',   'SCHEDULED', NULL, 8),
+(9, 2, '2026-04-01', 'MORNING',   'SCHEDULED', NULL, 8);
+GO
+
+-- =============================================
+-- E. REVENUE REPORTS: 18/03 → 30/03/2026
+-- =============================================
+INSERT INTO revenue_reports (branch_id, report_date, sale_channel, online_tickets_count, online_revenue, counter_tickets_count, counter_revenue, total_tickets_count, total_revenue, adult_tickets, child_tickets, normal_seats, vip_seats, couple_seats, generated_by) VALUES
+(1, '2026-03-18', 'COUNTER',  0,      0, 6, 480000,  6, 480000,  5, 1, 6, 0, 0, 4),
+(2, '2026-03-18', 'COUNTER',  0,      0, 4, 345000,  4, 345000,  4, 0, 4, 0, 0, 8),
+(1, '2026-03-19', 'COUNTER',  0,      0, 4, 330000,  4, 330000,  4, 0, 4, 0, 0, 4),
+(2, '2026-03-19', 'COUNTER',  0,      0, 2, 130000,  2, 130000,  2, 0, 2, 0, 0, 8),
+(1, '2026-03-20', 'COUNTER',  0,      0, 5, 405000,  5, 405000,  4, 1, 4, 1, 0, 4),
+(1, '2026-03-21', 'COUNTER',  0,      0, 7, 680000,  7, 680000,  6, 1, 5, 0, 2, 4),
+(2, '2026-03-21', 'COUNTER',  0,      0, 4, 380000,  4, 380000,  4, 0, 4, 0, 0, 8),
+(1, '2026-03-22', 'COUNTER',  0,      0, 4, 385000,  4, 385000,  3, 1, 4, 0, 0, 4),
+(2, '2026-03-22', 'COUNTER',  0,      0, 1,  85000,  1,  85000,  1, 0, 1, 0, 0, 8),
+(1, '2026-03-23', 'COUNTER',  0,      0, 3, 215000,  3, 215000,  3, 0, 3, 0, 0, 4),
+(1, '2026-03-24', 'COUNTER',  0,      0, 4, 270000,  4, 270000,  3, 1, 4, 0, 0, 4),
+(1, '2026-03-25', 'COUNTER',  0,      0, 4, 310000,  4, 310000,  3, 1, 3, 1, 0, 4),
+(2, '2026-03-25', 'COUNTER',  0,      0, 2, 130000,  2, 130000,  2, 0, 2, 0, 0, 8),
+(1, '2026-03-26', 'COUNTER',  0,      0, 3, 195000,  3, 195000,  2, 1, 3, 0, 0, 4),
+(1, '2026-03-27', 'COUNTER',  0,      0, 4, 300000,  4, 300000,  4, 0, 4, 0, 0, 4),
+(2, '2026-03-27', 'COUNTER',  0,      0, 2, 140000,  2, 140000,  1, 1, 2, 0, 0, 8),
+(1, '2026-03-28', 'COUNTER',  0,      0, 6, 530000,  6, 530000,  5, 1, 5, 1, 0, 4),
+(2, '2026-03-28', 'COUNTER',  0,      0, 2, 190000,  2, 190000,  2, 0, 2, 0, 0, 8),
+(1, '2026-03-29', 'COUNTER',  0,      0, 4, 380000,  4, 380000,  3, 1, 4, 0, 0, 4),
+(2, '2026-03-29', 'COUNTER',  0,      0, 2, 170000,  2, 170000,  2, 0, 2, 0, 0, 8),
+(1, '2026-03-30', 'COUNTER',  0,      0, 4, 275000,  4, 275000,  3, 1, 4, 0, 0, 4),
+(2, '2026-03-30', 'COUNTER',  0,      0, 2, 130000,  2, 130000,  1, 1, 2, 0, 0, 8);
+GO
+
+-- =============================================
+-- Thêm vào block XÓA DỮ LIỆU MẪU ở đầu file khi chạy lại:
+-- DELETE FROM staff_schedules;
+-- DBCC CHECKIDENT ('staff_schedules', RESEED, 0);
+-- =============================================

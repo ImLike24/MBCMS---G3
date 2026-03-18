@@ -42,6 +42,12 @@
                 <i class="fa fa-coffee me-3"></i>Quản lý đồ ăn & nước uống
             </a>
         </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/staff-schedule"
+               class="nav-link ${param.page == 'staff-schedule' ? 'active' : ''}">
+                <i class="fas fa-calendar-check me-3"></i>Lịch làm việc NV
+            </a>
+        </li>
         <li class="nav-item mt-3">
             <span class="nav-link text-muted fw-bold ps-3" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Hệ Thống Loyalty</span>
         </li>

@@ -56,6 +56,22 @@
             </li>
 
             <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/branch-manager/manage-staff"
+                    class="nav-link text-white ${param.page == 'manage-staff' ? 'active' : ''}">
+                    <i class="fa fa-users me-2" style="width: 20px; text-align: center;"></i>
+                    Quản lý nhân viên
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/branch-manager/manage-staff?action=schedule"
+                    class="nav-link text-white ${param.page == 'staff-schedule' ? 'active' : ''}">
+                    <i class="fa fa-calendar-plus-o me-2" style="width: 20px; text-align: center;"></i>
+                    Lịch làm việc nhân viên
+                </a>
+            </li>
+
+            <li class="nav-item">
                 <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes"
                     class="nav-link text-white ${param.page == 'showtimes' ? 'active' : ''}">
                     <i class="fa fa-calendar me-2" style="width: 20px; text-align: center;"></i>

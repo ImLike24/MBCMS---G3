@@ -1,6 +1,8 @@
 package controllers.staff;
 
+import com.google.gson.Gson;
 import models.User;
+import services.StaffDashboardService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -15,15 +17,13 @@ public class CinemaStaffDashboard extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
-        // Check authentication
+
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        // Check role
         String role = (String) session.getAttribute("role");
         if (!"CINEMA_STAFF".equals(role)) {
             response.sendRedirect(request.getContextPath() + "/access-denied");
@@ -32,8 +32,29 @@ public class CinemaStaffDashboard extends HttpServlet {
 
         User user = (User) session.getAttribute("user");
         request.setAttribute("user", user);
-        
-        // Forward to dashboard page
+
+        Integer branchId = user.getBranchId();
+        if (branchId == null) {
+            request.setAttribute("noBranch", true);
+            request.getRequestDispatcher("/pages/staff/dashboard.jsp").forward(request, response);
+            return;
+        }
+
+        StaffDashboardService svc = null;
+        try {
+            svc = new StaffDashboardService(branchId);
+            Gson gson = new Gson();
+
+            request.setAttribute("todaySummary",       svc.getTodaySummary());
+            request.setAttribute("ticketsByHourJson",  gson.toJson(svc.getTicketsByHourToday()));
+            request.setAttribute("revenueLast7Json",   gson.toJson(svc.getRevenueLast7Days()));
+            request.setAttribute("topMoviesJson",      gson.toJson(svc.getTopMoviesByTickets()));
+            request.setAttribute("todayShowtimes",     svc.getTodayShowtimes());
+            request.setAttribute("recentTransactions", svc.getRecentTransactions());
+        } finally {
+            if (svc != null) svc.closeConnection();
+        }
+
         request.getRequestDispatcher("/pages/staff/dashboard.jsp").forward(request, response);
     }
 }

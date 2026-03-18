@@ -25,21 +25,20 @@ public class CounterTickets extends DBContext {
     public int createCounterTicket(CounterTicket ticket) {
         lastErrorMessage = null;
 
-        // The table has an INSTEAD OF INSERT trigger (trg_prevent_double_booking_counter).
-        // With INSTEAD OF triggers, neither SCOPE_IDENTITY() nor RETURN_GENERATED_KEYS
-        // can capture the identity because the actual row is inserted inside the trigger
-        // body (a different scope). The only reliable approach is a plain INSERT followed
-        // by a SELECT on the unique ticket_code to retrieve the generated ticket_id.
+        // ticket_code is not a DB column — it is stored only in the notes field via
+        // updateNotesByTicketIds after all tickets are inserted.
+        // After INSERT (INSTEAD OF trigger), we retrieve the generated ticket_id by
+        // querying on (showtime_id, seat_id) which is unique per booking.
         String insertSql = "INSERT INTO counter_tickets " +
-                    "(showtime_id, seat_id, ticket_type, seat_type, price, ticket_code, " +
+                    "(showtime_id, seat_id, ticket_type, seat_type, price, " +
                     "sold_by, payment_method, customer_name, customer_phone, customer_email, notes) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        String selectSql = "SELECT ticket_id FROM counter_tickets WHERE ticket_code = ?";
+        String selectSql = "SELECT TOP 1 ticket_id FROM counter_tickets " +
+                    "WHERE showtime_id = ? AND seat_id = ? ORDER BY ticket_id DESC";
 
         System.out.println("[CounterTickets] INSERT: showtimeId=" + ticket.getShowtimeId()
                 + " seatId=" + ticket.getSeatId()
-                + " ticketCode=" + ticket.getTicketCode()
                 + " soldBy=" + ticket.getSoldBy());
 
         try {
@@ -49,18 +48,18 @@ public class CounterTickets extends DBContext {
                 insertStmt.setString(3, ticket.getTicketType());
                 insertStmt.setString(4, ticket.getSeatType());
                 insertStmt.setBigDecimal(5, ticket.getPrice());
-                insertStmt.setString(6, ticket.getTicketCode());
-                insertStmt.setInt(7, ticket.getSoldBy());
-                insertStmt.setString(8, ticket.getPaymentMethod());
-                insertStmt.setString(9, ticket.getCustomerName());
-                insertStmt.setString(10, ticket.getCustomerPhone());
-                insertStmt.setString(11, ticket.getCustomerEmail());
-                insertStmt.setString(12, ticket.getNotes());
+                insertStmt.setInt(6, ticket.getSoldBy());
+                insertStmt.setString(7, ticket.getPaymentMethod());
+                insertStmt.setString(8, ticket.getCustomerName());
+                insertStmt.setString(9, ticket.getCustomerPhone());
+                insertStmt.setString(10, ticket.getCustomerEmail());
+                insertStmt.setString(11, ticket.getNotes());
                 insertStmt.executeUpdate();
             }
 
             try (PreparedStatement selectStmt = connection.prepareStatement(selectSql)) {
-                selectStmt.setString(1, ticket.getTicketCode());
+                selectStmt.setInt(1, ticket.getShowtimeId());
+                selectStmt.setInt(2, ticket.getSeatId());
                 try (ResultSet rs = selectStmt.executeQuery()) {
                     if (rs.next()) {
                         int id = rs.getInt("ticket_id");
@@ -69,7 +68,7 @@ public class CounterTickets extends DBContext {
                     }
                 }
             }
-            System.err.println("[CounterTickets] INSERT succeeded but ticket_code not found: " + ticket.getTicketCode());
+            System.err.println("[CounterTickets] INSERT succeeded but ticket_id not found for showtime=" + ticket.getShowtimeId() + " seat=" + ticket.getSeatId());
         } catch (SQLException e) {
             lastErrorMessage = e.getMessage();
             System.err.println("[CounterTickets] SQL ERROR: " + e.getMessage()
@@ -121,18 +120,22 @@ public class CounterTickets extends DBContext {
     }
 
     /**
-     * Get counter tickets by ticket code (for receipt lookup).
-     * Supports base code: finds ticket_code = ? OR ticket_code LIKE ? + '-%' so that
-     * one transaction (multiple seats) stored as CT-xxx-1, CT-xxx-2 is found by base code CT-xxx.
+     * Get counter tickets by a list of ticket IDs (for receipt lookup).
      */
-    public List<CounterTicket> getCounterTicketsByCode(String ticketCode) {
+    public List<CounterTicket> getCounterTicketsByIds(List<Integer> ticketIds) {
         List<CounterTicket> tickets = new ArrayList<>();
-        String sql = "SELECT * FROM counter_tickets WHERE ticket_code = ? OR ticket_code LIKE ? ORDER BY ticket_id";
-        
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, ticketCode);
-            pstmt.setString(2, ticketCode + "-%");
-            
+        if (ticketIds == null || ticketIds.isEmpty()) return tickets;
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM counter_tickets WHERE ticket_id IN (");
+        for (int i = 0; i < ticketIds.size(); i++) {
+            sql.append(i == 0 ? "?" : ",?");
+        }
+        sql.append(") ORDER BY ticket_id");
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < ticketIds.size(); i++) {
+                pstmt.setInt(i + 1, ticketIds.get(i));
+            }
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     tickets.add(mapResultSetToCounterTicket(rs));
@@ -166,6 +169,27 @@ public class CounterTickets extends DBContext {
     }
 
     /**
+     * Update notes for a list of ticket IDs.
+     */
+    public void updateNotesByTicketIds(List<Integer> ticketIds, String notes) {
+        if (ticketIds == null || ticketIds.isEmpty()) return;
+        StringBuilder sql = new StringBuilder("UPDATE counter_tickets SET notes = ? WHERE ticket_id IN (");
+        for (int i = 0; i < ticketIds.size(); i++) {
+            sql.append(i == 0 ? "?" : ",?");
+        }
+        sql.append(")");
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            pstmt.setString(1, notes);
+            for (int i = 0; i < ticketIds.size(); i++) {
+                pstmt.setInt(i + 2, ticketIds.get(i));
+            }
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * Calculate total price for multiple tickets
      */
     public BigDecimal calculateTotalPrice(List<CounterTicket> tickets) {
@@ -187,7 +211,6 @@ public class CounterTickets extends DBContext {
         ticket.setTicketType(rs.getString("ticket_type"));
         ticket.setSeatType(rs.getString("seat_type"));
         ticket.setPrice(rs.getBigDecimal("price"));
-        ticket.setTicketCode(rs.getString("ticket_code"));
         ticket.setSoldBy(rs.getInt("sold_by"));
         ticket.setPaymentMethod(rs.getString("payment_method"));
         ticket.setCustomerName(rs.getString("customer_name"));

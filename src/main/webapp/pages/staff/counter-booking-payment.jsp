@@ -168,6 +168,27 @@
             color: #666;
         }
 
+        .form-group input.input-error {
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.2);
+        }
+
+        .form-group input.input-valid {
+            border-color: #27ae60;
+            box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2);
+        }
+
+        .field-error-msg {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .field-error-msg.visible {
+            display: block;
+        }
+
         .payment-methods {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -602,10 +623,12 @@
                 <div class="form-group">
                     <label for="customerPhone">Số điện thoại</label>
                     <input type="tel" id="customerPhone" placeholder="0123456789">
+                    <span class="field-error-msg" id="phoneError">Số điện thoại không hợp lệ (VD: 0912345678)</span>
                 </div>
                 <div class="form-group">
                     <label for="customerEmail">Email</label>
                     <input type="email" id="customerEmail" placeholder="customer@example.com">
+                    <span class="field-error-msg" id="emailError">Email không hợp lệ (VD: example@email.com)</span>
                 </div>
             </div>
 
@@ -734,7 +757,7 @@
         const surchargeRates = {
             <c:forEach var="s" items="${surchargeList}" varStatus="vs">'${s.seatType}': ${s.surchargeRate}<c:if test="${!vs.last}">,</c:if></c:forEach>
         };
-        let ticketCodeGenerated = '';
+        let ticketIdsGenerated = [];
         let lastFinalAmount = null;
         let lastDiscountAmount = null;
         let lastTotalAmount = 0;
@@ -1135,6 +1158,20 @@
             }
             lastRedeemPointsRequested = redeemPoints || 0;
 
+            // Validate phone and email format
+            if (!validatePhone(customerPhone)) {
+                document.getElementById('customerPhone').classList.add('input-error');
+                document.getElementById('phoneError').classList.add('visible');
+                document.getElementById('customerPhone').focus();
+                return;
+            }
+            if (!validateEmail(customerEmail)) {
+                document.getElementById('customerEmail').classList.add('input-error');
+                document.getElementById('emailError').classList.add('visible');
+                document.getElementById('customerEmail').focus();
+                return;
+            }
+
             document.getElementById('loadingOverlay').classList.add('show');
             document.getElementById('btnConfirmPayment').disabled = true;
 
@@ -1167,7 +1204,7 @@
                 document.getElementById('loadingOverlay').classList.remove('show');
 
                 if (result.success) {
-                    ticketCodeGenerated = result.ticketCode;
+                    ticketIdsGenerated = result.ticketIds || [];
                     // Lưu lại tổng tiền sau voucher (nếu có) để hiển thị
                     try {
                         const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
@@ -1230,7 +1267,7 @@
 
         // Export receipt in a new tab
         function exportReceipt() {
-            window.open('${pageContext.request.contextPath}/staff/counter-booking-receipt?ticketCode=' + ticketCodeGenerated, '_blank');
+            window.open('${pageContext.request.contextPath}/staff/counter-booking-receipt?ticketIds=' + ticketIdsGenerated.join(','), '_blank');
         }
 
         // Start a new booking
@@ -1239,8 +1276,22 @@
         }
 
         // Initialize on page load
+        const phoneRegex = /^(0[3|5|7|8|9])[0-9]{8}$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        function validatePhone(value) {
+            if (!value) return true; // optional
+            return phoneRegex.test(value);
+        }
+
+        function validateEmail(value) {
+            if (!value) return true; // optional
+            return emailRegex.test(value);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             displayBookingSummary();
+
             const redeemInput = document.getElementById('redeemPoints');
             if (redeemInput) {
                 redeemInput.addEventListener('input', function() {
@@ -1248,6 +1299,42 @@
                     updatePreviewTotals();
                 });
             }
+
+            const phoneInput = document.getElementById('customerPhone');
+            const phoneError = document.getElementById('phoneError');
+            phoneInput.addEventListener('input', function() {
+                const val = this.value.trim();
+                if (val === '') {
+                    this.classList.remove('input-error', 'input-valid');
+                    phoneError.classList.remove('visible');
+                } else if (validatePhone(val)) {
+                    this.classList.remove('input-error');
+                    this.classList.add('input-valid');
+                    phoneError.classList.remove('visible');
+                } else {
+                    this.classList.remove('input-valid');
+                    this.classList.add('input-error');
+                    phoneError.classList.add('visible');
+                }
+            });
+
+            const emailInput = document.getElementById('customerEmail');
+            const emailError = document.getElementById('emailError');
+            emailInput.addEventListener('input', function() {
+                const val = this.value.trim();
+                if (val === '') {
+                    this.classList.remove('input-error', 'input-valid');
+                    emailError.classList.remove('visible');
+                } else if (validateEmail(val)) {
+                    this.classList.remove('input-error');
+                    this.classList.add('input-valid');
+                    emailError.classList.remove('visible');
+                } else {
+                    this.classList.remove('input-valid');
+                    this.classList.add('input-error');
+                    emailError.classList.add('visible');
+                }
+            });
         });
     </script>
 </body>
