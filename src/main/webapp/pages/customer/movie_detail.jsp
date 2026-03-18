@@ -22,11 +22,16 @@
                     referrerpolicy="origin"></script>
 
                 <style>
+                    body {
+                        background: #111;
+                        color: #fff;
+                    }
+
                     .movie-detail-container {
                         padding-top: 120px;
                         padding-bottom: 60px;
                         min-height: 100vh;
-                        background: #fff;
+                        background: #111;
                         background-size: cover;
                     }
 
@@ -206,11 +211,6 @@
                                         <p class="text-light">${movie.cast}</p>
                                     </div>
 
-                                    <c:if test="${movie.active}">
-                                        <a href="${pageContext.request.contextPath}/booking?movieId=${movie.movieId}"
-                                            class="btn-book"> Đặt vé ngay <i class="fa fa-ticket ms-2"></i>
-                                        </a>
-                                    </c:if>
                                     <c:if test="${!movie.active}">
                                         <button class="btn btn-secondary btn-lg mt-4" disabled>Phim đã dừng
                                             chiếu</button>
@@ -257,7 +257,7 @@
                                 <div class="col-12 mb-4">
                                     <div class="alert alert-dark border-secondary">
                                         Please <a href="${pageContext.request.contextPath}/login"
-                                            class="text-warning">login</a> to write a review.
+                                            class="text-danger">login</a> to write a review.
                                     </div>
                                 </div>
                             </c:if>

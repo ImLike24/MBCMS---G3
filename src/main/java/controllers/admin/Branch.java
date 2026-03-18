@@ -113,8 +113,6 @@ public class Branch extends HttpServlet {
         // Gọi service với tham số
         List<CinemaBranch> list = branchService.getAllBranches(keyword, isActive, page, pageSize);
 
-        System.out.println("Branches fetched: " + list.size());
-
         int totalRecords = branchService.countBranches(keyword, isActive);
         int totalPages = (int) Math.ceil((double) totalRecords / pageSize);
 

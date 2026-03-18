@@ -96,12 +96,6 @@ public class EditMovie extends HttpServlet {
         if (movie.getDuration() <= 0) {
             errors.append("Thời lượng phải lớn hơn 0 phút. ");
         }
-        if (movie.getRating() < 0 || movie.getRating() > 5) {
-            errors.append("Đánh giá phải từ 0.0 đến 5.0. ");
-        }
-
-        // Log để debug posterUrl
-        System.out.println("Poster URL nhận được khi edit: " + movie.getPosterUrl());
 
         if (errors.length() > 0) {
             request.setAttribute("errorMessage", errors.toString());
@@ -154,8 +148,6 @@ public class EditMovie extends HttpServlet {
         m.setTitle(getParameterSafe(req, "title"));
         m.setDescription(getParameterSafe(req, "description"));
         m.setDuration(parseIntSafe(req.getParameter("duration"), 120));
-        m.setRating(parseDoubleSafe(req.getParameter("rating"), 0.0));
-        m.setAgeRating(getParameterSafe(req, "ageRating"));
         m.setDirector(getParameterSafe(req, "director"));
         m.setCast(getParameterSafe(req, "cast"));
 

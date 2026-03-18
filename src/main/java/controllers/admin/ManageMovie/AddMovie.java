@@ -109,19 +109,6 @@ public class AddMovie extends HttpServlet {
         m.setTitle(getTrimmedParam(req, "title"));
         m.setDescription(getTrimmedParam(req, "description"));
 
-        String ratingStr = getTrimmedParam(req, "rating");
-        double rating = 0.0;
-        if (ratingStr != null && !ratingStr.isEmpty()) {
-            try {
-                rating = Double.parseDouble(ratingStr);
-                rating = Math.max(0.0, Math.min(10.0, rating));
-                rating = Math.round(rating * 10.0) / 10.0;
-            } catch (NumberFormatException e) {
-                rating = 0.0; // nếu nhập chữ hoặc sai định dạng
-            }
-        }
-        m.setRating(rating);
-
         m.setDuration(parseInt(req.getParameter("duration"), 120));
         m.setAgeRating(getTrimmedParam(req, "ageRating"));
         m.setDirector(getTrimmedParam(req, "director"));

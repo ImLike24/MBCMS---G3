@@ -471,7 +471,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             else if (hour >= 17 && hour < 22) timeSlot = "EVENING";
             else timeSlot = "NIGHT";
 
-            // 3. Query Database lấy giá vé mặc định (ADULT)
+            // Query Database lấy giá vé mặc định (ADULT)
             BigDecimal dynamicPrice = ticketPricesDao.getTicketPrice(
                     branchId,
                     "ADULT",
@@ -480,7 +480,7 @@ public class ManageShowtimesServlet extends HttpServlet {
                     showtime.getShowDate()
             );
 
-            // 4. Ghi đè giá trị mới vào cả 2 object để đảm bảo JSP gọi cái nào cũng đúng
+            // Ghi đè giá trị mới vào cả 2 object để đảm bảo JSP gọi cái nào cũng đúng
             if (dynamicPrice != null) {
                 showtime.setBasePrice(dynamicPrice);
                 if (detail != null) {

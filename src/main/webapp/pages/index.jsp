@@ -87,7 +87,7 @@
                 <c:forEach var="m" items="${nowShowing}">
                     <div class="col-md-3 mb-4">
                         <div class="movie-card">
-                            <a href="${pageContext.request.contextPath}/admin/movies/detail?id=${m.movieId}">
+                            <a href="${pageContext.request.contextPath}/movies/detail?id=${m.movieId}">
                                 <img src="${m.posterUrl}" alt="${m.title}" onerror="this.src='https://via.placeholder.com/300x450?text=No+Image'">
                             </a>
                             <div class="movie-info">
@@ -98,9 +98,9 @@
                                     </div>
                                     <span class="badge bg-secondary">${m.ageRating}</span>
                                 </div>
-                                <a href="${pageContext.request.contextPath}#"
+                                <a href="${pageContext.request.contextPath}/movie?movieId=${m.movieId}"
                                    class="btn btn-sm btn-warning w-100 mt-3 fw-bold">
-                                    Đặt Vé Ngay
+                                    Xem chi tiết phim
                                 </a>
                             </div>
                         </div>

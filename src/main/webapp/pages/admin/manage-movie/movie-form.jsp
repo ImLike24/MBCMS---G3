@@ -128,15 +128,16 @@
                                    oninput="this.value = Math.max(0, Math.min(200, this.value));">
                             <div class="invalid-feedback">Thời lượng phải từ 1 đến 200 phút</div>
                         </div>
-                        <c:if test="${mode == 'add'}">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold required">Đánh giá (0-5)</label>
-                                <input type="number" step="0.1" class="form-control" name="rating"
-                                       value="${movie.rating != null ? movie.rating : '0.0'}" min="0" max="5" required
-                                       oninput="this.value = Math.max(0, Math.min(5, this.value));">
-                                <div class="invalid-feedback">Đánh giá từ 0.0 đến 5.0</div>
-                            </div>
-                        </c:if>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Độ tuổi</label>
+                            <select class="form-select" name="ageRating">
+                                <option value="">Chọn độ tuổi</option>
+                                <option value="P" ${movie.ageRating == 'P' ? 'selected' : ''}>P - Mọi lứa tuổi</option>
+                                <option value="C13" ${movie.ageRating == 'C13' ? 'selected' : ''}>C13</option>
+                                <option value="C16" ${movie.ageRating == 'C16' ? 'selected' : ''}>C16</option>
+                                <option value="C18" ${movie.ageRating == 'C18' ? 'selected' : ''}>C18</option>
+                            </select>
+                        </div>
                     </div>
                     <hr class="my-4">
                     <div class="row g-3">
@@ -200,16 +201,6 @@
                     </div>
 
                     <div class="row g-3">
-                        <div class="col-6">
-                            <label class="form-label fw-semibold">Độ tuổi</label>
-                            <select class="form-select" name="ageRating">
-                                <option value="">Chọn độ tuổi</option>
-                                <option value="P" ${movie.ageRating == 'P' ? 'selected' : ''}>P - Mọi lứa tuổi</option>
-                                <option value="C13" ${movie.ageRating == 'C13' ? 'selected' : ''}>C13</option>
-                                <option value="C16" ${movie.ageRating == 'C16' ? 'selected' : ''}>C16</option>
-                                <option value="C18" ${movie.ageRating == 'C18' ? 'selected' : ''}>C18</option>
-                            </select>
-                        </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold">Trạng thái</label>
                             <div class="form-check form-switch mt-2">
@@ -311,19 +302,6 @@ fileInput.addEventListener('change', async function() {
     // Reset input để có thể chọn lại cùng file nếu cần
     this.value = '';
 });
-    // Validate ngày nhập vào
-    const today = new Date().toISOString().split("T")[0];
-    const dateInput = document.getElementById("releaseDate");
-
-    // đặt ngày tối đa là hôm nay
-    dateInput.max = today;
-
-    // nếu nhập lớn hơn hôm nay thì tự chỉnh về hôm nay
-    dateInput.addEventListener("input", function () {
-        if (this.value > today) {
-            this.value = today;
-        }
-    });
 </script>
 </body>
 </html>
