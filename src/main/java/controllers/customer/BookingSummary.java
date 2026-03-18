@@ -279,8 +279,89 @@ public class BookingSummary extends HttpServlet {
             return;
         }
 
-        // Bước "Xử lý thanh toán" do hệ thống/người khác thực hiện — không insert DB, chỉ hiển thị thông báo.
-        response.sendRedirect(
-                request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId + "&pendingPayment=1");
+        try {
+            // 1. Tính toán số tiền cuối cùng (Trừ đi Voucher nếu có)
+            java.math.BigDecimal discountAmount = java.math.BigDecimal.ZERO;
+            String appliedVoucherCode = request.getParameter("appliedVoucherCode");
+
+            if (appliedVoucherCode != null && !appliedVoucherCode.trim().isEmpty()) {
+                repositories.Vouchers voucherRepo = new repositories.Vouchers();
+                models.Voucher v = voucherRepo.getActiveVoucherByCode(appliedVoucherCode.trim());
+                if (v != null) discountAmount = v.getDiscountAmount();
+                voucherRepo.closeConnection();
+            }
+
+            java.math.BigDecimal finalAmount = totalAmount.subtract(discountAmount);
+            if (finalAmount.compareTo(java.math.BigDecimal.ZERO) < 0) {
+                finalAmount = java.math.BigDecimal.ZERO;
+            }
+            long amountInVND = finalAmount.longValue() * 100; // VNPay tính bằng HÀO (x100)
+
+            // 2. Tạo mã GD (TxnRef) & Insert vào Database (Trạng thái PENDING)
+            String vnp_TxnRef = payment.Config.getRandomNumber(8);
+            repositories.Bookings bookingRepo = new repositories.Bookings();
+
+            int bookingId = bookingRepo.createOnlineBooking(customerId, showtimeId, "BANKING", vnp_TxnRef);
+
+            // Lưu từng chiếc vé khách đã chọn
+            for (Map<String, Object> seat : seatsList) {
+                int seatId = (Integer) seat.get("seatId");
+                String ticketType = (String) seat.get("ticketType");
+                String seatType = (String) seat.get("seatType");
+                java.math.BigDecimal price = (java.math.BigDecimal) seat.get("price");
+                bookingRepo.insertOnlineTicket(bookingId, showtimeId, seatId, ticketType, seatType, price);
+            }
+
+            // 3. Tạo URL thanh toán VNPay
+            Map<String, String> vnp_Params = new java.util.HashMap<>();
+            vnp_Params.put("vnp_Version", "2.1.0");
+            vnp_Params.put("vnp_Command", "pay");
+            vnp_Params.put("vnp_TmnCode", payment.Config.vnp_TmnCode);
+            vnp_Params.put("vnp_Amount", String.valueOf(amountInVND));
+            vnp_Params.put("vnp_CurrCode", "VND");
+            vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
+            vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang:" + vnp_TxnRef);
+            vnp_Params.put("vnp_OrderType", "other");
+            vnp_Params.put("vnp_Locale", "vn");
+            vnp_Params.put("vnp_ReturnUrl", payment.Config.vnp_ReturnUrl);
+            vnp_Params.put("vnp_IpAddr", payment.Config.getIpAddress(request));
+
+            // Xử lý thời gian giao dịch
+            java.util.Calendar cld = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Etc/GMT+7"));
+            java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
+            vnp_Params.put("vnp_CreateDate", formatter.format(cld.getTime()));
+            cld.add(java.util.Calendar.MINUTE, 15); // Hết hạn sau 15 phút
+            vnp_Params.put("vnp_ExpireDate", formatter.format(cld.getTime()));
+
+            // Build URL bảo mật với SecureHash
+            java.util.List<String> fieldNames = new java.util.ArrayList<>(vnp_Params.keySet());
+            java.util.Collections.sort(fieldNames);
+            StringBuilder hashData = new StringBuilder();
+            StringBuilder query = new StringBuilder();
+            java.util.Iterator<String> itr = fieldNames.iterator();
+            while (itr.hasNext()) {
+                String fieldName = itr.next();
+                String fieldValue = vnp_Params.get(fieldName);
+                if ((fieldValue != null) && (fieldValue.length() > 0)) {
+                    hashData.append(fieldName).append('=').append(java.net.URLEncoder.encode(fieldValue, java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                    query.append(java.net.URLEncoder.encode(fieldName, java.nio.charset.StandardCharsets.US_ASCII.toString())).append('=').append(java.net.URLEncoder.encode(fieldValue, java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                    if (itr.hasNext()) {
+                        query.append('&');
+                        hashData.append('&');
+                    }
+                }
+            }
+            String queryUrl = query.toString();
+            String vnp_SecureHash = payment.Config.hmacSHA512(payment.Config.secretKey, hashData.toString());
+            queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
+            String paymentUrl = payment.Config.vnp_PayUrl + "?" + queryUrl;
+
+            // 4. Redirect thẳng sang trang thanh toán của VNPay
+            response.sendRedirect(paymentUrl);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId + "&error=" + java.net.URLEncoder.encode("Lỗi khi tạo đơn hàng, vui lòng thử lại.", "UTF-8"));
+        }
     }
 }
