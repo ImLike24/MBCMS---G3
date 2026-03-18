@@ -86,7 +86,7 @@ public class CounterBookingService {
             counterTicketsRepo = new CounterTickets();
             showtimesRepo = new Showtimes();
 
-            // Generate unique ticket code for this transaction
+            // Generate a reference code for this transaction (used in descriptions only, not stored in DB column)
             String ticketCode = counterTicketsRepo.generateTicketCode();
 
             // Get showtime details and branch info for price calculation
@@ -149,6 +149,7 @@ public class CounterBookingService {
             BigDecimal discountAmount = BigDecimal.ZERO; // voucher discount
             BigDecimal pointDiscount = BigDecimal.ZERO;  // discount from loyalty points
             BigDecimal finalAmount = null;
+            int pointsRedeemed = 0;
 
             for (int i = 0; i < seatsArray.size(); i++) {
                 JsonObject seatObj = seatsArray.get(i).getAsJsonObject();
@@ -193,7 +194,7 @@ public class CounterBookingService {
                 ticket.setCustomerName(customerName);
                 ticket.setCustomerPhone(customerPhone);
                 ticket.setCustomerEmail(customerEmail);
-                ticket.setTicketCode(ticketCode + "-" + (i + 1));
+                // ticket_code is not a DB column; omit setting it here
 
                 ticketsToCreate.add(ticket);
             }
@@ -329,6 +330,7 @@ public class CounterBookingService {
 
                             if (redeemPointsToUse > 0
                                     && usersRepo.redeemPoints(loyaltyUser.getUserId(), redeemPointsToUse)) {
+                                pointsRedeemed = redeemPointsToUse;
                                 pointDiscount = new BigDecimal(redeemPointsToUse).multiply(new BigDecimal("1000"));
 
                                 PointHistory redeemHistory = new PointHistory();
@@ -401,6 +403,20 @@ public class CounterBookingService {
                     finalAmount = BigDecimal.ZERO;
                 }
             }
+
+            // Persist discount info into notes so receipt can display them
+            StringBuilder notesBuilder = new StringBuilder();
+            notesBuilder.append("TOTAL:").append(totalAmount.toPlainString());
+            if (appliedVoucherCode != null) {
+                notesBuilder.append("|VOUCHER:").append(appliedVoucherCode)
+                            .append(":").append(discountAmount.toPlainString());
+            }
+            if (pointsRedeemed > 0) {
+                notesBuilder.append("|POINTS:").append(pointsRedeemed)
+                            .append(":").append(pointDiscount.toPlainString());
+            }
+            notesBuilder.append("|FINAL:").append(finalAmount.toPlainString());
+            counterTicketsRepo.updateNotesByTicketIds(ticketIds, notesBuilder.toString());
 
             JsonObject successResponse = new JsonObject();
             successResponse.addProperty("success", true);
