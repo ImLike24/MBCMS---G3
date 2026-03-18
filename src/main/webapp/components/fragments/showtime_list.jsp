@@ -3,8 +3,10 @@
         <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
             <c:if test="${empty movies}">
-                <div class="text-center p-5 bg-light rounded">
-                    <h4>Không có suất chiếu nào trong ngày này.</h4>
+                <div class="text-center p-5 dark-card rounded">
+                    <i class="fa fa-calendar-times-o fa-3x text-muted mb-3 opacity-50"></i>
+                    <h4 class="text-secondary">Không có suất chiếu nào trong ngày này.</h4>
+                    <p class="text-muted">Vui lòng chọn ngày khác hoặc rạp khác.</p>
                 </div>
             </c:if>
 
@@ -15,12 +17,13 @@
                     <div class="movie-info">
                         <div class="movie-title">
                             <a href="${pageContext.request.contextPath}/movie?movieId=${movie.movieId}"
-                                class="text-decoration-none text-black">${movie.title}</a>
+                                class="text-decoration-none">${movie.title}</a>
                         </div>
-                        <p>
-                            <span class="badge bg-warning text-dark">${not empty movie.ageRating ? movie.ageRating :
+                        <p class="text-secondary">
+                            <span class="badge bg-warning text-dark me-2">${not empty movie.ageRating ? movie.ageRating
+                                :
                                 'G'}</span>
-                            ${movie.duration} phút
+                            <i class="fa fa-clock-o me-1"></i> ${movie.duration} phút
                         </p>
                         <div class="showtime-list">
                             <c:choose>
@@ -28,8 +31,7 @@
                                     <c:forEach var="st" items="${movie.showtimes}">
                                         <c:set var="timeStr" value="${st.startTime.toString().substring(0, 5)}" />
                                         <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=${st.showtimeId}"
-                                           class="showtime-btn"
-                                           data-start-datetime="${st.showDate}T${st.startTime}">
+                                            class="showtime-btn" data-start-datetime="${st.showDate}T${st.startTime}">
                                             ${timeStr}
                                         </a>
                                     </c:forEach>
@@ -44,7 +46,7 @@
             </c:forEach>
 
             <script>
-                // Chặn chọn suất chiếu đã qua thời gian chiếu (client-side)
+
                 document.addEventListener('click', function (e) {
                     const btn = e.target.closest('.showtime-btn');
                     if (!btn) return;

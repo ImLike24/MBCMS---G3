@@ -6,7 +6,6 @@ import jakarta.servlet.*;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.HashMap;
 
 import repositories.Bookings;
 
@@ -46,9 +45,16 @@ public class FinalizeBooking extends HttpServlet {
                                 : BigDecimal.ONE;
 
                         // Points = (FinalAmount / EarnRateAmount) * EarnPoints * Multiplier
-                        double earnedRaw = (finalAmount.doubleValue() / config.getEarnRateAmount().doubleValue())
-                                * config.getEarnPoints();
-                        int earnedPoints = (int) (earnedRaw * multiplier.doubleValue());
+                        BigDecimal earnRateAmount = config.getEarnRateAmount();
+                        int earnPointsPerRate = config.getEarnPoints();
+                        
+                        // (finalAmount / earnRateAmount) * earnPointsPerRate * multiplier
+                        BigDecimal earnedPointsBD = finalAmount
+                                .divide(earnRateAmount, 4, java.math.RoundingMode.HALF_UP)
+                                .multiply(BigDecimal.valueOf(earnPointsPerRate))
+                                .multiply(multiplier);
+
+                        int earnedPoints = earnedPointsBD.intValue();
 
                         if (earnedPoints > 0) {
                             userRepo.addPoints(userId, earnedPoints);
