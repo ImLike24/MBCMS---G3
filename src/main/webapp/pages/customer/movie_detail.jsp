@@ -225,42 +225,56 @@
                             </div>
 
                             <!-- Review Form  -->
-                            <c:if test="${sessionScope.user != null}">
-                                <div class="col-12 mb-4">
-                                    <div class="card bg-dark border-secondary">
-                                        <div class="card-body">
-                                            <h5 class="card-title text-warning">Viết đánh giá</h5>
-                                            <form action="movie" method="post">
-                                                <input type="hidden" name="movieId" value="${movie.movieId}">
-                                                <div>
-                                                    <div class="star-rating mb-2">
-                                                        <i class="fa fa-star star-icon" data-value="1"></i>
-                                                        <i class="fa fa-star star-icon" data-value="2"></i>
-                                                        <i class="fa fa-star star-icon" data-value="3"></i>
-                                                        <i class="fa fa-star star-icon" data-value="4"></i>
-                                                        <i class="fa fa-star star-icon" data-value="5"></i>
+                            <c:choose>
+                                <c:when test="${hasWatched}">
+                                    <div class="col-12 mb-4">
+                                        <div class="card bg-dark border-secondary">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-warning">Viết đánh giá</h5>
+                                                <form action="movie" method="post">
+                                                    <input type="hidden" name="movieId" value="${movie.movieId}">
+                                                    <div>
+                                                        <div class="star-rating mb-2">
+                                                            <i class="fa fa-star star-icon" data-value="1"></i>
+                                                            <i class="fa fa-star star-icon" data-value="2"></i>
+                                                            <i class="fa fa-star star-icon" data-value="3"></i>
+                                                            <i class="fa fa-star star-icon" data-value="4"></i>
+                                                            <i class="fa fa-star star-icon" data-value="5"></i>
+                                                        </div>
+                                                        <input type="hidden" name="rating" id="ratingInput" value="0">
                                                     </div>
-                                                    <input type="hidden" name="rating" id="ratingInput" value="0">
-                                                </div>
-                                                <div class="mb-3">
-                                                    <textarea class="form-control bg-light text-secondary border-0"
-                                                        name="comment" id="reviewComment" rows="3"
-                                                        placeholder="Hãy viết cảm nhận của bạn về bộ phim này..."></textarea>
-                                                </div>
-                                                <button type="submit" class="btn btn-warning">Đánh giá</button>
-                                            </form>
+                                                    <div class="mb-3">
+                                                        <textarea class="form-control bg-light text-secondary border-0"
+                                                            name="comment" id="reviewComment" rows="3"
+                                                            placeholder="Hãy viết cảm nhận của bạn về bộ phim này..."></textarea>
+                                                    </div>
+                                                    <button type="submit" class="btn btn-warning">Đánh giá</button>
+                                                </form>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </c:if>
-                            <c:if test="${sessionScope.user == null}">
-                                <div class="col-12 mb-4">
-                                    <div class="alert alert-dark border-secondary">
-                                        Please <a href="${pageContext.request.contextPath}/login"
-                                            class="text-danger">login</a> to write a review.
+                                </c:when>
+                                <c:when test="${sessionScope.user != null}">
+                                    <div class="col-12 mb-4">
+                                        <div class="card bg-dark border-secondary text-center py-4">
+                                            <div class="card-body">
+                                                <i class="fa fa-lock fa-3x text-secondary mb-3"></i>
+                                                <h5 class="card-title text-white">Chức năng đánh giá bị khóa</h5>
+                                                <p class="text-muted">Bạn cần mua vé và xem phim này để có thể để lại
+                                                    đánh giá.</p>
+                                                </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </c:if>
+                                </c:when>
+                                <c:otherwise>
+                                    <div class="col-12 mb-4">
+                                        <div class="alert alert-dark border-secondary">
+                                            Vui lòng <a href="${pageContext.request.contextPath}/login"
+                                                class="text-danger">đăng nhập</a> để viết đánh giá.
+                                        </div>
+                                    </div>
+                                </c:otherwise>
+                            </c:choose>
 
                             <!-- Reviews List -->
                             <div class="col-12" id="reviewsList">
@@ -392,7 +406,7 @@
                             text: 'Đánh giá của bạn đã được đăng!',
                             confirmButtonColor: '#d96c2c'
                         });
-                        // Optional: Clean URL
+
                         window.history.replaceState({}, document.title, window.location.pathname + "?movieId=" + movieId);
                     } else if (message === 'failed') {
                         Swal.fire({
@@ -401,7 +415,16 @@
                             text: 'Hình như bạn đang quên chấm điểm cho bộ phim này.',
                             confirmButtonColor: '#d96c2c'
                         });
-                        // Optional: Clean URL
+
+                        window.history.replaceState({}, document.title, window.location.pathname + "?movieId=" + movieId);
+                    } else if (message === 'unauthorized') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Chưa xem phim?',
+                            text: 'Chỉ những khách hàng đã xem phim mới có thể để lại đánh giá.',
+                            confirmButtonColor: '#d96c2c'
+                        });
+
                         window.history.replaceState({}, document.title, window.location.pathname + "?movieId=" + movieId);
                     }
 

@@ -233,7 +233,6 @@ public class BookingSummary extends HttpServlet {
         }
     }
 
-    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
@@ -295,7 +294,7 @@ public class BookingSummary extends HttpServlet {
             if (finalAmount.compareTo(java.math.BigDecimal.ZERO) < 0) {
                 finalAmount = java.math.BigDecimal.ZERO;
             }
-            long amountInVND = finalAmount.longValue() * 100; // VNPay tính bằng HÀO (x100)
+                long amountInVND = finalAmount.longValue() * 100; 
 
             // 2. Tạo mã GD (TxnRef) & Insert vào Database (Trạng thái PENDING)
             String vnp_TxnRef = payment.Config.getRandomNumber(8);
