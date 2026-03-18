@@ -194,6 +194,10 @@
                                                     </div>
                                                 </c:forEach>
                                             </div>
+                                            <div class="voucher-section mt-3 mb-2">
+                                                <label class="form-label small mb-1"><i class="fa fa-tag"></i> Nhập mã thẻ giảm giá (nếu có)</label>
+                                                <input type="text" name="voucherCode" class="form-control form-control-sm" placeholder="VD: TET2026" value="<c:out value='${param.voucherCode}'/>" maxlength="50">
+                                            </div>
                                             <c:if test="${not empty concessionsList}">
                                                 <div class="concession-section mt-3 mb-3">
                                                     <h4 class="mb-2"><i class="fa fa-coffee"></i> Đồ ăn / Thức uống</h4>

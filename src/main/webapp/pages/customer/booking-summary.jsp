@@ -65,9 +65,9 @@
                         <div class="alert alert-danger">${error}</div>
                     </c:if>
 
-                    <c:if test="${paymentSuccess}">
-                        <div class="alert alert-success fw-semibold mb-4">
-                            Thanh toán thành công. Mã đặt vé: ${receiptBookingCode}
+                    <c:if test="${pendingPaymentMessage}">
+                        <div class="alert alert-info fw-semibold mb-4">
+                            Hiện tại chưa làm bước Xử lý thanh toán
                         </div>
                     </c:if>
 
@@ -146,10 +146,10 @@
                                     <fmt:formatNumber value="${totalAmount != null ? totalAmount : 0}" type="currency" currencySymbol="₫" />
                                 </span>
                             </div>
-                            <c:if test="${discountAmount > 0}">
+                            <c:if test="${discountAmount != null && discountAmount > 0}">
                                 <div class="d-flex justify-content-between align-items-center mb-2 text-success">
-                                    <span>Giảm giá voucher</span>
-                                    <span>- <fmt:formatNumber value="${discountAmount}" type="currency" currencySymbol="₫" /></span>
+                                    <span>Lượng giá giảm:</span>
+                                    <span>Giảm giá: <fmt:formatNumber value="${discountAmount}" type="number" maxFractionDigits="0" /> đ</span>
                                 </div>
                             </c:if>
                             <div class="d-flex justify-content-between align-items-center border-top border-secondary pt-2">
