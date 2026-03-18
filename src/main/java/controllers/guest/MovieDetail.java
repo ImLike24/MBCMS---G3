@@ -14,6 +14,7 @@ import models.Review;
 import models.User;
 import repositories.Movies;
 import repositories.Reviews;
+import repositories.Bookings;
 
 @WebServlet(name = "MovieDetail", urlPatterns = { "/movie" })
 public class MovieDetail extends HttpServlet {
@@ -24,9 +25,11 @@ public class MovieDetail extends HttpServlet {
 
         Movies movieDao = null;
         Reviews reviewDao = null;
+        Bookings bookingDao = null;
         try {
             movieDao = new Movies();
             reviewDao = new Reviews();
+            bookingDao = new Bookings();
 
             String movieIdParam = request.getParameter("movieId");
             int limit = 3;
@@ -49,6 +52,15 @@ public class MovieDetail extends HttpServlet {
             request.setAttribute("avgRating", avgRating);
             request.setAttribute("reviews", reviews);
 
+            // Check if user has watched the movie
+            HttpSession session = request.getSession(false);
+            User user = (session != null) ? (User) session.getAttribute("user") : null;
+            boolean hasWatched = false;
+            if (user != null) {
+                hasWatched = bookingDao.hasUserWatchedMovie(user.getUserId(), movieId);
+            }
+            request.setAttribute("hasWatched", hasWatched);
+
             request.getRequestDispatcher("/pages/customer/movie_detail.jsp").forward(request, response);
 
         } catch (NumberFormatException e) {
@@ -61,6 +73,8 @@ public class MovieDetail extends HttpServlet {
                 movieDao.closeConnection();
             if (reviewDao != null)
                 reviewDao.closeConnection();
+            if (bookingDao != null)
+                bookingDao.closeConnection();
         }
     }
 
@@ -77,14 +91,21 @@ public class MovieDetail extends HttpServlet {
         }
 
         Reviews reviewDao = null;
+        Bookings bookingDao = null;
         try {
             reviewDao = new Reviews();
+            bookingDao = new Bookings();
 
             String movieIdStr = request.getParameter("movieId");
             String ratingStr = request.getParameter("rating");
             String comment = request.getParameter("comment");
             int movieId = Integer.parseInt(movieIdStr);
             int rating = Integer.parseInt(ratingStr);
+
+            if (!bookingDao.hasUserWatchedMovie(user.getUserId(), movieId)) {
+                response.sendRedirect(request.getContextPath() + "/movie?movieId=" + movieId + "&message=unauthorized");
+                return;
+            }
 
             if (rating > 0) {
                 Review review = new Review();
@@ -93,7 +114,7 @@ public class MovieDetail extends HttpServlet {
                 review.setMovieId(movieId);
                 review.setRating(rating);
                 review.setComment(comment);
-                
+
                 review.setVerified(false);
 
                 reviewDao.addReview(review);
@@ -113,6 +134,8 @@ public class MovieDetail extends HttpServlet {
         } finally {
             if (reviewDao != null)
                 reviewDao.closeConnection();
+            if (bookingDao != null)
+                bookingDao.closeConnection();
         }
     }
 }
