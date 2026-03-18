@@ -977,7 +977,7 @@ public class Showtimes extends DBContext {
         java.math.BigDecimal onlineRevenue = java.math.BigDecimal.ZERO;
 
         String onlineSql = """
-                SELECT ot.e_ticket_code AS ticket_code,
+                SELECT CONCAT('TKT-', ot.ticket_id) AS ticket_code,
                        b.booking_code,
                        COALESCE(u.fullName, 'N/A') AS customer_name,
                        COALESCE(u.email, '')        AS customer_email,
@@ -1019,7 +1019,7 @@ public class Showtimes extends DBContext {
         java.math.BigDecimal counterRevenue = java.math.BigDecimal.ZERO;
 
         String counterSql = """
-                SELECT ct.ticket_code,
+                SELECT CONCAT('C-', ct.ticket_id) AS ticket_code,
                        COALESCE(ct.customer_name,  'Walk-in') AS customer_name,
                        COALESCE(ct.customer_phone, '')         AS customer_phone,
                        s.seat_code, ct.ticket_type, ct.seat_type, ct.price,
@@ -1112,7 +1112,7 @@ public class Showtimes extends DBContext {
         List<Map<String, Object>> onlineTickets = new ArrayList<>();
         java.math.BigDecimal onlineRevenue = java.math.BigDecimal.ZERO;
         String onlineSql = """
-                SELECT ot.e_ticket_code AS ticket_code,
+                SELECT CONCAT('TKT-', ot.ticket_id) AS ticket_code,
                        b.booking_code,
                        COALESCE(u.fullName, 'N/A') AS customer_name,
                        COALESCE(u.email, '')        AS customer_email,
@@ -1154,7 +1154,7 @@ public class Showtimes extends DBContext {
         List<Map<String, Object>> counterTickets = new ArrayList<>();
         java.math.BigDecimal counterRevenue = java.math.BigDecimal.ZERO;
         String counterSql = """
-                SELECT ct.ticket_code,
+                SELECT CONCAT('C-', ct.ticket_id) AS ticket_code,
                        COALESCE(ct.customer_name,  'Walk-in') AS customer_name,
                        COALESCE(ct.customer_phone, '')         AS customer_phone,
                        COALESCE(ct.customer_email, '')         AS customer_email,
