@@ -37,7 +37,7 @@ public class CounterBookingReceiptService {
     private static final Font FONT_SMALL = new Font(Font.FontFamily.HELVETICA, 9, Font.NORMAL);
     private static final BaseColor COLOR_PRIMARY = new BaseColor(217, 108, 44); // #d96c2c
 
-    public void generateReceipt(String ticketCode, OutputStream out)
+    public void generateReceipt(List<Integer> ticketIds, OutputStream out)
             throws IOException, DocumentException {
 
         CounterTickets counterTicketsRepo = null;
@@ -46,15 +46,15 @@ public class CounterBookingReceiptService {
             counterTicketsRepo = new CounterTickets();
             showtimesRepo = new Showtimes();
 
-            List<CounterTicket> tickets = counterTicketsRepo.getCounterTicketsByCode(ticketCode);
+            List<CounterTicket> tickets = counterTicketsRepo.getCounterTicketsByIds(ticketIds);
             if (tickets.isEmpty()) {
-                throw new IllegalArgumentException("Tickets not found for code: " + ticketCode);
+                throw new IllegalArgumentException("Tickets not found for ids: " + ticketIds);
             }
 
             CounterTicket firstTicket = tickets.get(0);
             Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(firstTicket.getShowtimeId());
             if (showtimeDetails.isEmpty()) {
-                throw new IllegalArgumentException("Showtime not found for ticket code: " + ticketCode);
+                throw new IllegalArgumentException("Showtime not found for ticket ids: " + ticketIds);
             }
 
             generateReceiptPDF(out, tickets, showtimeDetails, showtimesRepo);
@@ -112,7 +112,7 @@ public class CounterBookingReceiptService {
             infoTable.setWidthPercentage(100);
             infoTable.setSpacingAfter(20);
 
-            addInfoRow(infoTable, "Ticket Code:", firstTicket.getTicketCode(), true);
+            addInfoRow(infoTable, "Ticket ID:", String.valueOf(firstTicket.getTicketId()), true);
             addInfoRow(infoTable, "Date:",
                     LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")), false);
             addInfoRow(infoTable, "Payment Method:", firstTicket.getPaymentMethod(), false);
@@ -185,22 +185,64 @@ public class CounterBookingReceiptService {
 
             document.add(ticketsTable);
 
-            PdfPTable totalTable = new PdfPTable(2);
-            totalTable.setWidthPercentage(100);
-            totalTable.setSpacingBefore(10);
+            // Parse discount info from notes
+            String notes = firstTicket.getNotes();
+            String voucherCodeNote = null;
+            BigDecimal voucherDiscount = null;
+            int pointsUsedNote = 0;
+            BigDecimal pointsDiscount = null;
+            BigDecimal finalAmountNote = null;
+            if (notes != null && !notes.isEmpty()) {
+                for (String part : notes.split("\\|")) {
+                    if (part.startsWith("VOUCHER:")) {
+                        String[] seg = part.substring(8).split(":");
+                        voucherCodeNote = seg[0];
+                        if (seg.length > 1) voucherDiscount = new BigDecimal(seg[1]);
+                    } else if (part.startsWith("POINTS:")) {
+                        String[] seg = part.substring(7).split(":");
+                        pointsUsedNote = Integer.parseInt(seg[0]);
+                        if (seg.length > 1) pointsDiscount = new BigDecimal(seg[1]);
+                    } else if (part.startsWith("FINAL:")) {
+                        finalAmountNote = new BigDecimal(part.substring(6));
+                    }
+                }
+            }
 
-            PdfPCell labelCell = new PdfPCell(new Phrase("TOTAL AMOUNT:", FONT_HEADER));
+            // Payment Summary
+            Paragraph summaryHeader = new Paragraph("PAYMENT SUMMARY", FONT_HEADER);
+            summaryHeader.setSpacingBefore(10);
+            summaryHeader.setSpacingAfter(10);
+            document.add(summaryHeader);
+
+            PdfPTable summaryTable = new PdfPTable(2);
+            summaryTable.setWidthPercentage(100);
+            summaryTable.setSpacingBefore(5);
+            addInfoRow(summaryTable, "Subtotal:", formatCurrency(totalAmount) + " VND", false);
+            if (voucherCodeNote != null && voucherDiscount != null) {
+                addInfoRow(summaryTable, "Voucher (" + voucherCodeNote + "):", "- " + formatCurrency(voucherDiscount) + " VND", false);
+            }
+            if (pointsUsedNote > 0 && pointsDiscount != null) {
+                addInfoRow(summaryTable, "Points redeemed (" + pointsUsedNote + " pts):", "- " + formatCurrency(pointsDiscount) + " VND", false);
+            }
+            document.add(summaryTable);
+
+            document.add(new Paragraph(new Chunk(new LineSeparator(1, 100, BaseColor.LIGHT_GRAY, Element.ALIGN_CENTER, -2))));
+
+            BigDecimal displayFinal = finalAmountNote != null ? finalAmountNote : totalAmount;
+            Font fontFinal = new Font(Font.FontFamily.HELVETICA, 13, Font.BOLD, COLOR_PRIMARY);
+            PdfPTable finalTable = new PdfPTable(2);
+            finalTable.setWidthPercentage(100);
+            finalTable.setSpacingBefore(5);
+            PdfPCell labelCell = new PdfPCell(new Phrase("TOTAL AMOUNT PAID:", fontFinal));
             labelCell.setBorder(PdfPCell.NO_BORDER);
             labelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             labelCell.setPaddingRight(10);
-            totalTable.addCell(labelCell);
-
-            PdfPCell amountCell = new PdfPCell(new Phrase(formatCurrency(totalAmount), FONT_HEADER));
+            finalTable.addCell(labelCell);
+            PdfPCell amountCell = new PdfPCell(new Phrase(formatCurrency(displayFinal) + " VND", fontFinal));
             amountCell.setBorder(PdfPCell.NO_BORDER);
             amountCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            totalTable.addCell(amountCell);
-
-            document.add(totalTable);
+            finalTable.addCell(amountCell);
+            document.add(finalTable);
 
             document.add(Chunk.NEWLINE);
             document.add(Chunk.NEWLINE);
@@ -214,16 +256,6 @@ public class CounterBookingReceiptService {
             footer2.setAlignment(Element.ALIGN_CENTER);
             footer2.setSpacingAfter(20);
             document.add(footer2);
-
-            Paragraph barcodeText = new Paragraph(firstTicket.getTicketCode(),
-                    new Font(Font.FontFamily.COURIER, 14, Font.BOLD));
-            barcodeText.setAlignment(Element.ALIGN_CENTER);
-            document.add(barcodeText);
-
-            Paragraph scanNote = new Paragraph("Scan this code at entrance", FONT_SMALL);
-            scanNote.setAlignment(Element.ALIGN_CENTER);
-            scanNote.setSpacingBefore(5);
-            document.add(scanNote);
 
         } finally {
             document.close();
