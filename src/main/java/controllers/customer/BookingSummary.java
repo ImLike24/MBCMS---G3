@@ -233,7 +233,6 @@ public class BookingSummary extends HttpServlet {
         }
     }
 
-    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
@@ -295,13 +294,13 @@ public class BookingSummary extends HttpServlet {
             if (finalAmount.compareTo(java.math.BigDecimal.ZERO) < 0) {
                 finalAmount = java.math.BigDecimal.ZERO;
             }
-            long amountInVND = finalAmount.longValue() * 100; // VNPay tính bằng HÀO (x100)
+                long amountInVND = finalAmount.longValue() * 100; 
 
             // 2. Tạo mã GD (TxnRef) & Insert vào Database (Trạng thái PENDING)
             String vnp_TxnRef = payment.Config.getRandomNumber(8);
             repositories.Bookings bookingRepo = new repositories.Bookings();
 
-            int bookingId = bookingRepo.createOnlineBooking(customerId, showtimeId, "BANKING", vnp_TxnRef, discountAmount, appliedVoucherCode);
+            int bookingId = bookingRepo.createOnlineBooking(customerId, showtimeId, "BANKING", vnp_TxnRef);
 
             // Lưu từng chiếc vé khách đã chọn
             for (Map<String, Object> seat : seatsList) {

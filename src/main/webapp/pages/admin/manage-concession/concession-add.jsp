@@ -73,7 +73,7 @@
 
                 <div class="mb-3">
                     <label class="form-label required">Giá cơ bản (VND)</label>
-                    <input type="number" name="priceBase" class="form-control" step="100" min="1000" required
+                    <input type="number" name="priceBase" class="form-control" step="100" min="1000" max="200000"required
                            value="${concession.priceBase > 0 ? concession.priceBase : ''}"
                            placeholder="Ví dụ: 45000">
                 </div>
