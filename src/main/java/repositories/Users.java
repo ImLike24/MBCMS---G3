@@ -488,6 +488,52 @@ public class Users extends DBContext {
         return false;
     }
 
+    /** Lấy danh sách CINEMA_STAFF thuộc một branch */
+    public java.util.List<User> getStaffByBranch(int branchId) {
+        String sql = """
+            SELECT u.* FROM users u
+            JOIN roles r ON u.role_id = r.role_id
+            WHERE r.role_name = 'CINEMA_STAFF' AND u.branch_id = ? AND u.status = 'ACTIVE'
+            ORDER BY u.fullName ASC
+            """;
+        java.util.List<User> list = new java.util.ArrayList<>();
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, branchId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) list.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    /** Lấy danh sách CINEMA_STAFF chưa được gán branch (branch_id IS NULL) */
+    public java.util.List<User> getUnassignedStaff() {
+        String sql = """
+            SELECT u.* FROM users u
+            JOIN roles r ON u.role_id = r.role_id
+            WHERE r.role_name = 'CINEMA_STAFF' AND u.branch_id IS NULL AND u.status = 'ACTIVE'
+            ORDER BY u.fullName ASC
+            """;
+        java.util.List<User> list = new java.util.ArrayList<>();
+        try (PreparedStatement st = connection.prepareStatement(sql);
+             ResultSet rs = st.executeQuery()) {
+            while (rs.next()) list.add(mapResultSetToUser(rs));
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    /** Gán staff vào branch (hoặc null để gỡ ra) */
+    public boolean updateBranchAssignment(int userId, Integer branchId) {
+        String sql = "UPDATE users SET branch_id = ?, updated_at = SYSDATETIME() WHERE user_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            if (branchId != null) st.setInt(1, branchId);
+            else st.setNull(1, java.sql.Types.INTEGER);
+            st.setInt(2, userId);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) { e.printStackTrace(); }
+        return false;
+    }
+
     public boolean updateTier(int userId) {
         String sql = """
             UPDATE users

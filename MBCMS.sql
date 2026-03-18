@@ -504,6 +504,41 @@ CREATE INDEX idx_invoice_item_online ON invoice_items(online_ticket_id);
 CREATE INDEX idx_invoice_item_counter ON invoice_items(counter_ticket_id);
 GO
 
+-- Staff Schedules
+CREATE TABLE staff_schedules (
+    schedule_id  INT IDENTITY(1,1) PRIMARY KEY,
+    staff_id     INT NOT NULL,
+    branch_id    INT NOT NULL,
+    work_date    DATE NOT NULL,
+    shift        VARCHAR(15) NOT NULL,
+    status       VARCHAR(15) DEFAULT 'SCHEDULED',
+    note         NVARCHAR(255),
+    created_by   INT,
+    created_at   DATETIME2 DEFAULT SYSDATETIME(),
+    updated_at   DATETIME2 DEFAULT SYSDATETIME(),
+    CONSTRAINT FK_ss_staff    FOREIGN KEY (staff_id)   REFERENCES users(user_id),
+    CONSTRAINT FK_ss_branch   FOREIGN KEY (branch_id)  REFERENCES cinema_branches(branch_id),
+    CONSTRAINT FK_ss_creator  FOREIGN KEY (created_by) REFERENCES users(user_id),
+    CONSTRAINT CK_ss_shift    CHECK (shift   IN ('MORNING','AFTERNOON','EVENING','NIGHT')),
+    CONSTRAINT CK_ss_status   CHECK (status  IN ('SCHEDULED','CANCELLED'))
+);
+GO
+
+CREATE INDEX idx_ss_staff  ON staff_schedules(staff_id);
+CREATE INDEX idx_ss_branch ON staff_schedules(branch_id);
+CREATE INDEX idx_ss_date   ON staff_schedules(work_date);
+GO
+
+CREATE TRIGGER trg_staff_schedules_updated ON staff_schedules
+AFTER UPDATE AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE ss SET updated_at = SYSDATETIME()
+    FROM staff_schedules ss
+    INNER JOIN inserted ins ON ss.schedule_id = ins.schedule_id;
+END;
+GO
+
 -- Auto update timestamp
 CREATE TRIGGER trg_invoice_updated ON invoices
 AFTER UPDATE AS
