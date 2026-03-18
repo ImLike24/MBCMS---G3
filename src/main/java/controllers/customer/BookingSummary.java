@@ -12,6 +12,13 @@ import repositories.Invoices;
 import repositories.LoyaltyConfigs;
 import repositories.PointHistories;
 import repositories.Users;
+import repositories.Vouchers;
+import repositories.UserVouchers;
+import models.Voucher;
+import models.UserVoucher;
+import models.LoyaltyConfig;
+import models.MembershipTier;
+import repositories.MembershipTiers;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -21,7 +28,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -82,13 +88,16 @@ public class BookingSummary extends HttpServlet {
 
         if (!isSuccessRedirect) {
             if (bookingData == null || !Integer.valueOf(showtimeIdParam).equals(bookingData.get("showtimeId"))) {
-                response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeIdParam);
+                response.sendRedirect(
+                        request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeIdParam);
                 return;
             }
             selectedSeats = (List<Map<String, Object>>) bookingData.get("seats");
             totalAmount = (java.math.BigDecimal) bookingData.get("totalAmount");
-            if (selectedSeats == null) selectedSeats = new ArrayList<>();
-            if (totalAmount == null) totalAmount = java.math.BigDecimal.ZERO;
+            if (selectedSeats == null)
+                selectedSeats = new ArrayList<>();
+            if (totalAmount == null)
+                totalAmount = java.math.BigDecimal.ZERO;
         }
 
         Showtimes showtimesRepo = null;
@@ -101,7 +110,7 @@ public class BookingSummary extends HttpServlet {
 
             Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
 
-            if(showtimeDetails == null || showtimeDetails.isEmpty()) {
+            if (showtimeDetails == null || showtimeDetails.isEmpty()) {
                 response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeId);
                 return;
             }
@@ -116,14 +125,77 @@ public class BookingSummary extends HttpServlet {
             request.setAttribute("branchName", showtimeDetails.get("branchName"));
             request.setAttribute("selectedSeats", selectedSeats != null ? selectedSeats : new ArrayList<>());
             request.setAttribute("totalAmount", totalAmount != null ? totalAmount : java.math.BigDecimal.ZERO);
-            List<Map<String, Object>> concessions = (List<Map<String, Object>>) (bookingData != null ? bookingData.get("concessions") : null);
+            List<Map<String, Object>> concessions = (List<Map<String, Object>>) (bookingData != null
+                    ? bookingData.get("concessions")
+                    : null);
             request.setAttribute("selectedConcessions", concessions != null ? concessions : new ArrayList<>());
-            java.math.BigDecimal ticketTotalAttr = bookingData != null ? (java.math.BigDecimal) bookingData.get("ticketTotal") : null;
-            java.math.BigDecimal concessionTotalAttr = bookingData != null ? (java.math.BigDecimal) bookingData.get("concessionTotal") : null;
-            if (ticketTotalAttr == null) ticketTotalAttr = totalAmount;
-            if (concessionTotalAttr == null) concessionTotalAttr = java.math.BigDecimal.ZERO;
+            java.math.BigDecimal ticketTotalAttr = bookingData != null
+                    ? (java.math.BigDecimal) bookingData.get("ticketTotal")
+                    : null;
+            java.math.BigDecimal concessionTotalAttr = bookingData != null
+                    ? (java.math.BigDecimal) bookingData.get("concessionTotal")
+                    : null;
+            if (ticketTotalAttr == null)
+                ticketTotalAttr = totalAmount;
+            if (concessionTotalAttr == null)
+                concessionTotalAttr = java.math.BigDecimal.ZERO;
             request.setAttribute("ticketTotal", ticketTotalAttr);
             request.setAttribute("concessionTotal", concessionTotalAttr);
+
+            // --- RESTORED: Voucher Validation ---
+            String voucherCode = request.getParameter("voucherCode");
+            BigDecimal discountAmountAttr = BigDecimal.ZERO;
+            if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+                Vouchers voucherRepo = new Vouchers();
+                UserVouchers uvRepo = new UserVouchers();
+                try {
+                    String code = voucherCode.trim();
+                    Voucher v = voucherRepo.getActiveVoucherByCode(code);
+                    if (v == null) {
+                        User currentUser = (User) session.getAttribute("user");
+                        if (currentUser != null) {
+                            UserVoucher uv = uvRepo.getVoucherByCode(code);
+                            if (uv != null && uv.getUserId() == currentUser.getUserId()) {
+                                if ("AVAILABLE".equals(uv.getStatus())) {
+                                    if (uv.getExpiresAt() != null
+                                            && uv.getExpiresAt().isAfter(java.time.LocalDateTime.now())) {
+                                        v = voucherRepo.getVoucherById(uv.getVoucherId());
+                                    } else {
+                                        request.setAttribute("voucherMessage", "Voucher đã hết hạn sử dụng.");
+                                    }
+                                } else {
+                                    request.setAttribute("voucherMessage",
+                                            "Voucher này đã được sử dụng hoặc không khả dụng.");
+                                }
+                            }
+                        }
+                    }
+
+                    if (v != null && request.getAttribute("voucherMessage") == null) {
+                        if (v.getIsActive()
+                                && (v.getMaxUsageLimit() == null || v.getCurrentUsage() < v.getMaxUsageLimit())) {
+                            discountAmountAttr = v.getDiscountAmount();
+                            request.setAttribute("discountAmount", discountAmountAttr);
+                            request.setAttribute("appliedVoucherCode", code);
+                            request.setAttribute("voucherMessage", "Áp dụng thành công: " + v.getVoucherName());
+                            request.setAttribute("isVoucherValid", true);
+                        } else {
+                            request.setAttribute("voucherMessage", "Voucher đã hết lượt sử dụng hoặc đã bị tạm ngưng.");
+                            request.setAttribute("isVoucherValid", false);
+                        }
+                    } else if (request.getAttribute("isVoucherValid") == null) {
+                        if (request.getAttribute("voucherMessage") == null) {
+                            request.setAttribute("voucherMessage", "Mã voucher không hợp lệ.");
+                        }
+                        request.setAttribute("isVoucherValid", false);
+                    }
+                } finally {
+                    voucherRepo.closeConnection();
+                    uvRepo.closeConnection();
+                }
+            }
+
+            request.setAttribute("userPoints", user != null ? user.getPoints() : 0);
 
             Showtime st = (Showtime) showtimeDetails.get("showtime");
 
@@ -172,15 +244,16 @@ public class BookingSummary extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         HttpSession session = request.getSession(false);
-        if(session == null || session.getAttribute("user") == null){
+        if (session == null || session.getAttribute("user") == null) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
         String role = (String) session.getAttribute("role");
-        if(!"CUSTOMER".equals(role)) {
+        if (!"CUSTOMER".equals(role)) {
             response.sendRedirect(request.getContextPath() + "/access-denied");
             return;
         }
@@ -216,17 +289,43 @@ public class BookingSummary extends HttpServlet {
             return;
         }
 
-        // Disable DB insert/payment side effects for online booking.
-        // Keep the selected seats in session and return to summary page.
-        session.setAttribute("paymentError", "Chức năng xử lý thanh toán online đang tạm thời bị tắt.");
-        response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
-        return;
+        // Read voucher from request
+        String appliedVoucherCode = request.getParameter("appliedVoucherCode");
 
         Showtimes showtimesRepo = null;
         OnlineTickets onlineTicketsRepo = null;
         Bookings bookingsRepo = null;
         Invoices invoicesRepo = null;
+        Vouchers vouchersRepo = null;
+        UserVouchers uvRepo = null;
+        Users usersRepo = null;
+        PointHistories pointHistoriesRepo = null;
+
         try {
+            // 1. Re-calculate discounts to ensure accuracy
+            BigDecimal voucherDiscount = BigDecimal.ZERO;
+            if (appliedVoucherCode != null && !appliedVoucherCode.isBlank()) {
+                vouchersRepo = new Vouchers();
+                uvRepo = new UserVouchers();
+                Voucher v = vouchersRepo.getActiveVoucherByCode(appliedVoucherCode);
+                if (v == null) {
+                    UserVoucher uv = uvRepo.getVoucherByCode(appliedVoucherCode);
+                    if (uv != null && uv.getUserId() == customerId && "AVAILABLE".equals(uv.getStatus())) {
+                        v = vouchersRepo.getVoucherById(uv.getVoucherId());
+                    }
+                }
+                if (v != null && (v.getMaxUsageLimit() == null || v.getCurrentUsage() < v.getMaxUsageLimit())) {
+                    voucherDiscount = v.getDiscountAmount();
+                } else {
+                    appliedVoucherCode = null; // Invalidate if not found or limited
+                }
+            }
+
+
+            BigDecimal totalDiscount = voucherDiscount;
+            BigDecimal finalAmount = totalAmount.subtract(totalDiscount);
+            if (finalAmount.compareTo(BigDecimal.ZERO) < 0)
+                finalAmount = BigDecimal.ZERO;
             showtimesRepo = new Showtimes();
             Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
             if (showtimeDetails == null || showtimeDetails.isEmpty()) {
@@ -238,7 +337,8 @@ public class BookingSummary extends HttpServlet {
 
             bookingsRepo = new Bookings();
             String bookingCode = bookingsRepo.generateBookingCode();
-                int bookingId = bookingsRepo.createOnlineBooking(customerId, showtimeId, paymentMethod, bookingCode);
+            int bookingId = bookingsRepo.insertBooking(customerId, showtimeId, bookingCode, totalAmount, totalDiscount,
+                    finalAmount, appliedVoucherCode);
             if (bookingId <= 0) {
                 session.setAttribute("paymentError", "Không thể tạo đơn đặt vé.");
                 response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
@@ -265,12 +365,15 @@ public class BookingSummary extends HttpServlet {
                 BigDecimal price = (BigDecimal) seatData.get("price");
 
                 if (!showtimesRepo.isSeatAvailable(showtimeId, seatId)) {
-                    session.setAttribute("paymentError", "Ghế " + (seatCode != null ? seatCode : seatId) + " đã được đặt trước.");
-                    response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
+                    session.setAttribute("paymentError",
+                            "Ghế " + (seatCode != null ? seatCode : seatId) + " đã được đặt trước.");
+                    response.sendRedirect(
+                            request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
                     return;
                 }
 
-                int ticketId = onlineTicketsRepo.insertOnlineTicket(bookingId, showtimeId, seatId, ticketType, seatType, price);
+                int ticketId = onlineTicketsRepo.insertOnlineTicket(bookingId, showtimeId, seatId, ticketType, seatType,
+                        price);
                 if (ticketId > 0) {
                     Map<String, Object> row = new java.util.HashMap<>();
                     row.put("ticketId", ticketId);
@@ -281,7 +384,8 @@ public class BookingSummary extends HttpServlet {
                     insertedTickets.add(row);
                 }
                 String ticketLabel = "CHILD".equals(ticketType) ? "Trẻ em" : "Người lớn";
-                if (i > 0) receiptSeatsStr.append(", ");
+                if (i > 0)
+                    receiptSeatsStr.append(", ");
                 receiptSeatsStr.append(seatCode).append(" (").append(ticketLabel).append(")");
             }
 
@@ -289,15 +393,13 @@ public class BookingSummary extends HttpServlet {
             if (branchId != null && branchId > 0) {
                 invoicesRepo = new Invoices();
                 invoiceCode = invoicesRepo.generateInvoiceCode();
-                BigDecimal discountAmount = BigDecimal.ZERO;
-                BigDecimal finalAmount = totalAmount;
+                BigDecimal discountAmount = totalDiscount;
 
                 int invoiceId = invoicesRepo.insertInvoice(
                         bookingId, invoiceCode, "ONLINE",
                         customerName, currentUser.getPhone(), customerEmail,
                         branchId, totalAmount, discountAmount, finalAmount,
-                        paymentMethod, customerId, null
-                );
+                        paymentMethod, customerId, null);
 
                 if (invoiceId > 0) {
                     for (Map<String, Object> ticket : insertedTickets) {
@@ -306,56 +408,89 @@ public class BookingSummary extends HttpServlet {
                         String seatType = (String) ticket.get("seatType");
                         String ticketType = (String) ticket.get("ticketType");
                         BigDecimal price = (BigDecimal) ticket.get("price");
-                        if (price == null) price = BigDecimal.ZERO;
+                        if (price == null)
+                            price = BigDecimal.ZERO;
 
-                        String itemDesc = (movieTitle != null ? movieTitle : "") + " - " + (seatType != null ? seatType : "") + " - " + (seatCode != null ? seatCode : "");
+                        String itemDesc = (movieTitle != null ? movieTitle : "") + " - "
+                                + (seatType != null ? seatType : "") + " - " + (seatCode != null ? seatCode : "");
                         try {
                             invoicesRepo.insertInvoiceItem(
                                     invoiceId, ticketId, itemDesc,
                                     movieTitle, showDate, startTime,
                                     roomName, seatCode, ticketType, seatType,
-                                    price, price
-                            );
+                                    price, price);
                         } catch (Exception ex) {
-                            LOGGER.log(Level.WARNING, "insertInvoiceItem failed for ticketId=" + ticketId + ", invoiceId=" + invoiceId, ex);
+                            LOGGER.log(Level.WARNING,
+                                    "insertInvoiceItem failed for ticketId=" + ticketId + ", invoiceId=" + invoiceId,
+                                    ex);
                         }
                     }
                 }
 
-                // Tích điểm thành viên từ hóa đơn (theo cấu hình admin)
-                if (invoiceId > 0 && totalAmount != null && totalAmount.compareTo(BigDecimal.ZERO) > 0) {
-                    LoyaltyConfigs loyaltyConfigs = null;
-                    Users usersRepoLoyalty = null;
-                    PointHistories pointHistoriesRepo = null;
+                // --- RESTORED: Mark Voucher as Used ---
+                if (appliedVoucherCode != null) {
+                    if (vouchersRepo == null)
+                        vouchersRepo = new Vouchers();
+                    if (uvRepo == null)
+                        uvRepo = new UserVouchers();
+                    vouchersRepo.incrementVoucherUsage(appliedVoucherCode);
+                    uvRepo.markVoucherAsUsed(appliedVoucherCode);
+                }
+
+
+                // --- RESTORED: Point Accrual Logic (from Old FinalizeBooking) ---
+                if (invoiceId > 0 && finalAmount != null && finalAmount.compareTo(BigDecimal.ZERO) > 0) {
+                    LoyaltyConfigs loyaltyConfigsRepo = null;
+                    MembershipTiers tiersRepo = null;
                     try {
-                        loyaltyConfigs = new LoyaltyConfigs();
-                        var config = loyaltyConfigs.getConfig();
+                        loyaltyConfigsRepo = new LoyaltyConfigs();
+                        tiersRepo = new MembershipTiers();
+
+                        LoyaltyConfig config = loyaltyConfigsRepo.getConfig();
                         if (config != null && config.getEarnRateAmount() != null
-                                && config.getEarnRateAmount().compareTo(BigDecimal.ZERO) > 0
-                                && config.getEarnPoints() != null && config.getEarnPoints() > 0) {
-                            BigDecimal rate = config.getEarnRateAmount();
-                            int earnPointsPerRate = config.getEarnPoints();
-                            int earnedPoints = totalAmount.divide(rate, 0, RoundingMode.FLOOR).intValue() * earnPointsPerRate;
-                            if (earnedPoints > 0) {
-                                usersRepoLoyalty = new Users();
-                                if (usersRepoLoyalty.addPoints(customerId, earnedPoints)) {
-                                    pointHistoriesRepo = new PointHistories();
-                                    PointHistory ph = new PointHistory();
-                                    ph.setUserId(customerId);
-                                    ph.setPointsChanged(earnedPoints);
-                                    ph.setTransactionType("EARN");
-                                    ph.setDescription("Tích điểm từ hóa đơn #" + invoiceCode);
-                                    ph.setReferenceId(invoiceId);
-                                    pointHistoriesRepo.insert(ph);
+                                && config.getEarnRateAmount().compareTo(BigDecimal.ZERO) > 0) {
+                            MembershipTier tier = tiersRepo.getTierById(currentUser.getTierId());
+                            BigDecimal multiplier = (tier != null && tier.getPointMultiplier() != null)
+                                    ? tier.getPointMultiplier()
+                                    : BigDecimal.ONE;
+
+                            double earnedRaw = (finalAmount.doubleValue() / config.getEarnRateAmount().doubleValue())
+                                    * config.getEarnPoints();
+                            int pointsToEarn = (int) (earnedRaw * multiplier.doubleValue());
+
+                            if (pointsToEarn > 0) {
+                                if (usersRepo == null)
+                                    usersRepo = new Users();
+                                if (usersRepo.addPoints(customerId, pointsToEarn)) {
+                                    // Cập nhật lịch sử điểm
+                                    if (pointHistoriesRepo == null)
+                                        pointHistoriesRepo = new PointHistories();
+                                    PointHistory phEarn = new PointHistory();
+                                    phEarn.setUserId(customerId);
+                                    phEarn.setPointsChanged(pointsToEarn);
+                                    phEarn.setTransactionType("EARN");
+                                    phEarn.setReferenceId(invoiceId);
+                                    phEarn.setDescription("Tích điểm từ hóa đơn #" + invoiceCode);
+                                    pointHistoriesRepo.insert(phEarn);
+
+                                    // Tự động nâng hạng
+                                    usersRepo.updateTier(customerId);
+
+                                    // Update session
+                                    currentUser
+                                            .setPoints((currentUser.getPoints() != null ? currentUser.getPoints() : 0)
+                                                    + pointsToEarn);
+                                    session.setAttribute("user", currentUser);
                                 }
                             }
                         }
                     } catch (Exception ex) {
-                        LOGGER.log(Level.WARNING, "[BookingSummary] Loyalty points failed", ex);
+                        LOGGER.log(Level.WARNING, "Error updating loyalty points", ex);
                     } finally {
-                        if (pointHistoriesRepo != null) pointHistoriesRepo.closeConnection();
-                        if (usersRepoLoyalty != null) usersRepoLoyalty.closeConnection();
-                        if (loyaltyConfigs != null) loyaltyConfigs.closeConnection();
+                        if (loyaltyConfigsRepo != null)
+                            loyaltyConfigsRepo.closeConnection();
+                        if (tiersRepo != null)
+                            tiersRepo.closeConnection();
                     }
                 }
             }
@@ -365,9 +500,10 @@ public class BookingSummary extends HttpServlet {
             session.setAttribute("receiptBookingCode", bookingCode);
             session.setAttribute("receiptInvoiceCode", invoiceCode);
             session.setAttribute("receiptSeats", receiptSeatsStr.toString());
-            session.setAttribute("receiptTotal", totalAmount);
+            session.setAttribute("receiptTotal", finalAmount);
 
-            response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId + "&success=1");
+            response.sendRedirect(
+                    request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId + "&success=1");
 
         } catch (Exception e) {
 
@@ -376,18 +512,22 @@ public class BookingSummary extends HttpServlet {
             session.setAttribute("paymentError", "Lỗi thanh toán: " + e.getMessage());
             response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
         } finally {
-            if (invoicesRepo != null) {
+            if (invoicesRepo != null)
                 invoicesRepo.closeConnection();
-            }
-            if (onlineTicketsRepo != null) {
+            if (onlineTicketsRepo != null)
                 onlineTicketsRepo.closeConnection();
-            }
-            if (bookingsRepo != null) {
+            if (bookingsRepo != null)
                 bookingsRepo.closeConnection();
-            }
-            if (showtimesRepo != null) {
+            if (showtimesRepo != null)
                 showtimesRepo.closeConnection();
-            }
+            if (vouchersRepo != null)
+                vouchersRepo.closeConnection();
+            if (uvRepo != null)
+                uvRepo.closeConnection();
+            if (usersRepo != null)
+                usersRepo.closeConnection();
+            if (pointHistoriesRepo != null)
+                pointHistoriesRepo.closeConnection();
         }
     }
 }
