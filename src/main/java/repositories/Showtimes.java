@@ -405,28 +405,63 @@ public class Showtimes extends DBContext {
     }
 
     /**
-     * Check if a room already has a showtime that overlaps the given time slot on
-     * the given date.
-     * Overlap condition: newStart < existingEnd AND newEnd > existingStart
+     * Check if a room already has a showtime that overlaps the requested time slot.
+     *
+     * Handles both regular and overnight (end_time < start_time) showtimes by
+     * converting everything to DATETIME for an accurate interval comparison.
+     *
+     * The new showtime spans:
+     *   newStart = DATETIME(date, startTime)
+     *   newEnd   = DATETIME(date + (1 day if overnight), endTime)
+     *
+     * An existing showtime spans:
+     *   exStart  = DATETIME(show_date, existing start_time)
+     *   exEnd    = DATETIME(show_date + (1 day if overnight), existing end_time)
+     *
+     * Overlap exists when: newStart < exEnd  AND  newEnd > exStart
      */
     public boolean hasSchedulingConflict(int roomId, java.time.LocalDate date,
             java.time.LocalTime startTime, java.time.LocalTime endTime,
             Integer excludeShowtimeId) {
-        String sql = "SELECT COUNT(*) FROM showtimes " +
-                "WHERE room_id = ? AND show_date = ? " +
-                "AND status NOT IN ('CANCELLED','COMPLETED') " +
-                "AND start_time < ? AND end_time > ? " +
-                (excludeShowtimeId != null ? "AND showtime_id != ?" : "");
+
+        // Determine if the new showtime is overnight
+        boolean newOvernight = endTime.isBefore(startTime) || endTime.equals(startTime);
+        java.time.LocalDate newEndDate = newOvernight ? date.plusDays(1) : date;
+
+        java.time.LocalDateTime newStart = java.time.LocalDateTime.of(date, startTime);
+        java.time.LocalDateTime newEnd   = java.time.LocalDateTime.of(newEndDate, endTime);
+
+        // Query: for every active showtime in the same room,
+        // compute its effective DATETIME range, then test overlap.
+        // We use DATEADD to build the effective end datetime for overnight showtimes.
+        String sql =
+            "SELECT COUNT(*) FROM showtimes " +
+            "WHERE room_id = ? " +
+            "  AND status NOT IN ('CANCELLED', 'COMPLETED') " +
+            (excludeShowtimeId != null ? "  AND showtime_id != ? " : "") +
+            "  AND ( " +
+            // Effective start datetime of existing showtime
+            "    CAST(CONVERT(varchar,show_date,23) + ' ' + CONVERT(varchar,start_time,108) AS DATETIME) < ? " +
+            "    AND " +
+            // Effective end datetime of existing showtime
+            // If overnight (end_time < start_time) → end is show_date + 1 day
+            "    CASE WHEN end_time < start_time " +
+            "         THEN CAST(CONVERT(varchar,DATEADD(day,1,show_date),23) + ' ' + CONVERT(varchar,end_time,108) AS DATETIME) " +
+            "         ELSE CAST(CONVERT(varchar,show_date,23) + ' ' + CONVERT(varchar,end_time,108) AS DATETIME) " +
+            "    END > ? " +
+            "  )";
+
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, roomId);
-            ps.setDate(2, java.sql.Date.valueOf(date));
-            ps.setTime(3, java.sql.Time.valueOf(endTime));
-            ps.setTime(4, java.sql.Time.valueOf(startTime));
-            if (excludeShowtimeId != null)
-                ps.setInt(5, excludeShowtimeId);
+            int idx = 1;
+            ps.setInt(idx++, roomId);
+            if (excludeShowtimeId != null) ps.setInt(idx++, excludeShowtimeId);
+            // newEnd  → used as upper bound of new slot (existing start must be < newEnd)
+            ps.setObject(idx++, java.sql.Timestamp.valueOf(newEnd));
+            // newStart → used as lower bound of new slot (existing end must be > newStart)
+            ps.setObject(idx++, java.sql.Timestamp.valueOf(newStart));
+
             try (java.sql.ResultSet rs = ps.executeQuery()) {
-                if (rs.next())
-                    return rs.getInt(1) > 0;
+                if (rs.next()) return rs.getInt(1) > 0;
             }
         } catch (SQLException e) {
             e.printStackTrace();

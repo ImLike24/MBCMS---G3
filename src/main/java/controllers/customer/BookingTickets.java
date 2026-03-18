@@ -28,6 +28,7 @@ import repositories.TicketPrices;
 @WebServlet(name = "TicketsOfChosenMovie", urlPatterns = { "/customer/booking-tickets" })
 public class BookingTickets extends HttpServlet {
 
+    // force update
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -417,6 +418,10 @@ public class BookingTickets extends HttpServlet {
             concessionsRepoPost.closeConnection();
             BigDecimal grandTotal = totalAmount.add(concessionTotalPost);
 
+            String voucherCodeParam = request.getParameter("voucherCode");
+            String voucherCodeToSummary = (voucherCodeParam != null && !voucherCodeParam.trim().isEmpty())
+                    ? voucherCodeParam.trim() : null;
+
             Map<String, Object> bookingData = new java.util.HashMap<>();
             bookingData.put("showtimeId", showtimeId);
             bookingData.put("totalAmount", grandTotal);
@@ -424,9 +429,12 @@ public class BookingTickets extends HttpServlet {
             bookingData.put("concessionTotal", concessionTotalPost);
             bookingData.put("seats", selectedSeats);
             bookingData.put("concessions", bookingConcessions);
+            if (voucherCodeToSummary != null) {
+                bookingData.put("voucherCode", voucherCodeToSummary);
+            }
             session.setAttribute("customerBookingData", bookingData);
 
-            response.sendRedirect(request.getContextPath() + "/customer/booking-payment?showtimeId=" + showtimeId);
+            response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -233,7 +233,198 @@ public class PerformanceReportRepository extends DBContext {
         return list;
     }
 
+    /**
+     * General performance by branch: branch name, total showtimes in period.
+     */
+    public List<BranchPerformanceRow> getTotalShowtimesByBranch(List<Integer> branchIds, LocalDate fromDate, LocalDate toDate) {
+        List<BranchPerformanceRow> list = new ArrayList<>();
+        if (branchIds == null || branchIds.isEmpty()) return list;
+
+        String ph = buildPlaceholders(branchIds.size());
+        String sql = """
+                SELECT b.branch_id, b.branch_name,
+                       COUNT(DISTINCT s.showtime_id) AS total_showtimes
+                FROM cinema_branches b
+                LEFT JOIN screening_rooms sr ON sr.branch_id = b.branch_id
+                LEFT JOIN showtimes s ON s.room_id = sr.room_id AND s.show_date >= ? AND s.show_date <= ?
+                WHERE b.branch_id IN (%s)
+                GROUP BY b.branch_id, b.branch_name
+                ORDER BY total_showtimes DESC
+                """.formatted(ph);
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            int idx = 1;
+            ps.setDate(idx++, java.sql.Date.valueOf(fromDate));
+            ps.setDate(idx++, java.sql.Date.valueOf(toDate));
+            for (Integer bid : branchIds) ps.setInt(idx++, bid);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    BranchPerformanceRow r = new BranchPerformanceRow();
+                    r.setBranchId(rs.getInt("branch_id"));
+                    r.setBranchName(rs.getString("branch_name"));
+                    r.setTotalShowtimes(rs.getInt("total_showtimes"));
+                    list.add(r);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * Seat utilization: occupancy rate (% of seats used across all showtimes) and average seats sold per showtime.
+     */
+    public SeatUtilizationMetrics getSeatUtilizationMetrics(List<Integer> branchIds, LocalDate fromDate, LocalDate toDate) {
+        SeatUtilizationMetrics m = new SeatUtilizationMetrics();
+        if (branchIds == null || branchIds.isEmpty()) return m;
+
+        String ph = buildPlaceholders(branchIds.size());
+        String sql = """
+                SELECT
+                    COUNT(DISTINCT s.showtime_id) AS showtimes_count,
+                    COALESCE(SUM(sr.total_seats), 0) AS total_capacity,
+                    (SELECT COALESCE(SUM(cnt), 0) FROM (
+                        SELECT ot.showtime_id, COUNT(*) AS cnt
+                        FROM online_tickets ot
+                        INNER JOIN bookings b ON ot.booking_id = b.booking_id
+                        INNER JOIN showtimes st ON ot.showtime_id = st.showtime_id
+                        INNER JOIN screening_rooms sr2 ON st.room_id = sr2.room_id
+                        WHERE sr2.branch_id IN (%s) AND st.show_date >= ? AND st.show_date <= ?
+                        AND b.status = 'CONFIRMED' AND b.payment_status = 'PAID'
+                        GROUP BY ot.showtime_id
+                    ) ot_cnt) +
+                    (SELECT COALESCE(SUM(cnt), 0) FROM (
+                        SELECT showtime_id, COUNT(*) AS cnt
+                        FROM counter_tickets ct
+                        INNER JOIN showtimes st ON ct.showtime_id = st.showtime_id
+                        INNER JOIN screening_rooms sr2 ON st.room_id = sr2.room_id
+                        WHERE sr2.branch_id IN (%s) AND st.show_date >= ? AND st.show_date <= ?
+                        GROUP BY showtime_id
+                    ) ct_cnt) AS total_sold
+                FROM showtimes s
+                INNER JOIN screening_rooms sr ON s.room_id = sr.room_id
+                WHERE sr.branch_id IN (%s) AND s.show_date >= ? AND s.show_date <= ?
+                """.formatted(ph, ph, ph);
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            int idx = 1;
+            for (int i = 0; i < 3; i++) {
+                for (Integer bid : branchIds) ps.setInt(idx++, bid);
+                ps.setDate(idx++, java.sql.Date.valueOf(fromDate));
+                ps.setDate(idx++, java.sql.Date.valueOf(toDate));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int showtimesCount = rs.getInt("showtimes_count");
+                    long totalCapacity = rs.getLong("total_capacity");
+                    long totalSold = rs.getLong("total_sold");
+                    m.setAverageSeatsSold(showtimesCount > 0 ? (int) (totalSold / showtimesCount) : 0);
+                    if (totalCapacity > 0) {
+                        m.setOccupancyRatePct(BigDecimal.valueOf(totalSold * 100.0 / totalCapacity).setScale(2, java.math.RoundingMode.HALF_UP));
+                    } else {
+                        m.setOccupancyRatePct(BigDecimal.ZERO);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return m;
+    }
+
+    /**
+     * Peak hours and low demand hours: time slots with highest and lowest attendance.
+     * Uses 4-hour buckets: 6-10, 10-14, 14-18, 18-22, 22-06.
+     */
+    public PeakLowHours getPeakAndLowHours(List<Integer> branchIds, LocalDate fromDate, LocalDate toDate) {
+        PeakLowHours result = new PeakLowHours();
+        if (branchIds == null || branchIds.isEmpty()) return result;
+
+        String ph = buildPlaceholders(branchIds.size());
+        String sql = """
+                WITH st_tickets AS (
+                    SELECT s.showtime_id,
+                        CASE
+                            WHEN DATEPART(HOUR, s.start_time) >= 22 OR DATEPART(HOUR, s.start_time) < 6 THEN N'22:00 - 06:00'
+                            WHEN DATEPART(HOUR, s.start_time) >= 18 THEN N'18:00 - 22:00'
+                            WHEN DATEPART(HOUR, s.start_time) >= 14 THEN N'14:00 - 18:00'
+                            WHEN DATEPART(HOUR, s.start_time) >= 10 THEN N'10:00 - 14:00'
+                            WHEN DATEPART(HOUR, s.start_time) >= 6 THEN N'06:00 - 10:00'
+                            ELSE N'22:00 - 06:00'
+                        END AS time_slot,
+                        (SELECT COUNT(*) FROM online_tickets ot INNER JOIN bookings b ON ot.booking_id = b.booking_id
+                         WHERE ot.showtime_id = s.showtime_id AND b.status = 'CONFIRMED' AND b.payment_status = 'PAID')
+                        + (SELECT COUNT(*) FROM counter_tickets ct WHERE ct.showtime_id = s.showtime_id) AS sold
+                    FROM showtimes s
+                    INNER JOIN screening_rooms sr ON s.room_id = sr.room_id
+                    WHERE sr.branch_id IN (%s) AND s.show_date >= ? AND s.show_date <= ?
+                )
+                SELECT time_slot, SUM(sold) AS total_sold
+                FROM st_tickets
+                GROUP BY time_slot
+                ORDER BY total_sold DESC
+                """.formatted(ph);
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            int idx = 1;
+            for (Integer bid : branchIds) ps.setInt(idx++, bid);
+            ps.setDate(idx++, java.sql.Date.valueOf(fromDate));
+            ps.setDate(idx++, java.sql.Date.valueOf(toDate));
+            try (ResultSet rs = ps.executeQuery()) {
+                String peak = null, low = null;
+                boolean first = true;
+                while (rs.next()) {
+                    String slot = rs.getString("time_slot");
+                    if (first) {
+                        peak = slot;
+                        first = false;
+                    }
+                    low = slot;
+                }
+                result.setPeakHours(peak != null ? peak : "—");
+                result.setLowDemandHours(low != null ? low : "—");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
     // --- DTO classes ---
+    public static class BranchPerformanceRow {
+        private int branchId;
+        private String branchName;
+        private int totalShowtimes;
+
+        public int getBranchId() { return branchId; }
+        public void setBranchId(int branchId) { this.branchId = branchId; }
+        public String getBranchName() { return branchName; }
+        public void setBranchName(String branchName) { this.branchName = branchName; }
+        public int getTotalShowtimes() { return totalShowtimes; }
+        public void setTotalShowtimes(int totalShowtimes) { this.totalShowtimes = totalShowtimes; }
+    }
+
+    public static class SeatUtilizationMetrics {
+        private BigDecimal occupancyRatePct = BigDecimal.ZERO;
+        private int averageSeatsSold;
+
+        public BigDecimal getOccupancyRatePct() { return occupancyRatePct; }
+        public void setOccupancyRatePct(BigDecimal occupancyRatePct) { this.occupancyRatePct = occupancyRatePct; }
+        public int getAverageSeatsSold() { return averageSeatsSold; }
+        public void setAverageSeatsSold(int averageSeatsSold) { this.averageSeatsSold = averageSeatsSold; }
+    }
+
+    public static class PeakLowHours {
+        private String peakHours = "—";
+        private String lowDemandHours = "—";
+
+        public String getPeakHours() { return peakHours; }
+        public void setPeakHours(String peakHours) { this.peakHours = peakHours; }
+        public String getLowDemandHours() { return lowDemandHours; }
+        public void setLowDemandHours(String lowDemandHours) { this.lowDemandHours = lowDemandHours; }
+    }
+
     public static class MoviePerformanceRow {
         private String movieTitle;
         private int showtimesCount;

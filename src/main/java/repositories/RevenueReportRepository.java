@@ -191,6 +191,46 @@ public class RevenueReportRepository extends DBContext {
     }
 
     /**
+     * Ticket revenue (from invoice_items with ONLINE_TICKET / COUNTER_TICKET) for given branches and period.
+     */
+    public BigDecimal getTicketRevenue(List<Integer> branchIds, LocalDate fromDate, LocalDate toDate) {
+        if (branchIds == null || branchIds.isEmpty()) return BigDecimal.ZERO;
+        String sql = """
+                SELECT COALESCE(SUM(ii.amount), 0) AS total
+                FROM invoice_items ii
+                INNER JOIN invoices i ON ii.invoice_id = i.invoice_id
+                WHERE i.branch_id IN (%s)
+                  AND i.status = 'ACTIVE' AND i.payment_status = 'PAID'
+                  AND CAST(i.invoice_date AS DATE) >= ? AND CAST(i.invoice_date AS DATE) <= ?
+                  AND ii.item_type IN ('ONLINE_TICKET', 'COUNTER_TICKET')
+                """.formatted(buildPlaceholders(branchIds.size()));
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            int idx = 1;
+            for (Integer bid : branchIds) {
+                ps.setInt(idx++, bid);
+            }
+            ps.setDate(idx++, java.sql.Date.valueOf(fromDate));
+            ps.setDate(idx++, java.sql.Date.valueOf(toDate));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBigDecimal("total");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return BigDecimal.ZERO;
+    }
+
+    /**
+     * Combo revenue (food & beverage). Currently no combo in invoice_items; returns 0 until COMBO item_type is added.
+     */
+    public BigDecimal getComboRevenue(List<Integer> branchIds, LocalDate fromDate, LocalDate toDate) {
+        // Optional: if combo orders are stored elsewhere or item_type extended to COMBO, implement here.
+        return BigDecimal.ZERO;
+    }
+
+    /**
      * Get total revenue for summary.
      */
     public BigDecimal getTotalRevenue(List<Integer> branchIds, LocalDate fromDate, LocalDate toDate) {

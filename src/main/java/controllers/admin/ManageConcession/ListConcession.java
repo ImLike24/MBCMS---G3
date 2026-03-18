@@ -15,7 +15,7 @@ public class ListConcession extends HttpServlet {
 
     private final ConcessionService service = new ConcessionService();
 
-    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int DEFAULT_PAGE_SIZE = 5;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)

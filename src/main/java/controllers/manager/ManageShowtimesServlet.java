@@ -80,7 +80,8 @@ public class ManageShowtimesServlet extends HttpServlet {
         request.setAttribute("managedBranches", managedBranches);
         request.setAttribute("selectedBranchId", selectedBranchId);
 
-        String branchName = managedBranches.stream().filter(b -> b.getBranchId() == finalSelectedId).findFirst().map(CinemaBranch::getBranchName).orElse("N/A");
+        String branchName = managedBranches.stream().filter(b -> b.getBranchId() == finalSelectedId).findFirst()
+                .map(CinemaBranch::getBranchName).orElse("N/A");
         request.setAttribute("currentBranchName", branchName);
 
         String action = request.getParameter("action");
@@ -364,6 +365,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             LocalDate date = LocalDate.parse(request.getParameter("showDate"));
             LocalTime start = LocalTime.parse(request.getParameter("startTime"));
             LocalTime end = LocalTime.parse(request.getParameter("endTime"));
+            boolean overnight = "1".equals(request.getParameter("overnight"));
 
             // Verify showtime exists and is SCHEDULED
             Showtime existing = showtimesDao.getShowtimeById(showtimeId);
@@ -381,8 +383,11 @@ public class ManageShowtimesServlet extends HttpServlet {
                 return;
             }
 
-            // Validate end > start
-            if (!end.isAfter(start)) {
+            // Validate end > start (use LocalDateTime to support overnight showtimes)
+            LocalDate endDate = overnight ? date.plusDays(1) : date;
+            java.time.LocalDateTime startDT = java.time.LocalDateTime.of(date, start);
+            java.time.LocalDateTime endDT = java.time.LocalDateTime.of(endDate, end);
+            if (!endDT.isAfter(startDT)) {
                 forwardWithError(request, response, "edit", branchId,
                         "Giờ kết thúc phải sau giờ bắt đầu.", movieId, roomId, date, start, showtimeId);
                 return;
@@ -461,15 +466,20 @@ public class ManageShowtimesServlet extends HttpServlet {
             // 1. Xác định Loại ngày (WEEKDAY / WEEKEND)
             java.time.DayOfWeek dayOfWeek = showtime.getShowDate().getDayOfWeek();
             String dayType = (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY)
-                    ? "WEEKEND" : "WEEKDAY";
+                    ? "WEEKEND"
+                    : "WEEKDAY";
 
             // 2. Xác định Khung giờ
             int hour = showtime.getStartTime().getHour();
             String timeSlot;
-            if (hour >= 6 && hour < 12) timeSlot = "MORNING";
-            else if (hour >= 12 && hour < 17) timeSlot = "AFTERNOON";
-            else if (hour >= 17 && hour < 22) timeSlot = "EVENING";
-            else timeSlot = "NIGHT";
+            if (hour >= 6 && hour < 12)
+                timeSlot = "MORNING";
+            else if (hour >= 12 && hour < 17)
+                timeSlot = "AFTERNOON";
+            else if (hour >= 17 && hour < 22)
+                timeSlot = "EVENING";
+            else
+                timeSlot = "NIGHT";
 
             // Query Database lấy giá vé mặc định (ADULT)
             BigDecimal dynamicPrice = ticketPricesDao.getTicketPrice(
@@ -477,14 +487,13 @@ public class ManageShowtimesServlet extends HttpServlet {
                     "ADULT",
                     dayType,
                     timeSlot,
-                    showtime.getShowDate()
-            );
+                    showtime.getShowDate());
 
             // Ghi đè giá trị mới vào cả 2 object để đảm bảo JSP gọi cái nào cũng đúng
             if (dynamicPrice != null) {
                 showtime.setBasePrice(dynamicPrice);
                 if (detail != null) {
-                    detail.put("base_price", dynamicPrice); // Ghi đè vào Map
+                    detail.put("basePrice", dynamicPrice);
                 }
             }
         }
@@ -717,6 +726,7 @@ public class ManageShowtimesServlet extends HttpServlet {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Removed: getBranchOfCurrentUser method is no longer used since branchId is taken from session attribute
+    // Removed: getBranchOfCurrentUser method is no longer used since branchId is
+    // taken from session attribute
     // ─────────────────────────────────────────────────────────────────────────
 }
