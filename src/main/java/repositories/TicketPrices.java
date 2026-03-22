@@ -58,7 +58,6 @@ public class TicketPrices extends DBContext {
         return false;
     }
 
-
     // Cập nhật bảng giá
     public boolean update(TicketPrice p) {
         String sql = "UPDATE ticket_prices SET branch_id=?, ticket_type=?, day_type=?, time_slot=?, price=?, effective_from=?, effective_to=?, is_active=? WHERE price_id=?";

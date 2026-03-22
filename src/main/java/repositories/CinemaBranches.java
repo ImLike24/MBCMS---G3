@@ -178,41 +178,6 @@ public class CinemaBranches extends DBContext {
         return false;
     }
 
-    public CinemaBranch getBranchByManagerId(int managerId) {
-        String sql = "SELECT * FROM cinema_branches WHERE manager_id = ?";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, managerId);
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next())
-                    return mapRow(rs);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    // Check if branch name exists (for duplicate validation)
-    public boolean branchNameExists(String branchName, Integer excludeBranchId) {
-        String sql = "SELECT COUNT(*) FROM cinema_branches WHERE branch_name = ? AND branch_id != ?";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setString(1, branchName);
-            if (excludeBranchId != null) {
-                st.setInt(2, excludeBranchId);
-            } else {
-                st.setInt(2, -1); // No exclusion
-            }
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
     // Get all active branches
     public List<CinemaBranch> getActiveBranches() {
         List<CinemaBranch> list = new ArrayList<>();
@@ -227,19 +192,6 @@ public class CinemaBranches extends DBContext {
         return list;
     }
 
-    // Update branch status
-    public boolean updateBranchStatus(int branchId, boolean isActive) {
-        String sql = "UPDATE cinema_branches SET is_active = ?, updated_at = SYSDATETIME() WHERE branch_id = ?";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setBoolean(1, isActive);
-            st.setInt(2, branchId);
-            return st.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
     public boolean delete(int id) {
         String sql = "DELETE FROM cinema_branches WHERE branch_id = ?";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
@@ -249,40 +201,6 @@ public class CinemaBranches extends DBContext {
             e.printStackTrace();
         }
         return false;
-    }
-
-    public CinemaBranch findByManagerId(int managerId) {
-        // Vẫn dùng LEFT JOIN để tận dụng hàm mapRow bên trên
-        String sql = "SELECT b.*, u.fullName as manager_name " +
-                "FROM cinema_branches b " +
-                "LEFT JOIN users u ON b.manager_id = u.user_id " +
-                "WHERE b.manager_id = ?";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, managerId);
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next())
-                    return mapRow(rs);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null; // Trả về null nếu ông này không quản lý rạp nào
-    }
-
-    public List<CinemaBranch> findByCity(String city) {
-        List<CinemaBranch> list = new ArrayList<>();
-        // Simple LIKE search on address for now
-        String sql = "SELECT * FROM cinema_branches WHERE address LIKE ? AND is_active = 1";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setString(1, "%" + city + "%");
-            try (ResultSet rs = st.executeQuery()) {
-                while (rs.next())
-                    list.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
     }
 
     // Lấy danh sách các chi nhánh do 1 manager quản lý

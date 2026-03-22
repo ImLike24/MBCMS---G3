@@ -220,7 +220,7 @@
                         name="email"
                         class="form-input"
                         required
-                        pattern="[a-zA-Z0-9._%25+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+                        pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$/,}"
                         title="Email không hợp lệ"
                         value="${email != null ? email : param.email}"
                         placeholder="vidu@email.com"
@@ -236,7 +236,7 @@
                         name="phone"
                         placeholder="0xxxxxxxxx"
                         required
-                        pattern="^0\d{9,10}$"
+                        pattern="^0\d{9}$"
                         title="Số điện thoại phải bắt đầu bằng 0 và có 10-11 số"
                         value="${phone != null ? phone : param.phone}"
                 >
@@ -251,6 +251,7 @@
                     name="birthday"
                     class="form-input"
                     value="${birthday != null ? birthday : param.birthday}"
+                    max="2026-03-18
             >
         </div>
 
