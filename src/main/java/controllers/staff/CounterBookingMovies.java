@@ -1,7 +1,8 @@
 package controllers.staff;
 
 import models.Movie;
-import repositories.Movies;
+import models.User;
+import services.CounterBookingMoviesService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -14,8 +15,6 @@ import java.util.List;
 
 @WebServlet(name = "counterBookingMovies", urlPatterns = { "/staff/counter-booking" })
 public class CounterBookingMovies extends HttpServlet {
-
-    private static final int PAGE_SIZE = 8; // Movies per page
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -37,9 +36,7 @@ public class CounterBookingMovies extends HttpServlet {
 
         // Mỗi request dùng connection riêng, tránh "connection is closed" khi nhiều
         // request đồng thời
-        Movies moviesRepo = null;
         try {
-            moviesRepo = new Movies();
             // Get date parameter
             // If no date param provided, default to TODAY (not show all)
             String dateParam = request.getParameter("date");
@@ -80,58 +77,20 @@ public class CounterBookingMovies extends HttpServlet {
                 }
             }
 
-            // Get movies with filter, search and pagination
-            List<Movie> movies;
-            int totalMovies;
-            List<String> ageRatings;
-            
-            if (showAllMovies) {
-                // Show all active movies (no date filter - e.g. after Reset)
-                // Use getAllActiveMovies() then filter/paginate in Java for reliability
-                List<Movie> allActive = moviesRepo.getAllActiveMovies();
-                
-                // Check if each movie has showtimes today
-                LocalDate today = LocalDate.now();
-                for (Movie movie : allActive) {
-                    int showtimeCount = moviesRepo.countShowtimesForMovieOnDate(movie.getMovieId(), today);
-                    movie.setHasShowtimesToday(showtimeCount > 0);
-                }
-                
-                if (search != null && !search.trim().isEmpty()) {
-                    String q = search.trim().toLowerCase();
-                    allActive = allActive.stream()
-                            .filter(m -> (m.getTitle() != null && m.getTitle().toLowerCase().contains(q))
-                                    || (m.getDirector() != null && m.getDirector().toLowerCase().contains(q))
-                                    || (m.getCast() != null && m.getCast().toLowerCase().contains(q)))
-                            .toList();
-                }
-                if (genre != null && !genre.trim().isEmpty()) {
-                    String g = genre.trim().toLowerCase();
-                    allActive = allActive.stream()
-                            .filter(m -> m.getGenres() != null && m.getGenres().stream()
-                                    .anyMatch(ge -> ge != null && ge.toLowerCase().contains(g)))
-                            .toList();
-                }
-                if (ageRating != null && !ageRating.trim().isEmpty()) {
-                    allActive = allActive.stream()
-                            .filter(m -> ageRating.trim().equalsIgnoreCase(m.getAgeRating()))
-                            .toList();
-                }
-                totalMovies = allActive.size();
-                int from = (page - 1) * PAGE_SIZE;
-                int to = Math.min(from + PAGE_SIZE, totalMovies);
-                movies = from < totalMovies ? allActive.subList(from, to) : List.of();
-                ageRatings = moviesRepo.getAgeRatingsFromActiveMovies();
-            } else {
-                // Show movies for specific date
-                movies = moviesRepo.getMoviesShowingOnDateWithFilter(
-                        selectedDate, search, genre, ageRating, page, PAGE_SIZE);
-                totalMovies = moviesRepo.countMoviesShowingOnDateWithFilter(
-                        selectedDate, search, genre, ageRating);
-                ageRatings = moviesRepo.getAgeRatingsShowingOnDate(selectedDate);
-            }
-            
-            int totalPages = (int) Math.ceil((double) totalMovies / PAGE_SIZE);
+            CounterBookingMoviesService service = new CounterBookingMoviesService();
+
+            // Lấy chi nhánh của staff (nếu có)
+            User currentUser = (User) session.getAttribute("user");
+            Integer branchId = currentUser != null ? currentUser.getBranchId() : null;
+            System.out.println("[DEBUG CounterBookingMovies] userId=" + (currentUser != null ? currentUser.getUserId() : "null")
+                + " branchId=" + branchId + " selectedDate=" + selectedDate + " showAllMovies=" + showAllMovies);
+            CounterBookingMoviesService.MoviesPage moviesPage = service.getMoviesForCounter(
+                    selectedDate, showAllMovies, search, genre, ageRating, page, branchId);
+
+            List<Movie> movies = moviesPage.movies;
+            int totalMovies = moviesPage.totalMovies;
+            int totalPages = moviesPage.totalPages;
+            List<String> ageRatings = moviesPage.ageRatings;
 
             // Set attributes for JSP
             request.setAttribute("movies", movies);
@@ -143,10 +102,11 @@ public class CounterBookingMovies extends HttpServlet {
             request.setAttribute("currentPage", page);
             request.setAttribute("totalPages", totalPages);
             request.setAttribute("totalMovies", totalMovies);
-            request.setAttribute("pageSize", PAGE_SIZE);
+            request.setAttribute("pageSize", service.getPageSize());
 
             // Filter attributes
             request.setAttribute("ageRatings", ageRatings);
+            request.setAttribute("genres", moviesPage.genres);
             request.setAttribute("selectedGenre", genre);
             request.setAttribute("selectedAgeRating", ageRating);
             request.setAttribute("searchQuery", search);
@@ -157,10 +117,6 @@ public class CounterBookingMovies extends HttpServlet {
             e.printStackTrace();
             request.setAttribute("error", "Error loading movies: " + e.getMessage());
             request.getRequestDispatcher("/pages/staff/counter-booking-movies.jsp").forward(request, response);
-        } finally {
-            if (moviesRepo != null) {
-                moviesRepo.closeConnection();
-            }
         }
     }
 }

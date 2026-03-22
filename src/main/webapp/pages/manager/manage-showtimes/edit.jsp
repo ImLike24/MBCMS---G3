@@ -72,9 +72,10 @@
                                 <i class="fa-solid fa-arrow-left me-1"></i>Quay lại
                             </a>
                             <div>
-                                <h3 class="fw-bold text-dark mb-0">
-                                    <i class="fa-solid fa-calendar-days me-2" style="color:#d96c2c;"></i>
-                                    Chỉnh sửa Suất Chiếu <span class="text-muted fs-5">#${showtime.showtimeId}</span>
+                                <h3 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-calendar-days" style="color:#d96c2c;"></i>
+                                    <span>Chỉnh sửa Suất Chiếu <span class="text-muted fs-5">#${showtime.showtimeId}</span></span>
+                                    <span class="badge bg-dark fs-6 rounded-pill px-3 py-2 ms-2"><i class="fa-solid fa-building me-1"></i> ${currentBranchName}</span>
                                 </h3>
                                 <nav aria-label="breadcrumb">
                                     <ol class="breadcrumb mb-0 mt-1">
@@ -166,25 +167,7 @@
                                             </div>
                                         </div>
 
-                                        <hr>
 
-                                        <!-- Pricing -->
-                                        <div class="mb-4">
-                                            <p class="section-label mb-2"><i class="fa-solid fa-tag me-1"></i>Giá vé</p>
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label for="basePrice"
-                                                        class="form-label fw-semibold required-star">Giá cơ bản
-                                                        (VNĐ)</label>
-                                                    <div class="input-group">
-                                                        <input type="number" id="basePrice" name="basePrice"
-                                                            class="form-control" min="0" step="1000" required
-                                                            value="${not empty prefPrice ? prefPrice : showtime.basePrice}">
-                                                        <span class="input-group-text">₫</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
 
                                         <!-- Submit -->
                                         <div class="d-flex gap-3 justify-content-end pt-2">
@@ -220,10 +203,7 @@
                                             <div class="small text-muted">Khung giờ</div>
                                             <div class="fw-semibold" id="previewTime">—</div>
                                         </div>
-                                        <div>
-                                            <div class="small text-muted">Giá cơ bản</div>
-                                            <div class="fw-semibold text-success" id="previewPrice">—</div>
-                                        </div>
+
                                     </div>
                                 </div>
 
@@ -244,13 +224,7 @@
                                             <span class="text-muted">Giờ gốc:</span>
                                             <span class="fw-semibold">${showtime.startTime} → ${showtime.endTime}</span>
                                         </div>
-                                        <div class="d-flex justify-content-between">
-                                            <span class="text-muted">Giá gốc:</span>
-                                            <span class="fw-semibold">
-                                                <fmt:formatNumber value="${showtime.basePrice}" type="number"
-                                                    groupingUsed="true" /> ₫
-                                            </span>
-                                        </div>
+
                                     </div>
                                 </div>
 
@@ -277,7 +251,7 @@
                     const startInput = document.getElementById('startTime');
                     const endInput = document.getElementById('endTime');
                     const showDate = document.getElementById('showDate');
-                    const priceInput = document.getElementById('basePrice');
+
 
                     function calcEndTime() {
                         const startVal = startInput.value;
@@ -295,18 +269,14 @@
                         const dateVal = showDate.value ? new Date(showDate.value + 'T00:00:00').toLocaleDateString('vi-VN') : '—';
                         const startVal = startInput.value || '—';
                         const endVal = endInput.value || '—';
-                        const price = priceInput.value ? parseInt(priceInput.value).toLocaleString('vi-VN') + ' ₫' : '—';
-
                         document.getElementById('previewRoom').textContent = roomText;
                         document.getElementById('previewDate').textContent = dateVal;
                         document.getElementById('previewTime').textContent = startVal !== '—' ? startVal + ' → ' + endVal : '—';
-                        document.getElementById('previewPrice').textContent = price;
                     }
 
                     startInput.addEventListener('change', calcEndTime);
                     roomSelect.addEventListener('change', updatePreview);
                     showDate.addEventListener('change', updatePreview);
-                    priceInput.addEventListener('input', updatePreview);
 
                     // Init
                     calcEndTime();
@@ -316,16 +286,10 @@
                     document.getElementById('editForm').addEventListener('submit', function (e) {
                         const start = startInput.value;
                         const end = endInput.value;
-                        const price = priceInput.value;
-
-                        if (!start || !end || !price) {
+                        if (!start || !end) {
                             e.preventDefault();
                             alert('Vui lòng điền đầy đủ thông tin bắt buộc.');
                             return;
-                        }
-                        if (parseFloat(price) < 0) {
-                            e.preventDefault();
-                            alert('Giá vé không được âm.');
                         }
                     });
                 </script>

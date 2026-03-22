@@ -70,15 +70,15 @@ public class ManageUsersServlet extends HttpServlet {
             Roles rolesRepo = new Roles();
 
             // Get users based on filters
-            List<User> users;
+            List<User> allUsers;
             if (searchKeyword != null && !searchKeyword.trim().isEmpty()) {
-                users = usersRepo.searchUsers(searchKeyword.trim());
+                allUsers = usersRepo.searchUsers(searchKeyword.trim());
             } else if (roleFilter != null && !roleFilter.isEmpty()) {
-                users = usersRepo.getUsersByRole(Integer.parseInt(roleFilter));
+                allUsers = usersRepo.getUsersByRole(Integer.parseInt(roleFilter));
             } else if (statusFilter != null && !statusFilter.isEmpty()) {
-                users = usersRepo.getUsersByStatus(statusFilter);
+                allUsers = usersRepo.getUsersByStatus(statusFilter);
             } else {
-                users = usersRepo.getAllUsers();
+                allUsers = usersRepo.getAllUsers();
             }
 
             // Get all roles for filter dropdown
@@ -90,6 +90,31 @@ public class ManageUsersServlet extends HttpServlet {
                 roleMap.put(role.getRoleId(), role.getRoleName());
             }
 
+            // ── Pagination ──────────────────────────────────────────────────
+            int pageSize = 5;
+            int totalUsers = allUsers.size();
+            int totalPages = (int) Math.ceil((double) totalUsers / pageSize);
+            if (totalPages == 0)
+                totalPages = 1;
+
+            int currentPage = 1;
+            String pageParam = request.getParameter("page");
+            if (pageParam != null && !pageParam.isEmpty()) {
+                try {
+                    currentPage = Integer.parseInt(pageParam);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            if (currentPage < 1)
+                currentPage = 1;
+            if (currentPage > totalPages)
+                currentPage = totalPages;
+
+            int fromIndex = (currentPage - 1) * pageSize;
+            int toIndex = Math.min(fromIndex + pageSize, totalUsers);
+            List<User> users = allUsers.subList(fromIndex, toIndex);
+            // ────────────────────────────────────────────────────────────────
+
             // Set attributes for JSP
             request.setAttribute("users", users);
             request.setAttribute("allRoles", allRoles);
@@ -97,6 +122,9 @@ public class ManageUsersServlet extends HttpServlet {
             request.setAttribute("roleFilter", roleFilter);
             request.setAttribute("statusFilter", statusFilter);
             request.setAttribute("searchKeyword", searchKeyword);
+            request.setAttribute("currentPage", currentPage);
+            request.setAttribute("totalPages", totalPages);
+            request.setAttribute("totalUsers", totalUsers);
 
             request.getRequestDispatcher("/pages/admin/user/manage-users.jsp").forward(request, response);
 
@@ -162,6 +190,20 @@ public class ManageUsersServlet extends HttpServlet {
             int userId = Integer.parseInt(userIdStr);
             usersDbContext = new DBContext();
             Users usersRepo = new Users();
+            Roles rolesRepo = new Roles();
+
+            // Prevent lock/delete on admin accounts (server-side guard)
+            if ("lock".equals(action) || "delete".equals(action) || "deactivate".equals(action)) {
+                User targetUser = usersRepo.getUserById(userId);
+                if (targetUser != null) {
+                    Role targetRole = rolesRepo.getRoleById(targetUser.getRoleId());
+                    if (targetRole != null && "ADMIN".equals(targetRole.getRoleName())) {
+                        response.sendRedirect(request.getContextPath()
+                                + "/admin/manage-users?error=Không thể khóa hoặc xóa tài khoản Admin");
+                        return;
+                    }
+                }
+            }
 
             boolean success = false;
             String message = "";

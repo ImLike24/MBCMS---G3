@@ -1,7 +1,7 @@
 package controllers.staff;
 
 import models.Showtime;
-import repositories.Showtimes;
+import services.CounterBookingSeatsService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -42,35 +42,30 @@ public class CounterBookingSeats extends HttpServlet {
             return;
         }
 
-        Showtimes showtimesRepo = null;
-        
         try {
             int showtimeId = Integer.parseInt(showtimeIdParam);
-            showtimesRepo = new Showtimes();
+            CounterBookingSeatsService service = new CounterBookingSeatsService();
+            CounterBookingSeatsService.SeatsResult result = service.getSeatsForShowtime(showtimeId);
 
-            // Get showtime details (includes movie, room, branch info)
-            Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
-            
-            if (showtimeDetails.isEmpty()) {
+            if (result == null || result.showtimeDetails == null || result.showtimeDetails.isEmpty()) {
                 request.setAttribute("error", "Showtime not found");
                 response.sendRedirect(request.getContextPath() + "/staff/counter-booking");
                 return;
             }
 
-            // Get all seats with their booking status
-            List<Map<String, Object>> seatsWithStatus = showtimesRepo.getSeatsWithBookingStatus(showtimeId);
-            
-            // Count available seats
-            int availableSeats = showtimesRepo.countAvailableSeats(showtimeId);
-            
-            // Set attributes for JSP
+            Map<String, Object> showtimeDetails = result.showtimeDetails;
+
             request.setAttribute("showtimeDetails", showtimeDetails);
-            request.setAttribute("seatsWithStatus", seatsWithStatus);
-            request.setAttribute("availableSeats", availableSeats);
+            request.setAttribute("seatsWithStatus", result.seatsWithStatus);
+            request.setAttribute("availableSeats", result.availableSeats);
             request.setAttribute("showtimeId", showtimeId);
+
+            // Dynamic ticket prices & surcharges
+            request.setAttribute("adultPrice", result.adultPrice);
+            request.setAttribute("childPrice", result.childPrice);
+            request.setAttribute("surchargeList", result.surchargeList);
             
-            // Extract useful info for easier access in JSP
-            Showtime showtime = (Showtime) showtimeDetails.get("showtime");
+            Showtime showtime = result.showtime;
             request.setAttribute("showtime", showtime);
             request.setAttribute("movieTitle", showtimeDetails.get("movieTitle"));
             request.setAttribute("moviePosterUrl", showtimeDetails.get("moviePosterUrl"));
@@ -78,16 +73,11 @@ public class CounterBookingSeats extends HttpServlet {
             request.setAttribute("totalSeats", showtimeDetails.get("totalSeats"));
             request.setAttribute("branchName", showtimeDetails.get("branchName"));
 
-            // Pre-format LocalTime / LocalDate so JSP EL can display them directly
-            if (showtime != null) {
-                if (showtime.getStartTime() != null) {
-                    request.setAttribute("formattedStartTime",
-                            showtime.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
-                }
-                if (showtime.getShowDate() != null) {
-                    request.setAttribute("formattedShowDate",
-                            showtime.getShowDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                }
+            if (result.formattedStartTime != null) {
+                request.setAttribute("formattedStartTime", result.formattedStartTime);
+            }
+            if (result.formattedShowDate != null) {
+                request.setAttribute("formattedShowDate", result.formattedShowDate);
             }
             
             request.getRequestDispatcher("/pages/staff/counter-booking-seats.jsp").forward(request, response);
@@ -100,10 +90,6 @@ public class CounterBookingSeats extends HttpServlet {
             e.printStackTrace();
             request.setAttribute("error", "Error loading seat map: " + e.getMessage());
             request.getRequestDispatcher("/pages/staff/counter-booking-seats.jsp").forward(request, response);
-        } finally {
-            if (showtimesRepo != null) {
-                showtimesRepo.closeConnection();
-            }
         }
     }
 }

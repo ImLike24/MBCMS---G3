@@ -2,6 +2,7 @@ package repositories;
 
 import config.DBContext;
 import models.User;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,6 +10,10 @@ import java.sql.Timestamp;
 import java.util.List;
 
 public class Users extends DBContext {
+
+    public Connection getConnection() {
+        return connection;
+    }
 
     // Helper map ResultSet to User Object
     private User mapResultSetToUser(ResultSet rs) throws SQLException {
@@ -27,6 +32,17 @@ public class Users extends DBContext {
         u.setAvatarUrl(rs.getString("avatarURL"));
         u.setStatus(rs.getString("status"));
         u.setPoints(rs.getInt("points"));
+        
+        u.setTotalAccumulatedPoints(rs.getInt("total_accumulated_points"));
+        u.setTierId(rs.getInt("tier_id"));
+        try {
+            int bId = rs.getInt("branch_id");
+            if (!rs.wasNull()) {
+                u.setBranchId(bId);
+            }
+        } catch (SQLException ignore) {
+            // column may not exist in older schemas
+        }
 
         if (rs.getTimestamp("created_at") != null)
             u.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
@@ -81,9 +97,9 @@ public class Users extends DBContext {
     }
 
     public boolean insert(User u) {
-        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points) "
+        String sql = "INSERT INTO users (role_id, username, email, password, fullName, birthday, phone, status, points, total_accumulated_points, tier_id, branch_id) "
                 +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, u.getRoleId());
             st.setString(2, u.getUsername());
@@ -98,7 +114,14 @@ public class Users extends DBContext {
 
             st.setString(7, u.getPhone());
             st.setString(8, u.getStatus());
-            st.setInt(9, u.getPoints());
+            st.setInt(9, u.getPoints() != null ? u.getPoints() : 0);
+            st.setInt(10, u.getTotalAccumulatedPoints() != null ? u.getTotalAccumulatedPoints() : 0);
+            st.setInt(11, u.getTierId() != null ? u.getTierId() : 1);
+            if (u.getBranchId() != null) {
+                st.setInt(12, u.getBranchId());
+            } else {
+                st.setNull(12, java.sql.Types.INTEGER);
+            }
 
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -117,26 +140,54 @@ public class Users extends DBContext {
         }
     }
 
-    public boolean updateProfile(User u) {
+    public boolean updateProfileInfo(User u) {
         String sql = """
-                    UPDATE users
-                    SET fullName = ?, email = ?, phone = ?, birthday = ?, password = ?, updated_at = SYSDATETIME()
-                    WHERE user_id = ?
-                """;
-
+            UPDATE users
+            SET fullName = ?, email = ?, phone = ?, birthday = ?, updated_at = SYSDATETIME()
+            WHERE user_id = ?
+        """;
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, u.getFullName());
             st.setString(2, u.getEmail());
             st.setString(3, u.getPhone());
-
-            if (u.getBirthday() != null)
+            if (u.getBirthday() != null) {
                 st.setTimestamp(4, Timestamp.valueOf(u.getBirthday()));
-            else
+            } else {
                 st.setNull(4, java.sql.Types.TIMESTAMP);
+            }
+            st.setInt(5, u.getUserId());
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    public boolean updatePassword(User u) {
+        String sql = """
+            UPDATE users
+            SET password = ?, updated_at = SYSDATETIME()
+            WHERE user_id = ?
+        """;
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, u.getPassword());
+            st.setInt(2, u.getUserId());
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
-            st.setString(5, u.getPassword());
-            st.setInt(6, u.getUserId());
-
+    public boolean updateAvatar(User u) {
+        String sql = """
+            UPDATE users
+            SET avatarUrl = ?, updated_at = SYSDATETIME()
+            WHERE user_id = ?
+        """;
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, u.getAvatarUrl());
+            st.setInt(2, u.getUserId());
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -374,6 +425,129 @@ public class Users extends DBContext {
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, newPassword); // Lưu ý: Nên mã hóa password (MD5/BCrypt) trước khi truyền vào đây
             st.setString(2, email);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Cộng thêm điểm cho user: vừa cập nhật points hiện tại,
+     * vừa cập nhật total_accumulated_points.
+     *
+     * @param userId      ID user cần cộng điểm
+     * @param deltaPoints số điểm cộng (dương). Nếu <= 0 sẽ không làm gì.
+     * @return true nếu cập nhật thành công, ngược lại false.
+     */
+    public boolean addPoints(int userId, int deltaPoints) {
+        if (deltaPoints <= 0) {
+            return false;
+        }
+
+        String sql = """
+                UPDATE users
+                SET points = points + ?,
+                    total_accumulated_points = total_accumulated_points + ?
+                WHERE user_id = ?
+                """;
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, deltaPoints);
+            st.setInt(2, deltaPoints);
+            st.setInt(3, userId);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Trừ điểm hiện có của user (dùng khi quy đổi điểm).
+     * Không ảnh hưởng total_accumulated_points.
+     *
+     * @param userId          ID user
+     * @param pointsToRedeem  số điểm muốn trừ (dương)
+     * @return true nếu trừ thành công, false nếu không đủ điểm hoặc lỗi
+     */
+    public boolean redeemPoints(int userId, int pointsToRedeem) {
+        if (pointsToRedeem <= 0) {
+            return false;
+        }
+
+        String sql = "UPDATE users SET points = points - ? WHERE user_id = ? AND points >= ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, pointsToRedeem);
+            st.setInt(2, userId);
+            st.setInt(3, pointsToRedeem);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /** Lấy danh sách CINEMA_STAFF thuộc một branch */
+    public java.util.List<User> getStaffByBranch(int branchId) {
+        String sql = """
+            SELECT u.* FROM users u
+            JOIN roles r ON u.role_id = r.role_id
+            WHERE r.role_name = 'CINEMA_STAFF' AND u.branch_id = ? AND u.status = 'ACTIVE'
+            ORDER BY u.fullName ASC
+            """;
+        java.util.List<User> list = new java.util.ArrayList<>();
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, branchId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) list.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    /** Lấy danh sách CINEMA_STAFF chưa được gán branch (branch_id IS NULL) */
+    public java.util.List<User> getUnassignedStaff() {
+        String sql = """
+            SELECT u.* FROM users u
+            JOIN roles r ON u.role_id = r.role_id
+            WHERE r.role_name = 'CINEMA_STAFF' AND u.branch_id IS NULL AND u.status = 'ACTIVE'
+            ORDER BY u.fullName ASC
+            """;
+        java.util.List<User> list = new java.util.ArrayList<>();
+        try (PreparedStatement st = connection.prepareStatement(sql);
+             ResultSet rs = st.executeQuery()) {
+            while (rs.next()) list.add(mapResultSetToUser(rs));
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    /** Gán staff vào branch (hoặc null để gỡ ra) */
+    public boolean updateBranchAssignment(int userId, Integer branchId) {
+        String sql = "UPDATE users SET branch_id = ?, updated_at = SYSDATETIME() WHERE user_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            if (branchId != null) st.setInt(1, branchId);
+            else st.setNull(1, java.sql.Types.INTEGER);
+            st.setInt(2, userId);
+            return st.executeUpdate() > 0;
+        } catch (SQLException e) { e.printStackTrace(); }
+        return false;
+    }
+
+    public boolean updateTier(int userId) {
+        String sql = """
+            UPDATE users
+            SET tier_id = (
+                SELECT TOP 1 tier_id
+                FROM membership_tiers
+                WHERE min_points_required <= (SELECT total_accumulated_points FROM users WHERE user_id = ?)
+                ORDER BY min_points_required DESC
+            )
+            WHERE user_id = ?
+        """;
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, userId);
+            st.setInt(2, userId);
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

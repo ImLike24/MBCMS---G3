@@ -9,15 +9,10 @@
             <ul class="sidebar-menu">
                 <li><a href="${pageContext.request.contextPath}/" onclick="toggleSidebar()"><i class="fa fa-home"></i>
                         Trang chủ</a></li>
-                <li><a href="${pageContext.request.contextPath}/movies" onclick="toggleSidebar()"><i
-                            class="fa fa-film"></i> Phim đang chiếu</a></li>
                 <li><a href="${pageContext.request.contextPath}/showtimes" onclick="toggleSidebar()"><i
                             class="fa fa-calendar"></i> Lịch chiếu</a></li>
-
                 <c:if test="${not empty sessionScope.user}">
                     <!-- Customer menu -->
-                    <li><a href="${pageContext.request.contextPath}/customer/my-tickets" onclick="toggleSidebar()"><i
-                                class="fa fa-ticket"></i> Vé của tôi</a></li>
                     <li><a href="${pageContext.request.contextPath}/customer/booking-history"
                             onclick="toggleSidebar()"><i class="fa fa-history"></i> Lịch sử đặt vé</a></li>
                     <li><a href="${pageContext.request.contextPath}/customer/promotions" onclick="toggleSidebar()"><i
@@ -30,12 +25,6 @@
                                 class="fa fa-user"></i> Tài khoản</a></li>
                     <li><a href="${pageContext.request.contextPath}/logout" onclick="toggleSidebar()"><i
                                 class="fa fa-sign-out"></i> Đăng xuất</a></li>
-                </c:if>
-
-                <c:if test="${empty sessionScope.user}">
-                    <!-- Guest menu -->
-                    <li><a href="${pageContext.request.contextPath}/login" onclick="toggleSidebar()"><i
-                                class="fa fa-sign-in"></i> Đăng nhập tài khoản</a></li>
                 </c:if>
             </ul>
         </div>

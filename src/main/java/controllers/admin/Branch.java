@@ -29,6 +29,9 @@ public class Branch extends HttpServlet {
                 case "create":
                     showCreateForm(request, response);
                     break;
+                case "view":
+                    showViewForm(request, response);
+                    break;
                 case "edit":
                     showEditForm(request, response);
                     break;
@@ -66,9 +69,17 @@ public class Branch extends HttpServlet {
                     break;
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            request.setAttribute("error", "Lỗi hệ thống: " + e.getMessage());
-            listBranches(request, response);
+            request.setAttribute("error", e.getMessage());
+            CinemaBranch b = extractBranchFromRequest(request);
+
+            if ("update".equals(action)) {
+                String idStr = request.getParameter("branchId");
+                if (idStr != null && !idStr.isEmpty()) {
+                    b.setBranchId(Integer.parseInt(idStr));
+                }
+            }
+            request.setAttribute("branch", b);
+            request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
         }
     }
 
@@ -101,6 +112,7 @@ public class Branch extends HttpServlet {
 
         // Gọi service với tham số
         List<CinemaBranch> list = branchService.getAllBranches(keyword, isActive, page, pageSize);
+
         int totalRecords = branchService.countBranches(keyword, isActive);
         int totalPages = (int) Math.ceil((double) totalRecords / pageSize);
 
@@ -108,8 +120,8 @@ public class Branch extends HttpServlet {
         request.setAttribute("branches", list);
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
-        request.setAttribute("keyword", keyword);
-        request.setAttribute("status", statusParam);
+        request.setAttribute("keyword", keyword == null ? "" : keyword);
+        request.setAttribute("status", statusParam == null ? "" : statusParam);
 
         request.getRequestDispatcher("/pages/admin/branch/list.jsp").forward(request, response);
     }
@@ -119,6 +131,18 @@ public class Branch extends HttpServlet {
         List<User> managers = branchService.getAllManagers();
         request.setAttribute("managers", managers);
 
+        request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
+    }
+
+    private void showViewForm(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        int id = Integer.parseInt(request.getParameter("id"));
+        CinemaBranch existingBranch = branchService.getBranchById(id);
+        List<User> managers = branchService.getAllManagers();
+
+        request.setAttribute("branch", existingBranch);
+        request.setAttribute("managers", managers);
+        request.setAttribute("isViewMode", true);
         request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
     }
 
@@ -169,7 +193,14 @@ public class Branch extends HttpServlet {
             response.sendRedirect("branches?message=updated");
         } catch (Exception e) {
             request.setAttribute("error", e.getMessage());
-            request.setAttribute("branch", extractBranchFromRequest(request));
+
+            CinemaBranch b = extractBranchFromRequest(request);
+
+            String idStr = request.getParameter("branchId");
+            if (idStr != null && !idStr.isEmpty()) {
+                b.setBranchId(Integer.parseInt(idStr));
+            }
+            request.setAttribute("branch", b);
             request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
         }
     }

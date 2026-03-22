@@ -21,6 +21,9 @@ public class User {
     private String avatarUrl;
     private String status = "ACTIVE";
     private Integer points = 0;
+    private Integer totalAccumulatedPoints = 0;
+    private Integer tierId = 1;
+    private Integer branchId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLogin;

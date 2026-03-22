@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import models.Genre;
 import services.GenreService;
-
 import java.io.IOException;
 import java.util.List;
 
@@ -15,69 +14,99 @@ import java.util.List;
 public class ListGenres extends HttpServlet {
 
     private final GenreService genreService = new GenreService();
+    private static final int DEFAULT_PAGE_SIZE = 10;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         String pathInfo = request.getPathInfo();
-        String servletPath = request.getServletPath();
 
-        // Trường hợp: /admin/genres (danh sách)
-        if (pathInfo == null || pathInfo.equals("/") || pathInfo.equals("")) {
-
-            List<Genre> genres = genreService.getAllGenres();
-
-            request.setAttribute("genres", genres);
-            request.getRequestDispatcher("/pages/admin/manage-genres/manage-genres.jsp")
-                   .forward(request, response);
-            return;
-        }
-
-        // Trường hợp: /admin/genres/add → form thêm mới
-        if (pathInfo.equals("/add")) {
-            request.getRequestDispatcher("/admin/genres/add.jsp").forward(request, response);
-            return;
-        }
-
-        // Trường hợp: /admin/genres/edit?id=5 → form sửa
-        if (pathInfo.equals("/edit")) {
-            String idStr = request.getParameter("id");
-            try {
-                int id = Integer.parseInt(idStr);
-                Genre genre = genreService.getGenreById(id); // cần thêm method này
-                if (genre != null) {
-                    request.setAttribute("genre", genre);
-                    request.getRequestDispatcher("/admin/genres/edit.jsp").forward(request, response);
-                } else {
-                    response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy thể loại");
-                }
-            } catch (NumberFormatException e) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "ID không hợp lệ");
+        // Xử lý các route con: /add, /edit, /detail
+        if (pathInfo != null && !pathInfo.equals("/") && !pathInfo.equals("")) {
+            if (pathInfo.equals("/add")) {
+                request.getRequestDispatcher("/admin/genres/add.jsp").forward(request, response);
+                return;
             }
-            return;
-        }
-
-        // Trường hợp: /admin/genres/detail?id=5 → xem chi tiết (tùy chọn)
-        if (pathInfo.equals("/detail")) {
-            String idStr = request.getParameter("id");
-            try {
-                int id = Integer.parseInt(idStr);
-                Genre genre = genreService.getGenreById(id);
-                if (genre != null) {
-                    request.setAttribute("genre", genre);
-                    request.getRequestDispatcher("/admin/genres/detail.jsp").forward(request, response);
-                } else {
-                    response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            if (pathInfo.equals("/edit")) {
+                String idStr = request.getParameter("id");
+                try {
+                    int id = Integer.parseInt(idStr);
+                    Genre genre = genreService.getGenreById(id);
+                    if (genre != null) {
+                        request.setAttribute("genre", genre);
+                        request.getRequestDispatcher("/admin/genres/edit.jsp").forward(request, response);
+                    } else {
+                        response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy thể loại");
+                    }
+                } catch (NumberFormatException e) {
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "ID không hợp lệ");
                 }
-            } catch (NumberFormatException e) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                return;
             }
+            if (pathInfo.equals("/detail")) {
+                String idStr = request.getParameter("id");
+                try {
+                    int id = Integer.parseInt(idStr);
+                    Genre genre = genreService.getGenreById(id);
+                    if (genre != null) {
+                        request.setAttribute("genre", genre);
+                        request.getRequestDispatcher("/admin/genres/detail.jsp").forward(request, response);
+                    } else {
+                        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                    }
+                } catch (NumberFormatException e) {
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                }
+                return;
+            }
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
 
-        // Không khớp route nào
-        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        // Phân trang cho danh sách chính
+        String pageStr = request.getParameter("page");
+        String sizeStr = request.getParameter("size");
+
+        int currentPage = 0;
+        try {
+            if (pageStr != null && !pageStr.isEmpty()) {
+                currentPage = Integer.parseInt(pageStr);
+                if (currentPage < 0) currentPage = 0;
+            }
+        } catch (NumberFormatException ignored) {}
+
+        int pageSize = DEFAULT_PAGE_SIZE;
+        try {
+            if (sizeStr != null && !sizeStr.isEmpty()) {
+                pageSize = Integer.parseInt(sizeStr);
+                if (pageSize <= 0) pageSize = DEFAULT_PAGE_SIZE;
+            }
+        } catch (NumberFormatException ignored) {}
+
+        List<Genre> allGenres = genreService.getAllGenres();
+        int totalItems = allGenres.size();
+
+        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+        if (totalPages == 0) totalPages = 1;
+
+        if (currentPage >= totalPages) {
+            currentPage = totalPages - 1;
+        }
+
+        int start = currentPage * pageSize;
+        int end = Math.min(start + pageSize, totalItems);
+
+        List<Genre> pagedGenres = allGenres.subList(start, end);
+
+        request.setAttribute("genres", pagedGenres);
+        request.setAttribute("currentPage", currentPage);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalItems", totalItems);
+        request.setAttribute("pageSize", pageSize);
+
+        request.getRequestDispatcher("/pages/admin/manage-genres/manage-genres.jsp")
+               .forward(request, response);
     }
 
     @Override
@@ -86,7 +115,6 @@ public class ListGenres extends HttpServlet {
 
         String action = request.getParameter("action");
 
-        // Thêm mới thể loại
         if ("add".equals(action)) {
             String genreName = request.getParameter("genreName");
             String description = request.getParameter("description");
@@ -103,8 +131,7 @@ public class ListGenres extends HttpServlet {
             newGenre.setDescription(description != null ? description.trim() : null);
             newGenre.setActive(isActiveStr != null && isActiveStr.equals("on"));
 
-            boolean success = genreService.addGenre(newGenre); // cần implement method này
-
+            boolean success = genreService.addGenre(newGenre);
             if (success) {
                 response.sendRedirect(request.getContextPath() + "/admin/genres?success=add");
             } else {
@@ -114,7 +141,6 @@ public class ListGenres extends HttpServlet {
             return;
         }
 
-        // Cập nhật thể loại
         if ("update".equals(action)) {
             String idStr = request.getParameter("genreId");
             String genreName = request.getParameter("genreName");
@@ -124,7 +150,6 @@ public class ListGenres extends HttpServlet {
             try {
                 int id = Integer.parseInt(idStr);
                 Genre genre = genreService.getGenreById(id);
-
                 if (genre == null) {
                     response.sendError(HttpServletResponse.SC_NOT_FOUND);
                     return;
@@ -134,8 +159,7 @@ public class ListGenres extends HttpServlet {
                 genre.setDescription(description != null ? description.trim() : null);
                 genre.setActive(isActiveStr != null && isActiveStr.equals("on"));
 
-                boolean success = genreService.updateGenre(genre); // cần implement
-
+                boolean success = genreService.updateGenre(genre);
                 if (success) {
                     response.sendRedirect(request.getContextPath() + "/admin/genres?success=update");
                 } else {
@@ -149,13 +173,11 @@ public class ListGenres extends HttpServlet {
             return;
         }
 
-        // Xóa (soft delete)
         if ("delete".equals(action)) {
             String idStr = request.getParameter("id");
             try {
                 int id = Integer.parseInt(idStr);
-                boolean success = genreService.deleteGenre(id); // soft delete hoặc hard delete
-
+                boolean success = genreService.deleteGenre(id);
                 if (success) {
                     response.sendRedirect(request.getContextPath() + "/admin/genres?success=delete");
                 } else {

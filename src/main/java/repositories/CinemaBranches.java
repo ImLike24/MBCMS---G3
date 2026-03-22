@@ -39,51 +39,6 @@ public class CinemaBranches extends DBContext {
         return b;
     }
 
-    public int countAll(String keyword, Boolean isActive) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM cinema_branches WHERE 1=1");
-        List<Object> params = new ArrayList<>();
-
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            sql.append(" AND branch_name LIKE ?");
-            params.add("%" + keyword + "%");
-        }
-
-        if (isActive != null) {
-            sql.append(" AND is_active = ?");
-            params.add(isActive);
-        }
-
-        try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                st.setObject(i + 1, params.get(i));
-            }
-            ResultSet rs = st.executeQuery();
-            if (rs.next())
-                return rs.getInt(1);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-
-    public List<CinemaBranch> findAll() {
-        List<CinemaBranch> list = new ArrayList<>();
-        // Sử dụng LEFT JOIN để lấy tên quản lý.
-        // LEFT JOIN đảm bảo vẫn lấy được chi nhánh kể cả khi chưa có quản lý.
-        String sql = "SELECT b.*, u.fullName as manager_name " +
-                "FROM cinema_branches b " +
-                "LEFT JOIN users u ON b.manager_id = u.user_id " +
-                "ORDER BY b.branch_id DESC";
-        try (PreparedStatement st = connection.prepareStatement(sql);
-                ResultSet rs = st.executeQuery()) {
-            while (rs.next())
-                list.add(mapRow(rs));
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
     public List<CinemaBranch> findAll(String keyword, Boolean isActive, int page, int pageSize) {
         List<CinemaBranch> list = new ArrayList<>();
         int offset = (page - 1) * pageSize;
@@ -94,38 +49,70 @@ public class CinemaBranches extends DBContext {
                         "LEFT JOIN users u ON b.manager_id = u.user_id " +
                         "WHERE 1=1 ");
 
-        List<Object> params = new ArrayList<>();
-
-        // Logic thêm điều kiện tìm kiếm
+        // Nối chuỗi SQL
         if (keyword != null && !keyword.trim().isEmpty()) {
             sql.append(" AND b.branch_name LIKE ?");
-            params.add("%" + keyword + "%");
         }
-
-        // Logic thêm điều kiện lọc status
         if (isActive != null) {
             sql.append(" AND b.is_active = ?");
-            params.add(isActive);
         }
-
-        // Logic phân trang
         sql.append(" ORDER BY b.branch_id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
-        params.add(offset);
-        params.add(pageSize);
 
         try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
-            // Set tham số động
-            for (int i = 0; i < params.size(); i++) {
-                st.setObject(i + 1, params.get(i));
+            int paramIndex = 1;
+
+            // Truyền tham số với kiểu dữ liệu rõ ràng (Chống lỗi JDBC)
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                st.setString(paramIndex++, "%" + keyword.trim() + "%");
+            }
+            if (isActive != null) {
+                st.setBoolean(paramIndex++, isActive);
             }
 
-            ResultSet rs = st.executeQuery();
-            while (rs.next())
-                list.add(mapRow(rs));
+            // Phân trang bắt buộc phải dùng setInt
+            st.setInt(paramIndex++, offset);
+            st.setInt(paramIndex++, pageSize);
+
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return list;
+    }
+
+    public int countAll(String keyword, Boolean isActive) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM cinema_branches WHERE 1=1");
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append(" AND branch_name LIKE ?");
+        }
+        if (isActive != null) {
+            sql.append(" AND is_active = ?");
+        }
+
+        try (PreparedStatement st = connection.prepareStatement(sql.toString())) {
+            int paramIndex = 1;
+
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                st.setString(paramIndex++, "%" + keyword.trim() + "%");
+            }
+            if (isActive != null) {
+                st.setBoolean(paramIndex++, isActive);
+            }
+
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
     public CinemaBranch findById(int id) {
@@ -291,6 +278,26 @@ public class CinemaBranches extends DBContext {
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next())
                     list.add(mapRow(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // Lấy danh sách các chi nhánh do 1 manager quản lý
+    public List<CinemaBranch> findListByManagerId(int managerId) {
+        List<CinemaBranch> list = new ArrayList<>();
+        String sql = "SELECT b.*, u.fullName as manager_name " +
+                "FROM cinema_branches b " +
+                "LEFT JOIN users u ON b.manager_id = u.user_id " +
+                "WHERE b.manager_id = ? AND b.is_active = 1";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, managerId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();

@@ -49,23 +49,32 @@ public class CounterBookingReceipt extends HttpServlet {
             return;
         }
 
-        // Get ticket code
-        String ticketCode = request.getParameter("ticketCode");
-        if (ticketCode == null || ticketCode.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Ticket code required");
+        // Get ticket IDs (comma-separated)
+        String ticketIdsParam = request.getParameter("ticketIds");
+        if (ticketIdsParam == null || ticketIdsParam.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Ticket IDs required");
+            return;
+        }
+
+        List<Integer> ticketIdList = new java.util.ArrayList<>();
+        for (String s : ticketIdsParam.split(",")) {
+            try { ticketIdList.add(Integer.parseInt(s.trim())); } catch (NumberFormatException ignored) {}
+        }
+        if (ticketIdList.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid ticket IDs");
             return;
         }
 
         CounterTickets counterTicketsRepo = null;
         Showtimes showtimesRepo = null;
-        
+
         try {
             counterTicketsRepo = new CounterTickets();
             showtimesRepo = new Showtimes();
 
-            // Get tickets by code
-            List<CounterTicket> tickets = counterTicketsRepo.getCounterTicketsByCode(ticketCode);
-            
+            // Get tickets by IDs
+            List<CounterTicket> tickets = counterTicketsRepo.getCounterTicketsByIds(ticketIdList);
+
             if (tickets.isEmpty()) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "Tickets not found");
                 return;
@@ -82,7 +91,7 @@ public class CounterBookingReceipt extends HttpServlet {
 
             // Generate PDF
             response.setContentType("application/pdf");
-            response.setHeader("Content-Disposition", "attachment; filename=Receipt_" + ticketCode + ".pdf");
+            response.setHeader("Content-Disposition", "attachment; filename=Receipt_" + ticketIdList.get(0) + ".pdf");
             
             generateReceiptPDF(response.getOutputStream(), tickets, showtimeDetails, showtimesRepo);
             
@@ -219,23 +228,71 @@ public class CounterBookingReceipt extends HttpServlet {
 
             document.add(ticketsTable);
 
-            // Total Amount
+            // Parse discount info from notes
+            String notes = firstTicket.getNotes();
+            String voucherCodeNote = null;
+            BigDecimal voucherDiscount = null;
+            int pointsUsedNote = 0;
+            BigDecimal pointsDiscount = null;
+            BigDecimal finalAmountNote = null;
+            if (notes != null && !notes.isEmpty()) {
+                for (String part : notes.split("\\|")) {
+                    if (part.startsWith("VOUCHER:")) {
+                        String[] seg = part.substring(8).split(":");
+                        voucherCodeNote = seg[0];
+                        if (seg.length > 1) voucherDiscount = new BigDecimal(seg[1]);
+                    } else if (part.startsWith("POINTS:")) {
+                        String[] seg = part.substring(7).split(":");
+                        pointsUsedNote = Integer.parseInt(seg[0]);
+                        if (seg.length > 1) pointsDiscount = new BigDecimal(seg[1]);
+                    } else if (part.startsWith("FINAL:")) {
+                        finalAmountNote = new BigDecimal(part.substring(6));
+                    }
+                }
+            }
+
+            // Payment Summary
+            Paragraph summaryHeader = new Paragraph("PAYMENT SUMMARY", FONT_HEADER);
+            summaryHeader.setSpacingBefore(10);
+            summaryHeader.setSpacingAfter(10);
+            document.add(summaryHeader);
+
             PdfPTable totalTable = new PdfPTable(2);
             totalTable.setWidthPercentage(100);
-            totalTable.setSpacingBefore(10);
+            totalTable.setSpacingBefore(5);
 
-            PdfPCell labelCell = new PdfPCell(new Phrase("TOTAL AMOUNT:", FONT_HEADER));
+            addInfoRow(totalTable, "Subtotal:", formatCurrency(totalAmount) + " VND", false);
+
+            if (voucherCodeNote != null && voucherDiscount != null) {
+                addInfoRow(totalTable, "Voucher (" + voucherCodeNote + "):", "- " + formatCurrency(voucherDiscount) + " VND", false);
+            }
+            if (pointsUsedNote > 0 && pointsDiscount != null) {
+                addInfoRow(totalTable, "Points redeemed (" + pointsUsedNote + " pts):", "- " + formatCurrency(pointsDiscount) + " VND", false);
+            }
+
+            document.add(totalTable);
+
+            // Line before final amount
+            document.add(new Chunk(new LineSeparator(1, 100, BaseColor.LIGHT_GRAY, Element.ALIGN_CENTER, -2)));
+
+            PdfPTable finalTable = new PdfPTable(2);
+            finalTable.setWidthPercentage(100);
+            finalTable.setSpacingBefore(5);
+
+            BigDecimal displayFinal = finalAmountNote != null ? finalAmountNote : totalAmount;
+            Font fontFinal = new Font(Font.FontFamily.HELVETICA, 13, Font.BOLD, COLOR_PRIMARY);
+            PdfPCell labelCell = new PdfPCell(new Phrase("TOTAL AMOUNT PAID:", fontFinal));
             labelCell.setBorder(Rectangle.NO_BORDER);
             labelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             labelCell.setPaddingRight(10);
-            totalTable.addCell(labelCell);
+            finalTable.addCell(labelCell);
 
-            PdfPCell amountCell = new PdfPCell(new Phrase(formatCurrency(totalAmount), FONT_HEADER));
+            PdfPCell amountCell = new PdfPCell(new Phrase(formatCurrency(displayFinal) + " VND", fontFinal));
             amountCell.setBorder(Rectangle.NO_BORDER);
             amountCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            totalTable.addCell(amountCell);
+            finalTable.addCell(amountCell);
 
-            document.add(totalTable);
+            document.add(finalTable);
 
             // Footer
             document.add(Chunk.NEWLINE);

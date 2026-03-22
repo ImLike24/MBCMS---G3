@@ -49,19 +49,22 @@
                             <div class="input-group">
                                 <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-muted"></i></span>
                                 <input type="text" class="form-control border-start-0"
-                                       name="search" value="${currentSearch}"
+                                       name="keyword" value="${keyword}"
                                        placeholder="Tìm kiếm tên chi nhánh...">
                             </div>
                         </div>
                         <div class="col-md-3 ms-auto">
                             <select class="form-select" name="status" onchange="document.getElementById('filterForm').submit()">
                                 <option value="">Tất cả trạng thái</option>
-                                <option value="true" ${param.status == 'true' ? 'selected' : ''}>Đang hoạt động</option>
-                                <option value="false" ${param.status == 'false' ? 'selected' : ''}>Ngừng hoạt động</option>
+                                <option value="active" ${status == 'active' ? 'selected' : ''}>Đang hoạt động</option>
+                                <option value="inactive" ${status == 'inactive' ? 'selected' : ''}>Ngừng hoạt động</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-dark w-100">Lọc dữ liệu</button>
+                        <div class="col-md-3">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-dark flex-grow-1"><i class="fa fa-filter me-1"></i> Lọc</button>
+                                <a href="branches" class="btn btn-light border flex-grow-1"><i class="fa fa-undo me-1"></i> Reset</a>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -112,7 +115,10 @@
                                     </span>
                                 </td>
                                 <td class="text-end pe-4">
-                                    <a href="branches?action=edit&id=${b.branchId}" class="btn btn-outline-dark btn-sm me-1" title="Sửa">
+                                    <a href="branches?action=view&id=${b.branchId}" class="btn btn-outline-info btn-sm me-1" title="Chi tiết">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    <a href="branches?action=edit&id=${b.branchId}" class="btn btn-outline-warning btn-sm me-1" title="Sửa">
                                         <i class="fa fa-pencil"></i>
                                     </a>
                                     <button onclick="confirmDelete(${b.branchId})" class="btn btn-outline-danger btn-sm" title="Xóa">
@@ -128,7 +134,7 @@
                 <c:if test="${totalPages > 1}">
                     <nav class="d-flex justify-content-end mt-4">
                         <ul class="pagination">
-                            <c:set var="queryParams" value="&search=${currentSearch}&status=${currentStatus}" />
+                            <c:set var="queryParams" value="&keyword=${keyword}&status=${status}" />
                             <c:forEach begin="1" end="${totalPages}" var="i">
                                 <li class="page-item ${currentPage == i ? 'active' : ''}">
                                     <a class="page-link" href="branches?page=${i}${queryParams}">${i}</a>

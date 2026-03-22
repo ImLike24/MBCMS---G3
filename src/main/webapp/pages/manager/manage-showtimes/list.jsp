@@ -86,7 +86,7 @@
                     <div class="container-fluid">
 
                         <!-- Page Header -->
-                        <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="d-flex justify-content-between align-items-end mb-4">
                             <div>
                                 <h3 class="fw-bold text-dark mb-1">
                                     <i class="fa-solid fa-film me-2" style="color:#d96c2c;"></i>Quản lý Suất Chiếu
@@ -99,12 +99,29 @@
                                     </ol>
                                 </nav>
                             </div>
-                            <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=create"
-                                class="btn btn-orange shadow-sm px-4">
-                                <i class="fa-solid fa-plus me-2"></i>Lên lịch suất chiếu
-                            </a>
-                        </div>
+                            
+                            <div class="d-flex gap-3 align-items-center">
+                                <form action="${pageContext.request.contextPath}/branch-manager/manage-showtimes" method="get" id="branchSelectForm" class="mb-0">
+                                    <div class="input-group shadow-sm">
+                                        <span class="input-group-text bg-dark text-white border-dark"><i class="fa-solid fa-building"></i></span>
+                                        <select class="form-select border-dark" name="branchId" onchange="document.getElementById('branchSelectForm').submit()" style="min-width: 200px; font-weight: 500;">
+                                            <c:forEach var="b" items="${managedBranches}">
+                                                <option value="${b.branchId}" ${b.branchId == selectedBranchId ? 'selected' : ''}>
+                                                        ${b.branchName}
+                                                </option>
+                                            </c:forEach>
+                                        </select>
+                                    </div>
+                                </form>
 
+                                <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=create&branchId=${selectedBranchId}"
+                                    class="btn btn-orange shadow-sm px-4 h-100 d-flex align-items-center">
+                                    <i class="fa-solid fa-plus me-2"></i>Lên lịch suất chiếu
+                                </a>
+                            </div>
+                        </div>
+                        
+                        
                         <!-- Alerts -->
                         <c:if test="${param.message == 'created'}">
                             <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert"
@@ -214,6 +231,7 @@
                             <form method="get"
                                 action="${pageContext.request.contextPath}/branch-manager/manage-showtimes"
                                 class="row g-2 align-items-end">
+                                <input type="hidden" name="branchId" value="${selectedBranchId}">
                                 <div class="col-md-3">
                                     <label class="form-label small fw-semibold mb-1">Ngày chiếu</label>
                                     <input type="date" name="filterDate" class="form-control form-control-sm"
@@ -311,40 +329,53 @@
                                                         </c:choose>
                                                     </td>
                                                     <td class="text-end pe-4">
-                                                        <c:if test="${st.status == 'SCHEDULED'}">
-                                                            <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=edit&id=${st.showtimeId}"
-                                                                class="btn btn-outline-primary btn-sm me-1"
-                                                                title="Chỉnh sửa">
-                                                                <i class="fa-solid fa-pencil"></i>
-                                                            </a>
-                                                            <!-- Cancel → confirmation page -->
-                                                            <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=cancel-preview&id=${st.showtimeId}"
-                                                                class="btn btn-outline-danger btn-sm"
-                                                                title="Huỷ suất chiếu">
-                                                                <i class="fa-solid fa-ban"></i>
-                                                            </a>
-                                                        </c:if>
-                                                        <c:if
-                                                            test="${st.status == 'COMPLETED' or st.status == 'CANCELLED'}">
-                                                            <c:if test="${st.status == 'CANCELLED'}">
-                                                                <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=view-cancelled&amp;id=${st.showtimeId}"
-                                                                    class="btn btn-outline-info btn-sm me-1"
-                                                                    title="Xem chi tiết vé đã hủy">
-                                                                    <i class="fa-solid fa-circle-info"></i>
+                                                        <%-- Nút xem chi tiết (SCHEDULED / ONGOING / COMPLETED) --%>
+                                                            <c:if
+                                                                test="${st.status == 'SCHEDULED' or st.status == 'ONGOING' or st.status == 'COMPLETED'}">
+                                                                <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=view-detail&id=${st.showtimeId}"
+                                                                    class="btn btn-outline-success btn-sm me-1"
+                                                                    title="Xem chi tiết">
+                                                                    <i class="fa-solid fa-eye"></i>
                                                                 </a>
                                                             </c:if>
-                                                            <button type="button"
-                                                                class="btn btn-outline-secondary btn-sm"
-                                                                data-id="${st.showtimeId}" data-status="${st.status}"
-                                                                onclick="confirmDelete(this.dataset.id, this.dataset.status)"
-                                                                title="Xóa">
-                                                                <i class="fa-solid fa-trash-can"></i>
-                                                            </button>
-                                                        </c:if>
-                                                        <c:if test="${st.status == 'ONGOING'}">
-                                                            <span class="text-muted small">—</span>
-                                                        </c:if>
+
+                                                            <%-- Nút sửa + huỷ (chỉ SCHEDULED) --%>
+                                                                <c:if test="${st.status == 'SCHEDULED'}">
+                                                                    <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=edit&id=${st.showtimeId}"
+                                                                        class="btn btn-outline-primary btn-sm me-1"
+                                                                        title="Chỉnh sửa">
+                                                                        <i class="fa-solid fa-pencil"></i>
+                                                                    </a>
+                                                                    <!-- Cancel → confirmation page -->
+                                                                    <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=cancel-preview&id=${st.showtimeId}"
+                                                                        class="btn btn-outline-danger btn-sm"
+                                                                        title="Huỷ suất chiếu">
+                                                                        <i class="fa-solid fa-ban"></i>
+                                                                    </a>
+                                                                </c:if>
+
+                                                                <%-- Nút xoá + xem chi tiết huỷ (COMPLETED hoặc
+                                                                    CANCELLED) --%>
+                                                                    <c:if
+                                                                        test="${st.status == 'COMPLETED' or st.status == 'CANCELLED'}">
+                                                                        <c:if test="${st.status == 'CANCELLED'}">
+                                                                            <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=view-cancelled&amp;id=${st.showtimeId}"
+                                                                                class="btn btn-outline-info btn-sm me-1"
+                                                                                title="Xem chi tiết vé đã hủy">
+                                                                                <i class="fa-solid fa-circle-info"></i>
+                                                                            </a>
+                                                                        </c:if>
+                                                                        <button type="button"
+                                                                            class="btn btn-outline-secondary btn-sm"
+                                                                            data-id="${st.showtimeId}"
+                                                                            data-status="${st.status}"
+                                                                            onclick="confirmDelete(this.dataset.id, this.dataset.status)"
+                                                                            title="Xóa">
+                                                                            <i class="fa-solid fa-trash-can"></i>
+                                                                        </button>
+                                                                    </c:if>
                                                     </td>
+
                                                 </tr>
                                             </c:forEach>
                                             <c:if test="${empty showtimes}">
@@ -360,6 +391,42 @@
                                 </div>
                             </div>
                         </div>
+
+                        <%-- ── Phân trang ──────────────────────────────────────── --%>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <span class="text-muted small">
+                                    Tổng: <strong>${totalShowtimes}</strong> suất chiếu &nbsp;|&nbsp;
+                                    Trang <strong>${currentPage}</strong> / <strong>${totalPages}</strong>
+                                </span>
+
+                                <c:if test="${totalPages > 1}">
+                                    <nav aria-label="Phân trang suất chiếu">
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <li class="page-item ${currentPage <= 1 ? 'disabled' : ''}">
+                                                <a class="page-link"
+                                                    href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${currentPage - 1}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}&branchId=${selectedBranchId}">
+                                                    &laquo;
+                                                </a>
+                                            </li>
+                                            <c:forEach begin="1" end="${totalPages}" var="p">
+                                                <li class="page-item ${p == currentPage ? 'active' : ''}">
+                                                    <a class="page-link"
+                                                        href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${p}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}&branchId=${selectedBranchId}">
+                                                        ${p}
+                                                    </a>
+                                                </li>
+                                            </c:forEach>
+                                            <li class="page-item ${currentPage >= totalPages ? 'disabled' : ''}">
+                                                <a class="page-link"
+                                                    href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${currentPage + 1}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}&branchId=${selectedBranchId}">
+                                                    &raquo;
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </c:if>
+                            </div>
+                            <%-- ─────────────────────────────────────────────────────── --%>
 
                     </div>
                 </main>

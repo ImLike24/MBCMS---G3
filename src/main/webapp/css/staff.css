@@ -953,6 +953,13 @@ body {
     color: #000;
 }
 
+/* VIP đã đặt - bắt buộc dùng màu Ghế đã đặt (ưu tiên cao hơn .seat.vip) */
+.seat.vip.booked {
+    background: #555 !important;
+    color: #888 !important;
+    cursor: not-allowed !important;
+}
+
 .seat.vip.selected {
     background: #d96c2c;
     color: white;
@@ -964,6 +971,13 @@ body {
     width: 95px;
     background: #e91e63;
     color: white;
+}
+
+/* Couple đã đặt - bắt buộc dùng màu Ghế đã đặt (ưu tiên cao hơn .seat.couple) */
+.seat.couple.booked {
+    background: #555 !important;
+    color: #888 !important;
+    cursor: not-allowed !important;
 }
 
 .seat.couple.selected {
@@ -2656,6 +2670,13 @@ body {
     color: #000;
 }
 
+/* VIP đã đặt - bắt buộc dùng màu Ghế đã đặt (ưu tiên cao hơn .seat.vip) */
+.seat.vip.booked {
+    background: #555 !important;
+    color: #888 !important;
+    cursor: not-allowed !important;
+}
+
 .seat.vip.selected {
     background: #d96c2c;
     color: white;
@@ -2667,6 +2688,13 @@ body {
     width: 95px;
     background: #e91e63;
     color: white;
+}
+
+/* Couple đã đặt - bắt buộc dùng màu Ghế đã đặt (ưu tiên cao hơn .seat.couple) */
+.seat.couple.booked {
+    background: #555 !important;
+    color: #888 !important;
+    cursor: not-allowed !important;
 }
 
 .seat.couple.selected {

@@ -57,12 +57,24 @@ public class ManageSeatTypeServlet extends HttpServlet {
             Seats seatsRepo = new Seats();
             SeatTypeSurcharges surchargesRepo = new SeatTypeSurcharges();
 
-            CinemaBranch branch = branchesRepo.getBranchByManagerId(currentUser.getUserId());
+            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
 
-            if (branch == null) {
+            if (managedBranches == null || managedBranches.isEmpty()) {
                 request.setAttribute("error", "You are not assigned to any branch");
                 request.getRequestDispatcher("/pages/manager/manage-seat-type.jsp").forward(request, response);
                 return;
+            }
+
+            // Determine selected branch
+            String branchIdParam = request.getParameter("branchId");
+            CinemaBranch branch = managedBranches.get(0);
+            if (branchIdParam != null && !branchIdParam.isEmpty()) {
+                try {
+                    int bId = Integer.parseInt(branchIdParam);
+                    for (CinemaBranch b : managedBranches) {
+                        if (b.getBranchId() == bId) { branch = b; break; }
+                    }
+                } catch (NumberFormatException ignored) {}
             }
 
             // Surcharge configs for this branch (map: seatType -> rate)
@@ -97,6 +109,7 @@ public class ManageSeatTypeServlet extends HttpServlet {
                     /* ignore */ }
             }
 
+            request.setAttribute("managedBranches", managedBranches);
             request.setAttribute("branch", branch);
             request.setAttribute("rooms", rooms);
             request.setAttribute("selectedRoom", selectedRoom);
@@ -128,13 +141,25 @@ public class ManageSeatTypeServlet extends HttpServlet {
 
         try {
             CinemaBranches branchesRepo = new CinemaBranches();
-            CinemaBranch branch = branchesRepo.getBranchByManagerId(currentUser.getUserId());
 
-            if (branch == null) {
+            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
+            if (managedBranches == null || managedBranches.isEmpty()) {
                 response.sendRedirect(request.getContextPath()
                         + "/branch-manager/manage-seat-type?error=You+are+not+assigned+to+any+branch");
                 return;
             }
+            // Resolve selected branch from POST param
+            String branchIdStr = request.getParameter("branchId");
+            CinemaBranch branch = managedBranches.get(0);
+            if (branchIdStr != null && !branchIdStr.isEmpty()) {
+                try {
+                    int bId = Integer.parseInt(branchIdStr);
+                    for (CinemaBranch b : managedBranches) {
+                        if (b.getBranchId() == bId) { branch = b; break; }
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+            final int selectedBranchId = branch.getBranchId();
 
             // ── Action: updateSurcharge ──────────────────────────────────────────
             if ("updateSurcharge".equals(action)) {
@@ -158,10 +183,10 @@ public class ManageSeatTypeServlet extends HttpServlet {
                 }
                 if (updated > 0) {
                     response.sendRedirect(request.getContextPath()
-                            + "/branch-manager/manage-seat-type?success=Surcharge+rates+updated+successfully");
+                            + "/branch-manager/manage-seat-type?branchId=" + selectedBranchId + "&success=Surcharge+rates+updated+successfully");
                 } else {
                     response.sendRedirect(request.getContextPath()
-                            + "/branch-manager/manage-seat-type?error=No+surcharge+rates+updated");
+                            + "/branch-manager/manage-seat-type?branchId=" + selectedBranchId + "&error=No+surcharge+rates+updated");
                 }
                 return;
             }
@@ -234,10 +259,10 @@ public class ManageSeatTypeServlet extends HttpServlet {
 
             if (success) {
                 response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-seat-type?roomId=" + roomId + "&success=" + message);
+                        + "/branch-manager/manage-seat-type?branchId=" + selectedBranchId + "&roomId=" + roomId + "&success=" + message);
             } else {
                 response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-seat-type?roomId=" + roomId + "&error=" + message);
+                        + "/branch-manager/manage-seat-type?branchId=" + selectedBranchId + "&roomId=" + roomId + "&error=" + message);
             }
 
         } catch (NumberFormatException e) {

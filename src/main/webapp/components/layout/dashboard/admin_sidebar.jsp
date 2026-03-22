@@ -38,17 +38,37 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="${pageContext.request.contextPath}/admin/concessions" class="nav-link">
                 <i class="fa fa-coffee me-3"></i>Quản lý đồ ăn & nước uống
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/staff-schedule"
+               class="nav-link ${param.page == 'staff-schedule' ? 'active' : ''}">
+                <i class="fas fa-calendar-check me-3"></i>Lịch làm việc NV
+            </a>
+        </li>
+        <li class="nav-item mt-3">
+            <span class="nav-link text-muted fw-bold ps-3" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Hệ Thống Loyalty</span>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/loyalty-config" class="nav-link">
+                <i class="fa fa-cogs me-3"></i>Cấu hình Tích Điểm
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/manage-tiers" class="nav-link">
+                <i class="fa fa-trophy me-3"></i>Hạng Thành Viên
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/manage-vouchers" class="nav-link">
+                <i class="fa fa-tag me-3"></i>Quản lý Vouchers
             </a>
         </li>
     </ul>
 
     <div class="mt-auto pt-3 border-top border-secondary">
-
-        <a href="${pageContext.request.contextPath}/profile" class="nav-link text-white-50 hover-white">
-            <i class="fa fa-user me-2 text-danger"></i> Hồ sơ cá nhân
-        </a>
 
         <a href="${pageContext.request.contextPath}/logout" class="nav-link text-white-50 hover-white">
             <i class="fa fa-sign-out me-2 text-danger"></i> Đăng xuất

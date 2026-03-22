@@ -46,6 +46,20 @@ CREATE TABLE cinema_branches (
 );
 GO
 
+IF COL_LENGTH('users', 'branch_id') IS NULL
+BEGIN
+    ALTER TABLE users
+        ADD branch_id INT NULL;
+
+    ALTER TABLE users
+        ADD CONSTRAINT FK_users_branch
+            FOREIGN KEY (branch_id) REFERENCES cinema_branches(branch_id);
+
+    CREATE INDEX idx_users_branch
+        ON users(branch_id);
+END;
+GO
+
 CREATE TABLE screening_rooms (
     room_id INT IDENTITY(1,1) PRIMARY KEY,
     branch_id INT NOT NULL,
@@ -152,13 +166,15 @@ CREATE TABLE bookings (
     CONSTRAINT CK_booking_status CHECK (status IN ('PENDING','CONFIRMED','CANCELLED','EXPIRED')),
     CONSTRAINT CK_payment_status CHECK (payment_status IN ('PENDING','PAID','REFUNDED','FAILED')),
     CONSTRAINT CK_payment_method CHECK (payment_method IN ('ZALOPAY','CREDIT_CARD','BANKING')),
-    CONSTRAINT CK_booking_amounts CHECK (
-        total_amount >= 0 AND 
-        discount_amount >= 0 AND 
-        final_amount >= 0 AND
-        final_amount = total_amount - discount_amount
-    ),
-    CONSTRAINT CK_payment_time CHECK (payment_time IS NULL OR payment_time >= booking_time)
+CONSTRAINT CK_booking_amounts 
+CHECK (
+    total_amount >= 0 AND 
+    discount_amount >= 0 AND 
+    final_amount >= 0 AND
+    final_amount = total_amount - discount_amount
+),
+CONSTRAINT CK_payment_time 
+CHECK (payment_time IS NULL OR payment_time >= booking_time)
 );
 GO
 
@@ -170,17 +186,22 @@ CREATE TABLE online_tickets (
     ticket_type VARCHAR(10) NOT NULL,
     seat_type VARCHAR(10) NOT NULL,
     price DECIMAL(10,2) NOT NULL,
-    e_ticket_code VARCHAR(100) UNIQUE NOT NULL,
-    is_checked_in BIT DEFAULT 0,
-    checked_in_at DATETIME2,
-    checked_in_by INT, -- Staff user_id
     created_at DATETIME2 DEFAULT SYSDATETIME(),
-    CONSTRAINT FK_online_ticket_booking FOREIGN KEY (booking_id) REFERENCES bookings(booking_id),
-    CONSTRAINT FK_online_ticket_showtime FOREIGN KEY (showtime_id) REFERENCES showtimes(showtime_id),
-    CONSTRAINT FK_online_ticket_seat FOREIGN KEY (seat_id) REFERENCES seats(seat_id),
-    CONSTRAINT FK_online_ticket_checkin_by FOREIGN KEY (checked_in_by) REFERENCES users(user_id),
-    CONSTRAINT CK_online_ticket_type CHECK (ticket_type IN ('ADULT','CHILD')),
-    CONSTRAINT CK_online_seat_type CHECK (seat_type IN ('NORMAL','VIP','COUPLE'))
+
+    CONSTRAINT FK_online_ticket_booking 
+        FOREIGN KEY (booking_id) REFERENCES bookings(booking_id),
+
+    CONSTRAINT FK_online_ticket_showtime 
+        FOREIGN KEY (showtime_id) REFERENCES showtimes(showtime_id),
+
+    CONSTRAINT FK_online_ticket_seat 
+        FOREIGN KEY (seat_id) REFERENCES seats(seat_id),
+
+    CONSTRAINT CK_online_ticket_type 
+        CHECK (ticket_type IN ('ADULT','CHILD')),
+
+    CONSTRAINT CK_online_seat_type 
+        CHECK (seat_type IN ('NORMAL','VIP','COUPLE'))
 );
 GO
 
@@ -191,22 +212,34 @@ CREATE TABLE counter_tickets (
     ticket_type VARCHAR(10) NOT NULL,
     seat_type VARCHAR(10) NOT NULL,
     price DECIMAL(10,2) NOT NULL,
-    ticket_code VARCHAR(100) UNIQUE NOT NULL,
-    sold_by INT NOT NULL, -- Staff user_id
+    sold_by INT NOT NULL,
     payment_method VARCHAR(20) NOT NULL,
     customer_name NVARCHAR(100),
     customer_phone VARCHAR(20),
     customer_email VARCHAR(100),
     notes NVARCHAR(500),
     sold_at DATETIME2 DEFAULT SYSDATETIME(),
-    CONSTRAINT FK_counter_ticket_showtime FOREIGN KEY (showtime_id) REFERENCES showtimes(showtime_id),
-    CONSTRAINT FK_counter_ticket_seat FOREIGN KEY (seat_id) REFERENCES seats(seat_id),
-    CONSTRAINT FK_counter_ticket_sold_by FOREIGN KEY (sold_by) REFERENCES users(user_id),
-    CONSTRAINT CK_counter_ticket_type CHECK (ticket_type IN ('ADULT','CHILD')),
-    CONSTRAINT CK_counter_seat_type CHECK (seat_type IN ('NORMAL','VIP','COUPLE')),
-    CONSTRAINT CK_counter_payment_method CHECK (payment_method IN ('CASH','BANKING'))
+
+    CONSTRAINT FK_counter_ticket_showtime 
+        FOREIGN KEY (showtime_id) REFERENCES showtimes(showtime_id),
+
+    CONSTRAINT FK_counter_ticket_seat 
+        FOREIGN KEY (seat_id) REFERENCES seats(seat_id),
+
+    CONSTRAINT FK_counter_ticket_sold_by 
+        FOREIGN KEY (sold_by) REFERENCES users(user_id),
+
+    CONSTRAINT CK_counter_ticket_type 
+        CHECK (ticket_type IN ('ADULT','CHILD')),
+
+    CONSTRAINT CK_counter_seat_type 
+        CHECK (seat_type IN ('NORMAL','VIP','COUPLE')),
+
+    CONSTRAINT CK_counter_payment_method 
+        CHECK (payment_method IN ('CASH','BANKING'))
 );
 GO
+
 
 CREATE TABLE revenue_reports (
     report_id INT IDENTITY(1,1) PRIMARY KEY,
@@ -262,18 +295,6 @@ CREATE TABLE reported_comments (
     CONSTRAINT FK_report_reported_by FOREIGN KEY (reported_by) REFERENCES users(user_id),
     CONSTRAINT FK_report_resolved_by FOREIGN KEY (resolved_by) REFERENCES users(user_id),
     CONSTRAINT CK_report_status CHECK (status IN ('PENDING','REVIEWED','RESOLVED','DISMISSED'))
-);
-GO
-
-CREATE TABLE notifications (
-    notification_id INT IDENTITY(1,1) PRIMARY KEY,
-    user_id INT NOT NULL,
-    title NVARCHAR(150) NOT NULL,
-    message NVARCHAR(MAX) NOT NULL,
-    notification_type VARCHAR(20) DEFAULT 'GENERAL',
-    sent_at DATETIME2 DEFAULT SYSDATETIME(),
-    CONSTRAINT FK_notification_user FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CONSTRAINT CK_notification_type CHECK (notification_type IN ('BOOKING','SYSTEM','GENERAL'))
 );
 GO
 
@@ -377,6 +398,18 @@ CREATE TABLE invoice_items (
 );
 GO
 
+CREATE TABLE concessions (
+    concession_id INT IDENTITY(1,1) PRIMARY KEY,
+    concession_type VARCHAR(20) UNIQUE NOT NULL,
+    quantity INT DEFAULT 0,
+    price_base DECIMAL(3,1) NOT NULL ,
+    added_by int,
+    created_at DATETIME2 DEFAULT SYSDATETIME(),
+    CONSTRAINT CK_concession_type CHECK (concession_type IN ('BEVERAGE','FOOD')),
+    CONSTRAINT FK_concessions_users FOREIGN KEY (added_by) REFERENCES users(user_id)
+);
+GO
+
 
 
 -- Users indexes
@@ -424,19 +457,21 @@ CREATE UNIQUE INDEX ux_booking_code ON bookings(booking_code);
 CREATE INDEX idx_ticket_prices_dates 
 ON ticket_prices(effective_from, effective_to, is_active);
 
--- Online tickets indexes
+-- Online tickets
 CREATE INDEX idx_online_ticket_booking ON online_tickets(booking_id);
 CREATE INDEX idx_online_ticket_showtime ON online_tickets(showtime_id);
 CREATE INDEX idx_online_ticket_seat ON online_tickets(seat_id);
-CREATE INDEX idx_online_ticket_checkin ON online_tickets(is_checked_in);
-CREATE UNIQUE INDEX ux_online_ticket_showtime_seat ON online_tickets(showtime_id, seat_id);
+CREATE UNIQUE INDEX ux_online_ticket_showtime_seat 
+    ON online_tickets(showtime_id, seat_id);
 
--- Counter tickets indexes
+-- Counter tickets
 CREATE INDEX idx_counter_ticket_showtime ON counter_tickets(showtime_id);
 CREATE INDEX idx_counter_ticket_seat ON counter_tickets(seat_id);
 CREATE INDEX idx_counter_ticket_sold_by ON counter_tickets(sold_by);
 CREATE INDEX idx_counter_ticket_sold_at ON counter_tickets(sold_at);
-CREATE UNIQUE INDEX ux_counter_ticket_showtime_seat ON counter_tickets(showtime_id, seat_id);
+CREATE UNIQUE INDEX ux_counter_ticket_showtime_seat 
+    ON counter_tickets(showtime_id, seat_id);
+GO
 
 -- Revenue reports indexes
 CREATE INDEX idx_revenue_branch ON revenue_reports(branch_id);
@@ -455,11 +490,6 @@ CREATE INDEX idx_report_review ON reported_comments(review_id);
 CREATE INDEX idx_report_status ON reported_comments(status);
 CREATE INDEX idx_report_reported_by ON reported_comments(reported_by);
 
--- Notifications indexes
-CREATE INDEX idx_notification_user ON notifications(user_id);
-CREATE INDEX idx_notification_type ON notifications(notification_type);
-CREATE INDEX idx_notification_sent ON notifications(sent_at);
-
 
 CREATE INDEX idx_invoice_code ON invoices(invoice_code);
 CREATE INDEX idx_invoice_booking ON invoices(booking_id);
@@ -472,7 +502,42 @@ CREATE INDEX idx_invoice_customer ON invoices(customer_phone, customer_email);
 CREATE INDEX idx_invoice_item_invoice ON invoice_items(invoice_id);
 CREATE INDEX idx_invoice_item_online ON invoice_items(online_ticket_id);
 CREATE INDEX idx_invoice_item_counter ON invoice_items(counter_ticket_id);
-Go
+GO
+
+-- Staff Schedules
+CREATE TABLE staff_schedules (
+    schedule_id  INT IDENTITY(1,1) PRIMARY KEY,
+    staff_id     INT NOT NULL,
+    branch_id    INT NOT NULL,
+    work_date    DATE NOT NULL,
+    shift        VARCHAR(15) NOT NULL,
+    status       VARCHAR(15) DEFAULT 'SCHEDULED',
+    note         NVARCHAR(255),
+    created_by   INT,
+    created_at   DATETIME2 DEFAULT SYSDATETIME(),
+    updated_at   DATETIME2 DEFAULT SYSDATETIME(),
+    CONSTRAINT FK_ss_staff    FOREIGN KEY (staff_id)   REFERENCES users(user_id),
+    CONSTRAINT FK_ss_branch   FOREIGN KEY (branch_id)  REFERENCES cinema_branches(branch_id),
+    CONSTRAINT FK_ss_creator  FOREIGN KEY (created_by) REFERENCES users(user_id),
+    CONSTRAINT CK_ss_shift    CHECK (shift   IN ('MORNING','AFTERNOON','EVENING','NIGHT')),
+    CONSTRAINT CK_ss_status   CHECK (status  IN ('SCHEDULED','CANCELLED'))
+);
+GO
+
+CREATE INDEX idx_ss_staff  ON staff_schedules(staff_id);
+CREATE INDEX idx_ss_branch ON staff_schedules(branch_id);
+CREATE INDEX idx_ss_date   ON staff_schedules(work_date);
+GO
+
+CREATE TRIGGER trg_staff_schedules_updated ON staff_schedules
+AFTER UPDATE AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE ss SET updated_at = SYSDATETIME()
+    FROM staff_schedules ss
+    INNER JOIN inserted ins ON ss.schedule_id = ins.schedule_id;
+END;
+GO
 
 -- Auto update timestamp
 CREATE TRIGGER trg_invoice_updated ON invoices
@@ -594,76 +659,88 @@ BEGIN
 END;
 GO
 
--- Trigger: Prevent duplicate seat at online booking
 CREATE TRIGGER trg_prevent_double_booking_online
 ON online_tickets
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    
-    -- Check if seat already sold at counter
+
     IF EXISTS (
-        SELECT 1 
+        SELECT 1
         FROM inserted i
-        INNER JOIN counter_tickets ct 
-            ON i.showtime_id = ct.showtime_id 
-            AND i.seat_id = ct.seat_id
+        INNER JOIN counter_tickets ct
+            ON i.showtime_id = ct.showtime_id
+           AND i.seat_id = ct.seat_id
     )
     BEGIN
-        RAISERROR('Seat already sold at counter', 16, 1);
+        RAISERROR(N'Seat already sold at counter', 16, 1);
         RETURN;
     END
-    
-    -- Insert if OK
+
     INSERT INTO online_tickets (
-        booking_id, showtime_id, seat_id, ticket_type, 
-        seat_type, price, e_ticket_code, created_at
+        booking_id, showtime_id, seat_id,
+        ticket_type, seat_type, price
     )
-    SELECT 
-        booking_id, showtime_id, seat_id, ticket_type,
-        seat_type, price, e_ticket_code, SYSDATETIME()
+    SELECT
+        booking_id, showtime_id, seat_id,
+        ticket_type, seat_type, price
     FROM inserted;
 END;
 GO
 
--- Trigger: Prevent duplicate seat at counter booking
+
 CREATE TRIGGER trg_prevent_double_booking_counter
 ON counter_tickets
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    
-    -- Check if seat already sold online
+
     IF EXISTS (
-        SELECT 1 
+        SELECT 1
         FROM inserted i
-        INNER JOIN online_tickets ot 
-            ON i.showtime_id = ot.showtime_id 
-            AND i.seat_id = ot.seat_id
+        INNER JOIN online_tickets ot
+            ON i.showtime_id = ot.showtime_id
+           AND i.seat_id = ot.seat_id
     )
     BEGIN
-        RAISERROR('Seat already sold online', 16, 1);
+        RAISERROR(N'Seat already sold online', 16, 1);
         RETURN;
     END
-    
-    -- Insert if OK
+
     INSERT INTO counter_tickets (
-        showtime_id, seat_id, ticket_type, seat_type, 
-        price, ticket_code, sold_by, payment_method,
-        customer_name, customer_phone, customer_email, 
-        notes, sold_at
+        showtime_id, seat_id,
+        ticket_type, seat_type,
+        price, sold_by, payment_method,
+        customer_name, customer_phone,
+        customer_email, notes, sold_at
     )
-    SELECT 
-        showtime_id, seat_id, ticket_type, seat_type,
-        price, ticket_code, sold_by, payment_method,
-        customer_name, customer_phone, customer_email,
-        notes, SYSDATETIME()
+    SELECT
+        showtime_id, seat_id,
+        ticket_type, seat_type,
+        price, sold_by, payment_method,
+        customer_name, customer_phone,
+        customer_email, notes, SYSDATETIME()
     FROM inserted;
 END;
 GO
 
+
+
+-- Updated 25/01/2026
+
+IF NOT EXISTS (SELECT 1 FROM roles)
+BEGIN
+    INSERT INTO roles (role_name) VALUES ('GUEST');
+    INSERT INTO roles (role_name) VALUES ('CUSTOMER');
+    INSERT INTO roles (role_name) VALUES ('CINEMA_STAFF');
+    INSERT INTO roles (role_name) VALUES ('BRANCH_MANAGER');
+    INSERT INTO roles (role_name) VALUES ('ADMIN');
+END;
+GO
+
+-- Updated 04/02/2025
 create table genres
 (
     genre_id    int identity
@@ -727,10 +804,12 @@ alter table movies
 drop column genre
 go
 
--- =============================================
--- Seat Type Surcharge Config (per branch)
--- Run this on existing DB to add surcharge support
--- =============================================
+
+
+
+
+
+-- Updated 22/02/2026
 CREATE TABLE seat_type_surcharges (
     surcharge_id   INT IDENTITY(1,1) PRIMARY KEY,
     branch_id      INT NOT NULL,
@@ -744,6 +823,183 @@ CREATE TABLE seat_type_surcharges (
 );
 GO
 
+-- Default rows (0% surcharge for all types per existing branch)
+INSERT INTO seat_type_surcharges (branch_id, seat_type, surcharge_rate)
+SELECT b.branch_id, t.seat_type, 0
+FROM cinema_branches b
+CROSS JOIN (VALUES ('NORMAL'),('VIP'),('COUPLE')) AS t(seat_type)
+WHERE NOT EXISTS (
+    SELECT 1 FROM seat_type_surcharges s
+    WHERE s.branch_id = b.branch_id AND s.seat_type = t.seat_type
+);
+GO
+
+
+-- Updated 01/03/2026
 ALTER TABLE showtimes
     ADD cancellation_reason NVARCHAR(500) NULL,
         cancelled_at DATETIME2 NULL;
+
+-- Updated 9/3/2026
+ALTER TABLE ticket_prices
+ADD branch_id int;
+
+
+ALTER TABLE ticket_prices
+ADD CONSTRAINT FK_ticket_prices_branch
+FOREIGN KEY (branch_id) REFERENCES cinema_branches(branch_id);
+
+
+-- Cập nhật lại index cho tối ưu
+CREATE INDEX idx_ticket_prices_branch
+ON ticket_prices (branch_id, is_active);
+
+
+-- Xóa constraint check của cột seat_type
+ALTER TABLE ticket_prices DROP CONSTRAINT CK_price_seat_type;
+
+
+-- Xóa cột seat_type khỏi bảng ticket_prices
+ALTER TABLE ticket_prices DROP COLUMN seat_type;
+
+ALTER TABLE screening_rooms ALTER COLUMN room_name NVARCHAR(100) NOT NULL;
+
+
+-- ==========================================
+-- UPDATE 09/03/2026
+-- ==========================================
+-- 1. BẢNG CẤP BẬC THÀNH VIÊN (MEMBERSHIP TIERS)
+CREATE TABLE membership_tiers (
+    tier_id INT IDENTITY(1,1) PRIMARY KEY,
+    tier_name NVARCHAR(50) NOT NULL UNIQUE,
+    min_points_required INT NOT NULL DEFAULT 0,
+    point_multiplier DECIMAL(3,2) DEFAULT 1.0, -- Hệ số nhân điểm (VD: VIP x1.2)
+    created_at DATETIME2 DEFAULT SYSDATETIME()
+);
+GO
+
+INSERT INTO membership_tiers (tier_name, min_points_required, point_multiplier) VALUES
+('MEMBER', 0, 1.0),
+('BRONZE', 100, 1.1),
+('SILVER', 200, 1.2),
+('GOLD', 300, 1.3),
+('DIAMOND', 500, 1.5);
+GO
+
+-- 2. CẬP NHẬT BẢNG USERS
+
+ALTER TABLE users 
+ADD total_accumulated_points INT DEFAULT 0,
+    tier_id INT DEFAULT 1;
+GO
+
+ALTER TABLE users
+ADD CONSTRAINT FK_users_tier FOREIGN KEY (tier_id) REFERENCES membership_tiers(tier_id);
+GO
+
+-- 3. BẢNG LỊCH SỬ ĐIỂM (POINT HISTORY)
+CREATE TABLE point_history (
+    history_id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT NOT NULL,
+    points_changed INT NOT NULL,
+    transaction_type VARCHAR(20) NOT NULL, 
+    description NVARCHAR(255),
+    reference_id INT,
+    created_at DATETIME2 DEFAULT SYSDATETIME(),
+    CONSTRAINT FK_point_history_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT CK_point_transaction_type CHECK (transaction_type IN ('EARN', 'REDEEM', 'REFUND', 'EXPIRE', 'ADJUSTMENT'))
+);
+GO
+
+-- 4. BẢNG DANH MỤC QUÀ TẶNG & PROMO (REWARD VOUCHERS)
+-- Lưu các Voucher do Admin tạo ra
+CREATE TABLE vouchers (
+    voucher_id INT IDENTITY(1,1) PRIMARY KEY,
+    voucher_name NVARCHAR(100) NOT NULL,          
+    voucher_type VARCHAR(20) DEFAULT 'LOYALTY',   
+    voucher_code VARCHAR(50) NULL,                
+    points_cost INT NOT NULL DEFAULT 0,           
+    discount_amount DECIMAL(10,2) NOT NULL,
+    max_usage_limit INT DEFAULT 0,                
+    valid_days INT DEFAULT 30,                    
+    is_active BIT DEFAULT 1,
+    created_at DATETIME2 DEFAULT SYSDATETIME(),
+    CONSTRAINT CK_voucher_type CHECK (voucher_type IN ('LOYALTY', 'PUBLIC'))
+);
+GO
+
+-- 5. BẢNG VOUCHER CỦA KHÁCH HÀNG (USER VOUCHERS)
+-- Lưu mã voucher cá nhân của từng khách
+CREATE TABLE user_vouchers (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT NOT NULL,
+    voucher_id INT NOT NULL,
+    voucher_code VARCHAR(50) UNIQUE NOT NULL,
+    status VARCHAR(15) DEFAULT 'AVAILABLE', 
+    redeemed_at DATETIME2 DEFAULT SYSDATETIME(),
+    expires_at DATETIME2 NOT NULL,
+    used_at DATETIME2,
+    CONSTRAINT FK_uv_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT FK_uv_voucher FOREIGN KEY (voucher_id) REFERENCES vouchers(voucher_id),
+    CONSTRAINT CK_uv_status CHECK (status IN ('AVAILABLE', 'USED', 'EXPIRED'))
+);
+GO
+
+-- 6. CẬP NHẬT BẢNG BOOKINGS
+ALTER TABLE bookings
+ADD applied_voucher_code VARCHAR(50) NULL;
+GO
+
+CREATE INDEX idx_booking_voucher_code ON bookings(applied_voucher_code);
+GO
+
+-- 7. BẢNG CẤU HÌNH TÍCH ĐIỂM
+CREATE TABLE loyalty_configs (
+    config_id INT PRIMARY KEY CHECK (config_id = 1),
+    earn_rate_amount DECIMAL(10,2) NOT NULL DEFAULT 10000,
+    earn_points INT NOT NULL DEFAULT 1,          
+    min_redeem_points INT NOT NULL DEFAULT 100,
+    updated_at DATETIME2 DEFAULT SYSDATETIME(),
+    updated_by INT NULL,
+    CONSTRAINT FK_loyalty_config_admin FOREIGN KEY (updated_by) REFERENCES users(user_id)
+);
+GO
+
+INSERT INTO loyalty_configs (config_id, earn_rate_amount, earn_points, min_redeem_points) 
+VALUES (1, 10000, 1, 100);
+GO
+
+-- 11/03/2026
+-- ALTER TABLE [MBCMS].[dbo].[concessions]
+-- ADD concession_name NVARCHAR(255);
+
+-- 14/03/2026
+IF COL_LENGTH('vouchers', 'current_usage') IS NULL
+BEGIN
+    ALTER TABLE vouchers
+        ADD current_usage INT DEFAULT 0;
+END;
+GO
+
+--16/03/2026: Chuyển bookings.applied_voucher_id -> applied_voucher_code (an toàn khi chạy nhiều lần)
+IF COL_LENGTH('bookings', 'applied_voucher_id') IS NOT NULL
+BEGIN
+    -- Xóa FK nếu tồn tại
+    IF EXISTS (
+        SELECT 1
+        FROM sys.foreign_keys
+        WHERE name = 'FK_booking_voucher'
+          AND parent_object_id = OBJECT_ID('bookings')
+    )
+    BEGIN
+        ALTER TABLE bookings DROP CONSTRAINT FK_booking_voucher;
+    END;
+
+    ALTER TABLE bookings DROP COLUMN applied_voucher_id;
+END;
+
+IF COL_LENGTH('bookings', 'applied_voucher_code') IS NULL
+BEGIN
+    ALTER TABLE bookings ADD applied_voucher_code VARCHAR(50) NULL;
+END;
+GO

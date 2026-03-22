@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.math.BigDecimal;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -22,6 +22,8 @@ import repositories.CinemaBranches;
 import repositories.Movies;
 import repositories.ScreeningRooms;
 import repositories.Showtimes;
+import services.TicketPriceService;
+import java.math.BigDecimal;
 
 @WebServlet(name = "ManageShowtimesServlet", urlPatterns = { "/branch-manager/manage-showtimes" })
 public class ManageShowtimesServlet extends HttpServlet {
@@ -30,6 +32,7 @@ public class ManageShowtimesServlet extends HttpServlet {
     private final Movies moviesDao = new Movies();
     private final ScreeningRooms roomsDao = new ScreeningRooms();
     private final CinemaBranches branchDao = new CinemaBranches();
+    private final TicketPriceService ticketPriceService = new TicketPriceService();
 
     // ─────────────────────────────────────────────────────────────────────────
     // GET
@@ -38,31 +41,71 @@ public class ManageShowtimesServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        CinemaBranch branch = getBranchOfCurrentUser(request);
-        if (branch == null) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không phải Branch Manager.");
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+
+        List<CinemaBranch> managedBranches = branchDao.findListByManagerId(user.getUserId());
+        if (managedBranches == null || managedBranches.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không quản lý chi nhánh nào.");
+            return;
+        }
+
+        Integer selectedBranchId = null;
+        String branchIdParam = request.getParameter("branchId");
+
+        if (branchIdParam != null && !branchIdParam.isEmpty()) {
+            selectedBranchId = Integer.parseInt(branchIdParam);
+        } else if (session.getAttribute("selectedBranchId") != null) {
+            selectedBranchId = (Integer) session.getAttribute("selectedBranchId");
+        } else {
+            selectedBranchId = managedBranches.get(0).getBranchId();
+        }
+
+        // Validate branch belongs to the manager
+        final Integer finalSelectedId = selectedBranchId;
+        boolean isValidBranch = managedBranches.stream().anyMatch(b -> b.getBranchId().equals(finalSelectedId));
+        if (!isValidBranch) {
+            selectedBranchId = managedBranches.get(0).getBranchId();
+        }
+
+        session.setAttribute("selectedBranchId", selectedBranchId);
+        request.setAttribute("managedBranches", managedBranches);
+        request.setAttribute("selectedBranchId", selectedBranchId);
+
+        String branchName = managedBranches.stream().filter(b -> b.getBranchId() == finalSelectedId).findFirst()
+                .map(CinemaBranch::getBranchName).orElse("N/A");
+        request.setAttribute("currentBranchName", branchName);
 
         String action = request.getParameter("action");
         if (action == null)
             action = "list";
 
         switch (action) {
+            case "view-detail":
+                showActiveDetail(request, response, selectedBranchId);
+                break;
             case "create":
-                showScheduleForm(request, response, branch.getBranchId());
+                showScheduleForm(request, response, selectedBranchId);
                 break;
             case "edit":
-                showEditForm(request, response, branch.getBranchId());
+                showEditForm(request, response, selectedBranchId);
                 break;
             case "cancel-preview":
-                showCancelPreview(request, response, branch.getBranchId());
+                showCancelPreview(request, response, selectedBranchId);
                 break;
             case "view-cancelled":
-                showCancelledDetail(request, response, branch.getBranchId());
+                showCancelledDetail(request, response, selectedBranchId);
                 break;
             default:
-                listShowtimes(request, response, branch.getBranchId());
+                listShowtimes(request, response, selectedBranchId);
                 break;
         }
     }
@@ -76,22 +119,28 @@ public class ManageShowtimesServlet extends HttpServlet {
 
         request.setCharacterEncoding("UTF-8");
 
-        CinemaBranch branch = getBranchOfCurrentUser(request);
-        if (branch == null) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+
+        Integer selectedBranchId = (Integer) session.getAttribute("selectedBranchId");
+        if (selectedBranchId == null) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
             return;
         }
 
         String action = request.getParameter("action");
 
         if ("create".equals(action)) {
-            handleCreate(request, response, branch.getBranchId());
+            handleCreate(request, response, selectedBranchId);
         } else if ("update".equals(action)) {
-            handleUpdate(request, response, branch.getBranchId());
+            handleUpdate(request, response, selectedBranchId);
         } else if ("cancel".equals(action)) {
-            handleCancelWithRefund(request, response, branch.getBranchId());
+            handleCancelWithRefund(request, response, selectedBranchId);
         } else if ("delete".equals(action)) {
-            handleDelete(request, response, branch.getBranchId());
+            handleDelete(request, response, selectedBranchId);
         } else {
             response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
         }
@@ -119,16 +168,54 @@ public class ManageShowtimesServlet extends HttpServlet {
             }
         }
 
-        List<Map<String, Object>> showtimes = showtimesDao.getShowtimesByBranch(branchId, filterDate, statusFilter,
+        List<Map<String, Object>> allShowtimes = showtimesDao.getShowtimesByBranch(branchId, filterDate, statusFilter,
                 movieKw);
 
+        // Overwrite base price dynamically
+        for (Map<String, Object> showtimeMap : allShowtimes) {
+            LocalDate showDate = (LocalDate) showtimeMap.get("showDate");
+            LocalTime startTime = (LocalTime) showtimeMap.get("startTime");
+            if (showDate != null && startTime != null) {
+                BigDecimal basePrice = ticketPriceService.getBasePriceForShowtime(branchId, showDate, startTime);
+                showtimeMap.put("basePrice", basePrice);
+            }
+        }
+
         Map<String, Integer> stats = showtimesDao.countShowtimesByBranch(branchId);
+
+        // ── Pagination ────────────────────────────────────────────────────
+        int pageSize = 5;
+        int totalShowtimes = allShowtimes.size();
+        int totalPages = (int) Math.ceil((double) totalShowtimes / pageSize);
+        if (totalPages == 0)
+            totalPages = 1;
+
+        int currentPage = 1;
+        String pageParam = request.getParameter("page");
+        if (pageParam != null && !pageParam.isBlank()) {
+            try {
+                currentPage = Integer.parseInt(pageParam);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        if (currentPage < 1)
+            currentPage = 1;
+        if (currentPage > totalPages)
+            currentPage = totalPages;
+
+        int fromIndex = (currentPage - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, totalShowtimes);
+        List<Map<String, Object>> showtimes = allShowtimes.subList(fromIndex, toIndex);
+        // ─────────────────────────────────────────────────────────────────
 
         request.setAttribute("showtimes", showtimes);
         request.setAttribute("stats", stats);
         request.setAttribute("filterDate", dateStr);
         request.setAttribute("filterStatus", statusFilter);
         request.setAttribute("filterMovie", movieKw);
+        request.setAttribute("currentPage", currentPage);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalShowtimes", totalShowtimes);
 
         request.getRequestDispatcher("/pages/manager/manage-showtimes/list.jsp")
                 .forward(request, response);
@@ -203,35 +290,40 @@ public class ManageShowtimesServlet extends HttpServlet {
             LocalDate date = LocalDate.parse(request.getParameter("showDate"));
             LocalTime start = LocalTime.parse(request.getParameter("startTime"));
             LocalTime end = LocalTime.parse(request.getParameter("endTime"));
-            BigDecimal price = new BigDecimal(request.getParameter("basePrice"));
+            boolean overnight = "1".equals(request.getParameter("overnight"));
+
+            // If overnight, end is on the next calendar day
+            LocalDate endDate = overnight ? date.plusDays(1) : date;
 
             // Validate room belongs to this branch
             ScreeningRoom room = roomsDao.getRoomById(roomId);
             if (room == null || room.getBranchId() != branchId) {
                 forwardWithError(request, response, "create", branchId,
-                        "Phòng không hợp lệ.", movieId, roomId, date, start, price, null);
+                        "Phòng không hợp lệ.", movieId, roomId, date, start, null);
                 return;
             }
 
-            // Validate end > start
-            if (!end.isAfter(start)) {
+            // Validate end is after start (using LocalDateTime to handle overnight)
+            java.time.LocalDateTime startDT = java.time.LocalDateTime.of(date, start);
+            java.time.LocalDateTime endDT = java.time.LocalDateTime.of(endDate, end);
+            if (!endDT.isAfter(startDT)) {
                 forwardWithError(request, response, "create", branchId,
-                        "Giờ kết thúc phải sau giờ bắt đầu.", movieId, roomId, date, start, price, null);
+                        "Giờ kết thúc phải sau giờ bắt đầu.", movieId, roomId, date, start, null);
                 return;
             }
 
             // Check date not in the past
             if (date.isBefore(LocalDate.now())) {
                 forwardWithError(request, response, "create", branchId,
-                        "Ngày chiếu không được ở trong quá khứ.", movieId, roomId, date, start, price, null);
+                        "Ngày chiếu không được ở trong quá khứ.", movieId, roomId, date, start, null);
                 return;
             }
 
-            // Check scheduling conflict
+            // Check scheduling conflict (pass endDate so overnight conflicts are caught)
             if (showtimesDao.hasSchedulingConflict(roomId, date, start, end, null)) {
                 forwardWithError(request, response, "create", branchId,
                         "Phòng đã có suất chiếu trong khung giờ này. Vui lòng chọn giờ khác.",
-                        movieId, roomId, date, start, price, null);
+                        movieId, roomId, date, start, null);
                 return;
             }
 
@@ -241,7 +333,6 @@ public class ManageShowtimesServlet extends HttpServlet {
             st.setShowDate(date);
             st.setStartTime(start);
             st.setEndTime(end);
-            st.setBasePrice(price);
             st.setStatus("SCHEDULED");
 
             int newId = showtimesDao.createShowtime(st);
@@ -251,7 +342,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             } else {
                 forwardWithError(request, response, "create", branchId,
                         "Lỗi khi tạo suất chiếu. Vui lòng thử lại.",
-                        movieId, roomId, date, start, price, null);
+                        movieId, roomId, date, start, null);
             }
 
         } catch (Exception e) {
@@ -274,7 +365,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             LocalDate date = LocalDate.parse(request.getParameter("showDate"));
             LocalTime start = LocalTime.parse(request.getParameter("startTime"));
             LocalTime end = LocalTime.parse(request.getParameter("endTime"));
-            BigDecimal price = new BigDecimal(request.getParameter("basePrice"));
+            boolean overnight = "1".equals(request.getParameter("overnight"));
 
             // Verify showtime exists and is SCHEDULED
             Showtime existing = showtimesDao.getShowtimeById(showtimeId);
@@ -288,14 +379,17 @@ public class ManageShowtimesServlet extends HttpServlet {
             ScreeningRoom room = roomsDao.getRoomById(roomId);
             if (room == null || room.getBranchId() != branchId) {
                 forwardWithError(request, response, "edit", branchId,
-                        "Phòng không hợp lệ.", movieId, roomId, date, start, price, showtimeId);
+                        "Phòng không hợp lệ.", movieId, roomId, date, start, showtimeId);
                 return;
             }
 
-            // Validate end > start
-            if (!end.isAfter(start)) {
+            // Validate end > start (use LocalDateTime to support overnight showtimes)
+            LocalDate endDate = overnight ? date.plusDays(1) : date;
+            java.time.LocalDateTime startDT = java.time.LocalDateTime.of(date, start);
+            java.time.LocalDateTime endDT = java.time.LocalDateTime.of(endDate, end);
+            if (!endDT.isAfter(startDT)) {
                 forwardWithError(request, response, "edit", branchId,
-                        "Giờ kết thúc phải sau giờ bắt đầu.", movieId, roomId, date, start, price, showtimeId);
+                        "Giờ kết thúc phải sau giờ bắt đầu.", movieId, roomId, date, start, showtimeId);
                 return;
             }
 
@@ -303,11 +397,12 @@ public class ManageShowtimesServlet extends HttpServlet {
             if (showtimesDao.hasSchedulingConflict(roomId, date, start, end, showtimeId)) {
                 forwardWithError(request, response, "edit", branchId,
                         "Phòng đã có suất chiếu trong khung giờ này. Vui lòng chọn giờ khác.",
-                        movieId, roomId, date, start, price, showtimeId);
+                        movieId, roomId, date, start, showtimeId);
                 return;
             }
 
-            boolean updated = showtimesDao.updateShowtime(showtimeId, date, start, end, price);
+            // base_price is NOT updated here — managed by the ticket price config screen
+            boolean updated = showtimesDao.updateShowtime(showtimeId, date, start, end, null);
             if (updated) {
                 // Also update room if changed
                 if (existing.getRoomId() != roomId) {
@@ -318,7 +413,7 @@ public class ManageShowtimesServlet extends HttpServlet {
                         + "/branch-manager/manage-showtimes?message=updated");
             } else {
                 forwardWithError(request, response, "edit", branchId,
-                        "Lỗi khi cập nhật suất chiếu.", movieId, roomId, date, start, price, showtimeId);
+                        "Lỗi khi cập nhật suất chiếu.", movieId, roomId, date, start, showtimeId);
             }
 
         } catch (Exception e) {
@@ -326,6 +421,87 @@ public class ManageShowtimesServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath()
                     + "/branch-manager/manage-showtimes?error=invalid");
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET: View Active Showtime Detail (SCHEDULED / ONGOING / COMPLETED)
+    // ─────────────────────────────────────────────────────────────────────────
+    private void showActiveDetail(HttpServletRequest request, HttpServletResponse response, int branchId)
+            throws ServletException, IOException {
+
+        String idStr = request.getParameter("id");
+        if (idStr == null) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
+            return;
+        }
+        int showtimeId;
+        try {
+            showtimeId = Integer.parseInt(idStr);
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
+            return;
+        }
+
+        Showtime showtime = showtimesDao.getShowtimeById(showtimeId);
+        if (showtime == null) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notfound");
+            return;
+        }
+
+        // Only allow SCHEDULED, ONGOING, COMPLETED
+        String status = showtime.getStatus();
+        if (!"SCHEDULED".equals(status) && !"ONGOING".equals(status) && !"COMPLETED".equals(status)) {
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes");
+            return;
+        }
+
+        // Dynamically compute base price
+        // Lấy thông tin chi tiết (Map) từ Database lên trước
+        java.util.Map<String, Object> detail = showtimesDao.getActiveShowtimeDetail(showtimeId);
+
+        // Dynamically compute base price (Tính toán lại giá động)
+        if (showtime.getShowDate() != null && showtime.getStartTime() != null) {
+            repositories.TicketPrices ticketPricesDao = new repositories.TicketPrices();
+
+            // 1. Xác định Loại ngày (WEEKDAY / WEEKEND)
+            java.time.DayOfWeek dayOfWeek = showtime.getShowDate().getDayOfWeek();
+            String dayType = (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY)
+                    ? "WEEKEND"
+                    : "WEEKDAY";
+
+            // 2. Xác định Khung giờ
+            int hour = showtime.getStartTime().getHour();
+            String timeSlot;
+            if (hour >= 6 && hour < 12)
+                timeSlot = "MORNING";
+            else if (hour >= 12 && hour < 17)
+                timeSlot = "AFTERNOON";
+            else if (hour >= 17 && hour < 22)
+                timeSlot = "EVENING";
+            else
+                timeSlot = "NIGHT";
+
+            // Query Database lấy giá vé mặc định (ADULT)
+            BigDecimal dynamicPrice = ticketPricesDao.getTicketPrice(
+                    branchId,
+                    "ADULT",
+                    dayType,
+                    timeSlot,
+                    showtime.getShowDate());
+
+            // Ghi đè giá trị mới vào cả 2 object để đảm bảo JSP gọi cái nào cũng đúng
+            if (dynamicPrice != null) {
+                showtime.setBasePrice(dynamicPrice);
+                if (detail != null) {
+                    detail.put("basePrice", dynamicPrice);
+                }
+            }
+        }
+
+        request.setAttribute("showtime", showtime);
+        request.setAttribute("detail", detail);
+        request.getRequestDispatcher("/pages/manager/manage-showtimes/detail.jsp")
+                .forward(request, response);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -351,6 +527,13 @@ public class ManageShowtimesServlet extends HttpServlet {
         if (showtime == null || !"CANCELLED".equals(showtime.getStatus())) {
             response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notfound");
             return;
+        }
+
+        // Dynamically compute base price
+        if (showtime.getShowDate() != null && showtime.getStartTime() != null) {
+            BigDecimal price = ticketPriceService.getBasePriceForShowtime(branchId, showtime.getShowDate(),
+                    showtime.getStartTime());
+            showtime.setBasePrice(price);
         }
 
         Movie movie = moviesDao.getMovieById(showtime.getMovieId());
@@ -388,6 +571,13 @@ public class ManageShowtimesServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath()
                     + "/branch-manager/manage-showtimes?error=noteditable");
             return;
+        }
+
+        // Dynamically compute base price
+        if (showtime.getShowDate() != null && showtime.getStartTime() != null) {
+            BigDecimal price = ticketPriceService.getBasePriceForShowtime(branchId, showtime.getShowDate(),
+                    showtime.getStartTime());
+            showtime.setBasePrice(price);
         }
 
         // Fetch movie name for display
@@ -508,7 +698,7 @@ public class ManageShowtimesServlet extends HttpServlet {
     private void forwardWithError(HttpServletRequest request, HttpServletResponse response,
             String formType, int branchId, String errorMsg,
             int movieId, int roomId, LocalDate date, LocalTime startTime,
-            BigDecimal price, Integer showtimeId)
+            Integer showtimeId)
             throws ServletException, IOException {
 
         request.setAttribute("errorMsg", errorMsg);
@@ -516,7 +706,6 @@ public class ManageShowtimesServlet extends HttpServlet {
         request.setAttribute("prefRoomId", roomId);
         request.setAttribute("prefDate", date);
         request.setAttribute("prefStartTime", startTime);
-        request.setAttribute("prefPrice", price);
 
         List<Movie> movies = moviesDao.getAllActiveMovies();
         List<ScreeningRoom> rooms = roomsDao.getAllRoomsByBranch(branchId);
@@ -537,15 +726,7 @@ public class ManageShowtimesServlet extends HttpServlet {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Helper: get branch of logged-in manager
+    // Removed: getBranchOfCurrentUser method is no longer used since branchId is
+    // taken from session attribute
     // ─────────────────────────────────────────────────────────────────────────
-    private CinemaBranch getBranchOfCurrentUser(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session == null)
-            return null;
-        User user = (User) session.getAttribute("user");
-        if (user == null)
-            return null;
-        return branchDao.findByManagerId(user.getUserId());
-    }
 }

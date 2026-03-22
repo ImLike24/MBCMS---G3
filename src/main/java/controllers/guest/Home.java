@@ -21,8 +21,6 @@ public class Home extends HttpServlet {
         request.setAttribute("comingSoon", homeService.getComingSoonMovies());
         request.setAttribute("topRated", homeService.getTopRatedMovies());
 
-        request.setAttribute("genres", homeService.getActiveGenres());
-
         request.getRequestDispatcher("/pages/index.jsp").forward(request, response);
     }
 

@@ -64,6 +64,13 @@
         .btn-group-sm .action-btn + .action-btn {
             margin-left: 8px;
         }
+        .pagination .page-item.active .page-link {
+            background-color: #d96c2c;
+            border-color: #d96c2c;
+        }
+        .pagination .page-link {
+            color: #d96c2c;
+        }
     </style>
 </head>
 <body>
@@ -74,7 +81,7 @@
 
 <main>
     <div class="container-fluid">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
                 <h3 class="fw-bold" style="color: #212529;">Quản lý Thể loại</h3>
                 <nav aria-label="breadcrumb">
@@ -90,7 +97,22 @@
             </a>
         </div>
 
-        <!-- Thông báo thành công / lỗi -->
+        <!-- Selector phân trang -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <label for="pageSize" class="form-label mb-0 fw-medium text-muted">Hiển thị mỗi trang:</label>
+                <select id="pageSize" class="form-select w-auto" 
+                        onchange="window.location.href='?page=0&size=' + this.value">
+                    <option value="10" ${pageSize == 10 ? 'selected' : ''}>10</option>
+                    <option value="20" ${pageSize == 20 ? 'selected' : ''}>20</option>
+                    <option value="25" ${pageSize == 25 ? 'selected' : ''}>25</option>
+                    <option value="50" ${pageSize == 50 ? 'selected' : ''}>50</option>
+                    <option value="100" ${pageSize == 100 ? 'selected' : ''}>100</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Thông báo -->
         <c:if test="${not empty param.success}">
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <c:choose>
@@ -102,7 +124,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         </c:if>
-
         <c:if test="${not empty param.error}">
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <c:choose>
@@ -196,12 +217,39 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Phân trang -->
+                <c:if test="${totalPages > 1}">
+                    <nav aria-label="Genres pagination" class="d-flex justify-content-center my-4">
+                        <ul class="pagination mb-0">
+                            <li class="page-item ${currentPage == 0 ? 'disabled' : ''}">
+                                <a class="page-link" href="?page=${currentPage - 1}&size=${pageSize}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            <c:forEach begin="0" end="${totalPages - 1}" var="i">
+                                <li class="page-item ${currentPage == i ? 'active' : ''}">
+                                    <a class="page-link" href="?page=${i}&size=${pageSize}">${i + 1}</a>
+                                </li>
+                            </c:forEach>
+                            <li class="page-item ${currentPage == totalPages - 1 ? 'disabled' : ''}">
+                                <a class="page-link" href="?page=${currentPage + 1}&size=${pageSize}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </c:if>
+
+                <div class="text-center text-muted small mb-3">
+                    Hiển thị ${genres.size()} / ${totalItems} thể loại 
+                    (Trang ${currentPage + 1} / ${totalPages})
+                </div>
             </div>
         </div>
     </div>
 </main>
 
-<!-- Kích hoạt tooltip -->
 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
 <script>
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');

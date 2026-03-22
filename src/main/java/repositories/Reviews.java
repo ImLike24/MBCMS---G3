@@ -34,8 +34,6 @@ public class Reviews extends DBContext {
                     r.setMovieId(rs.getInt("movie_id"));
                     r.setRating(rs.getInt("rating"));
                     r.setComment(rs.getString("comment"));
-                    r.setHelpfulCount(rs.getInt("helpful_count"));
-                    r.setVerified(rs.getBoolean("is_verified"));
 
                     if (rs.getTimestamp("created_at") != null)
                         r.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
@@ -56,19 +54,32 @@ public class Reviews extends DBContext {
     }
 
     public boolean addReview(Review r) {
-        String sql = "INSERT INTO reviews (user_id, movie_id, rating, comment, is_verified, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO reviews (user_id, movie_id, rating, comment, created_at) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setInt(1, r.getUserId());
             st.setInt(2, r.getMovieId());
             st.setDouble(3, r.getRating());
             st.setString(4, r.getComment());
-            st.setBoolean(5, r.isVerified());
-            st.setTimestamp(6, Timestamp.valueOf(LocalDateTime.now()));
+            st.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
 
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
+    }
+    public double getAverageRating(int movieId) {
+        String sql = "SELECT AVG(CAST(rating AS DECIMAL(3,2))) as avg_rating FROM reviews WHERE movie_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, movieId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return Math.round(rs.getDouble("avg_rating") * 10.0) / 10.0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0.0;
     }
 }

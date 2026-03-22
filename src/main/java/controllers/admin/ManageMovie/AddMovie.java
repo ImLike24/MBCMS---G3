@@ -29,6 +29,15 @@ public class AddMovie extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        String success = request.getParameter("success");
+        if ("poster_updated".equals(success)) {
+            request.setAttribute("message", "Cập nhật poster thành công!");
+        }
+        
+        String error = request.getParameter("error");
+        if (error != null) {
+            request.setAttribute("errorMessage", "Lỗi upload poster: " + error);
+        }
 
         request.setAttribute("allGenres", genreService.getAllActiveGenres());
         request.setAttribute("mode", "add");
@@ -99,19 +108,6 @@ public class AddMovie extends HttpServlet {
         Movie m = new Movie();
         m.setTitle(getTrimmedParam(req, "title"));
         m.setDescription(getTrimmedParam(req, "description"));
-
-        String ratingStr = getTrimmedParam(req, "rating");
-        double rating = 0.0;
-        if (ratingStr != null && !ratingStr.isEmpty()) {
-            try {
-                rating = Double.parseDouble(ratingStr);
-                rating = Math.max(0.0, Math.min(10.0, rating));
-                rating = Math.round(rating * 10.0) / 10.0;
-            } catch (NumberFormatException e) {
-                rating = 0.0; // nếu nhập chữ hoặc sai định dạng
-            }
-        }
-        m.setRating(rating);
 
         m.setDuration(parseInt(req.getParameter("duration"), 120));
         m.setAgeRating(getTrimmedParam(req, "ageRating"));
