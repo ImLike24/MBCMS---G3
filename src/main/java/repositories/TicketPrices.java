@@ -1,12 +1,16 @@
 package repositories;
 
-import config.DBContext;
-import models.TicketPrice;
-
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+
+import config.DBContext;
+import models.TicketPrice;
 
 public class TicketPrices extends DBContext {
 

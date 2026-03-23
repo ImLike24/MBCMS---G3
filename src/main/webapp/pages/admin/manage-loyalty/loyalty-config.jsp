@@ -64,7 +64,11 @@
                                     <i class="fas fa-money-bill-wave text-success me-1"></i> Giá trị quy đổi (VNĐ)
                                 </label>
                                 <input type="number" class="form-control" id="earnRatio" name="earnRatio"
+<<<<<<< HEAD
                                        value="${config.earnRateAmount}" step="1000" min="1000" max="100000" required>
+=======
+                                       value="${config.earnRateAmount}" step="1000" min="1000" required>
+>>>>>>> ducanhtran
                                 <div class="form-text text-muted">Số tiền khách hàng cần chi để đổi lấy số điểm tương ứng.</div>
                             </div>
 
@@ -73,7 +77,11 @@
                                     <i class="fas fa-star text-warning me-1"></i> Số điểm nhận được
                                 </label>
                                 <input type="number" class="form-control" id="earnPoints" name="earnPoints"
+<<<<<<< HEAD
                                        value="${config.earnPoints}" min="1" max="100" required>
+=======
+                                       value="${config.earnPoints}" min="1" required>
+>>>>>>> ducanhtran
                                 <div class="form-text text-muted">Số điểm cộng vào tài khoản sau khi chi tiêu theo mức trên.</div>
                             </div>
 
@@ -82,7 +90,11 @@
                                     <i class="fas fa-gift text-danger me-1"></i> Điểm tối thiểu để đổi quà
                                 </label>
                                 <input type="number" class="form-control" id="minRedeem" name="minRedeem"
+<<<<<<< HEAD
                                        value="${config.minRedeemPoints}" min="0" max="1000" required>
+=======
+                                       value="${config.minRedeemPoints}" min="0" required>
+>>>>>>> ducanhtran
                                 <div class="form-text text-muted">Số điểm tối thiểu để khách hàng có thể truy cập danh sách đổi thưởng.</div>
                             </div>
 

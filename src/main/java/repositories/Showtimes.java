@@ -139,7 +139,9 @@ public class Showtimes extends DBContext {
                 "WHERE st.showtime_id = ? " +
                 "AND s.status = 'AVAILABLE' " +
                 "AND s.seat_id NOT IN ( " +
-                "    SELECT seat_id FROM online_tickets WHERE showtime_id = ? " +
+                "    SELECT ot.seat_id FROM online_tickets ot " +
+                "    INNER JOIN bookings b ON ot.booking_id = b.booking_id " +
+                "    WHERE ot.showtime_id = ? AND b.payment_status = 'PAID' " +
                 "    UNION " +
                 "    SELECT seat_id FROM counter_tickets WHERE showtime_id = ? " +
                 ")";
@@ -172,7 +174,9 @@ public class Showtimes extends DBContext {
                 "WHERE st.showtime_id = ? " +
                 "AND s.status = 'AVAILABLE' " +
                 "AND s.seat_id NOT IN ( " +
-                "    SELECT seat_id FROM online_tickets WHERE showtime_id = ? " +
+                "    SELECT ot.seat_id FROM online_tickets ot " +
+                "    INNER JOIN bookings b ON ot.booking_id = b.booking_id " +
+                "    WHERE ot.showtime_id = ? AND b.payment_status = 'PAID' " +
                 "    UNION " +
                 "    SELECT seat_id FROM counter_tickets WHERE showtime_id = ? " +
                 ") " +
@@ -195,13 +199,15 @@ public class Showtimes extends DBContext {
     }
 
     /**
-     * Get all seats for a showtime's room with booking status
+     * Get all seats for a showtime's room with booking status.
+     * Online seats count as booked only after payment is PAID (PENDING holds rows in DB but does not block the map).
      */
     public List<Map<String, Object>> getSeatsWithBookingStatus(int showtimeId) {
         List<Map<String, Object>> seatsWithStatus = new ArrayList<>();
         String sql = "SELECT s.*, " +
                 "CASE " +
-                "    WHEN EXISTS (SELECT 1 FROM online_tickets ot WHERE ot.showtime_id = ? AND ot.seat_id = s.seat_id) THEN 'BOOKED_ONLINE' "
+                "    WHEN EXISTS (SELECT 1 FROM online_tickets ot INNER JOIN bookings b ON ot.booking_id = b.booking_id "
+                + "WHERE ot.showtime_id = ? AND ot.seat_id = s.seat_id AND b.payment_status = 'PAID') THEN 'BOOKED_ONLINE' "
                 +
                 "    WHEN EXISTS (SELECT 1 FROM counter_tickets ct WHERE ct.showtime_id = ? AND ct.seat_id = s.seat_id) THEN 'BOOKED_COUNTER' "
                 +
@@ -238,7 +244,8 @@ public class Showtimes extends DBContext {
      */
     public boolean isSeatAvailable(int showtimeId, int seatId) {
         String sql = "SELECT CASE " +
-                "    WHEN EXISTS (SELECT 1 FROM online_tickets WHERE showtime_id = ? AND seat_id = ?) THEN 0 " +
+                "    WHEN EXISTS (SELECT 1 FROM online_tickets ot INNER JOIN bookings b ON ot.booking_id = b.booking_id "
+                + "WHERE ot.showtime_id = ? AND ot.seat_id = ? AND b.payment_status = 'PAID') THEN 0 " +
                 "    WHEN EXISTS (SELECT 1 FROM counter_tickets WHERE showtime_id = ? AND seat_id = ?) THEN 0 " +
                 "    WHEN EXISTS (SELECT 1 FROM seats WHERE seat_id = ? AND status != 'AVAILABLE') THEN 0 " +
                 "    ELSE 1 " +

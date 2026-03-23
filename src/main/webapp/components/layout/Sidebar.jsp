@@ -19,8 +19,6 @@
                                 class="fa fa-gift"></i> Ưu đãi</a></li>
                     <li><a href="${pageContext.request.contextPath}/customer/membership" onclick="toggleSidebar()"><i
                                 class="fa fa-star"></i> Thành viên</a></li>
-                    <li><a href="${pageContext.request.contextPath}/customer/combos" onclick="toggleSidebar()"><i
-                                class="fa fa-utensils"></i> Combo</a></li>
                     <li><a href="${pageContext.request.contextPath}/customer/profile" onclick="toggleSidebar()"><i
                                 class="fa fa-user"></i> Tài khoản</a></li>
                     <li><a href="${pageContext.request.contextPath}/logout" onclick="toggleSidebar()"><i

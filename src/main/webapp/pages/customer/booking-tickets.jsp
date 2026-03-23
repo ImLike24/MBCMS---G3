@@ -18,7 +18,7 @@
         <jsp:include page="/components/layout/Sidebar.jsp" />
         <jsp:include page="/components/layout/Header.jsp" />
 
-        <div class="container mt-5 pt-4 mb-5">
+        <div class="container-fluid booking-tickets-counter-style px-3 px-lg-4 mt-5 pt-4 mb-5">
             <c:if test="${not empty error}">
                 <div class="alert alert-danger">${error}</div>
             </c:if>
@@ -41,17 +41,16 @@
                                     <span><i class="fa fa-clock-o"></i> ${formattedStartTime}</span>
                                     <span><i class="fa fa-calendar"></i> ${formattedShowDate}</span>
                                     <span><i class="fa fa-map-marker"></i> ${branchName}</span>
-                                    <span class="text-muted">
-                                        <i class="fa fa-info-circle"></i>
-                                        Còn trống: ${availableSeats} / ${totalSeats}
-                                    </span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="seat-map-section">
                             <div class="section-header">
-                                <h3><i class="fa fa-chair"></i> Chọn ghế ngồi</h3>
+                                <h3><i class="fa fa-film"></i> Phòng chiếu</h3>
+                                <span style="color: #ccc; font-size: 14px;">
+                                    <i class="fa fa-info-circle"></i> Ghế trống: ${availableSeats} / ${totalSeats}
+                                </span>
                             </div>
 
                             <div class="screen"></div>
@@ -75,8 +74,21 @@
                                                             <span>${seat.seatCode}</span>
                                                         </label>
                                                     </c:when>
+                                                    <c:when test="${status == 'BROKEN'}">
+                                                        <div class="seat booked ${seat.seatType == 'VIP' ? 'vip' : ''} ${seat.seatType == 'COUPLE' ? 'couple' : ''}"
+                                                             title="Ghế đang bị hỏng (BROKEN)">
+                                                            ${seat.seatCode}
+                                                        </div>
+                                                    </c:when>
+                                                    <c:when test="${status == 'MAINTENANCE'}">
+                                                        <div class="seat booked ${seat.seatType == 'VIP' ? 'vip' : ''} ${seat.seatType == 'COUPLE' ? 'couple' : ''}"
+                                                             title="Ghế đang bảo trì (MAINTENANCE)">
+                                                            ${seat.seatCode}
+                                                        </div>
+                                                    </c:when>
                                                     <c:otherwise>
-                                                        <div class="seat booked ${seat.seatType == 'VIP' ? 'vip' : ''} ${seat.seatType == 'COUPLE' ? 'couple' : ''}" title="Ghế đã được đặt">
+                                                        <div class="seat booked ${seat.seatType == 'VIP' ? 'vip' : ''} ${seat.seatType == 'COUPLE' ? 'couple' : ''}"
+                                                             title="Ghế đã được đặt">
                                                             ${seat.seatCode}
                                                         </div>
                                                     </c:otherwise>
@@ -88,26 +100,26 @@
                                 </c:forEach>
                             </div>
 
-                            <div class="seat-legend mt-3">
+                            <div class="seat-legend">
                                 <div class="legend-item">
                                     <div class="legend-box available"></div>
-                                    <span>Ghế trống</span>
+                                    <span>Còn trống</span>
                                 </div>
                                 <div class="legend-item">
                                     <div class="legend-box selected"></div>
-                                    <span>Ghế đã chọn</span>
+                                    <span>Đang chọn</span>
                                 </div>
                                 <div class="legend-item">
                                     <div class="legend-box booked"></div>
-                                    <span>Ghế đã đặt</span>
+                                    <span>Đã bán</span>
                                 </div>
                                 <div class="legend-item">
                                     <div class="legend-box vip"></div>
-                                    <span>VIP</span>
+                                    <span>Ghế VIP</span>
                                 </div>
                                 <div class="legend-item">
                                     <div class="legend-box couple"></div>
-                                    <span>Couple</span>
+                                    <span>Ghế đôi</span>
                                 </div>
                             </div>
                             <div class="concession-counter mt-4">
@@ -182,12 +194,12 @@
                                                             <a href="${removeSeatUrl}" class="btn-remove-seat" title="Bỏ ghế này" data-seat-id="${seatInfo.seatId}">&times;</a>
                                                         </div>
                                                         <div class="ticket-type-selector">
-                                                            <label class="ticket-type-btn">
-                                                                <input type="radio" name="ticketType_${seatInfo.seatId}" value="ADULT" ${seatInfo.ticketType == 'ADULT' ? 'checked' : ''}>
+                                                            <input type="radio" class="ticket-type-radio" name="ticketType_${seatInfo.seatId}" id="ticketTypeAdult_${seatInfo.seatId}" value="ADULT" ${seatInfo.ticketType == 'ADULT' ? 'checked' : ''}>
+                                                            <label class="ticket-type-btn" for="ticketTypeAdult_${seatInfo.seatId}">
                                                                 <i class="fa fa-user"></i> Người lớn
                                                             </label>
-                                                            <label class="ticket-type-btn">
-                                                                <input type="radio" name="ticketType_${seatInfo.seatId}" value="CHILD" ${seatInfo.ticketType == 'CHILD' ? 'checked' : ''}>
+                                                            <input type="radio" class="ticket-type-radio" name="ticketType_${seatInfo.seatId}" id="ticketTypeChild_${seatInfo.seatId}" value="CHILD" ${seatInfo.ticketType == 'CHILD' ? 'checked' : ''}>
+                                                            <label class="ticket-type-btn" for="ticketTypeChild_${seatInfo.seatId}">
                                                                 <i class="fa fa-child"></i> Trẻ em
                                                             </label>
                                                         </div>
@@ -231,7 +243,6 @@
                                                     <span class="price-amount" id="grandTotalEl"><fmt:formatNumber value="${totalAmount}" type="number" maxFractionDigits="0"/> ₫</span>
                                                 </div>
                                             </div>
-                                            <p class="small text-muted mb-2">Đổi loại vé (Người lớn/Trẻ em) hoặc số lượng đồ ăn — tổng tiền cập nhật ngay, không cần reload.</p>
                                             <div class="action-buttons mt-3">
                                                 <button type="submit" class="btn btn-sm btn-warning btn-proceed px-4">
                                                     Tiếp tục
@@ -249,7 +260,7 @@
                                     </c:otherwise>
                                 </c:choose>
                                 <p class="mb-0 small text-muted mt-2">
-                                    <a href="${pageContext.request.contextPath}/customer/booking-showtimes?movieId=${showtime.movieId}&date=${showtime.showDate}" class="text-decoration-none">&laquo; Quay lại chọn suất chiếu</a>
+                                    <a href="${pageContext.request.contextPath}/showtimes" class="text-decoration-none">&laquo; Quay lại chọn suất chiếu</a>
                                 </p>
                             </div>
                         </div>

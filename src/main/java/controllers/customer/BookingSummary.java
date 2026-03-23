@@ -62,6 +62,8 @@ public class BookingSummary extends HttpServlet {
         if (session.getAttribute("paymentError") != null) {
             request.setAttribute("error", session.getAttribute("paymentError"));
             session.removeAttribute("paymentError");
+        } else if (request.getParameter("error") != null && !request.getParameter("error").isBlank()) {
+            request.setAttribute("error", request.getParameter("error"));
         }
 
         // Khi success=1: hiển thị hóa đơn (dữ liệu từ session receipt)
@@ -233,6 +235,7 @@ public class BookingSummary extends HttpServlet {
         }
     }
 
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
@@ -249,16 +252,6 @@ public class BookingSummary extends HttpServlet {
 
         User currentUser = (User) session.getAttribute("user");
         int customerId = currentUser.getUserId();
-
-        // Lấy dữ liệu từ form (không dùng JSON/JavaScript)
-        String customerName = request.getParameter("customerName");
-        String customerEmail = request.getParameter("customerEmail");
-        if (customerName == null || customerName.isBlank()) {
-            customerName = currentUser.getFullName() != null ? currentUser.getFullName() : "";
-        }
-        if (customerEmail == null || customerEmail.isBlank()) {
-            customerEmail = currentUser.getEmail() != null ? currentUser.getEmail() : "";
-        }
 
         // Lấy dữ liệu đặt vé từ session (do booking-tickets lưu)
         @SuppressWarnings("unchecked")
@@ -278,6 +271,7 @@ public class BookingSummary extends HttpServlet {
             return;
         }
 
+        repositories.Bookings bookingRepo = null;
         try {
             // 1. Tính toán số tiền cuối cùng (Trừ đi Voucher nếu có)
             java.math.BigDecimal discountAmount = java.math.BigDecimal.ZERO;
@@ -294,11 +288,11 @@ public class BookingSummary extends HttpServlet {
             if (finalAmount.compareTo(java.math.BigDecimal.ZERO) < 0) {
                 finalAmount = java.math.BigDecimal.ZERO;
             }
-                long amountInVND = finalAmount.longValue() * 100; 
+            long amountInVND = finalAmount.longValue() * 100;
 
             // 2. Tạo mã GD (TxnRef) & Insert vào Database (Trạng thái PENDING)
             String vnp_TxnRef = payment.Config.getRandomNumber(8);
-            repositories.Bookings bookingRepo = new repositories.Bookings();
+            bookingRepo = new repositories.Bookings();
 
             int bookingId = bookingRepo.createOnlineBooking(customerId, showtimeId, "BANKING", vnp_TxnRef, totalAmount, discountAmount, finalAmount, appliedVoucherCode);
 
@@ -357,10 +351,15 @@ public class BookingSummary extends HttpServlet {
 
             // 4. Redirect thẳng sang trang thanh toán của VNPay
             response.sendRedirect(paymentUrl);
+            return;
 
         } catch (Exception e) {
             e.printStackTrace();
             response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId + "&error=" + java.net.URLEncoder.encode("Lỗi khi tạo đơn hàng, vui lòng thử lại.", "UTF-8"));
+        } finally {
+            if (bookingRepo != null) {
+                bookingRepo.closeConnection();
+            }
         }
     }
 }

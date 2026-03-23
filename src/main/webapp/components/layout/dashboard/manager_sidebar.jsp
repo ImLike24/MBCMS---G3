@@ -3,7 +3,7 @@
     <div id="sidebarMenu" class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark">
 
         <!-- Header -->
-        <a href="${pageContext.request.contextPath}/manager/dashboard"
+        <a href="${pageContext.request.contextPath}/branch-manager/dashboard"
             class="d-flex align-items-center mb-3 text-white text-decoration-none">
             <span class="fs-4 fw-bold">
                 <i class="fa fa-user-secret me-2"></i>Quản lý
@@ -84,14 +84,6 @@
                    class="nav-link text-white ${param.page == 'ticket-prices' ? 'active' : ''}">
                     <i class="fa fa-ticket me-2" style="width: 20px; text-align: center;"></i>
                     Cấu hình Giá vé
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/manager/report/revenue"
-                   class="nav-link text-white ${param.page == 'revenue' ? 'active' : ''}">
-                    <i class="fa fa-bar-chart me-2" style="width: 20px; text-align: center;"></i>
-                    Báo cáo Doanh thu
                 </a>
             </li>
 

@@ -108,7 +108,11 @@
                                     <table class="table table-hover table-custom align-middle mb-0">
                                         <thead class="table-light">
                                             <tr style="color: black;">
+<<<<<<< HEAD
                                                 
+=======
+                                                <th class="ps-4">Id</th>
+>>>>>>> ducanhtran
                                                 <th>Tên Voucher</th>
                                                 <th>Phân loại</th>
                                                 <th>Mã Voucher</th>
@@ -123,7 +127,11 @@
                                             <c:forEach var="v" items="${vouchers}">
                                                 <tr
                                                     class="${(!v.isActive or (v.maxUsageLimit - v.currentUsage le 0)) ? 'opacity-50 text-muted' : ''}">
+<<<<<<< HEAD
                                                     
+=======
+                                                    <td class="ps-4 text-muted">${v.voucherId}</td>
+>>>>>>> ducanhtran
                                                     <td class="fw-semibold text-dark">${v.voucherName}</td>
                                                     <td>
                                                         <c:choose>

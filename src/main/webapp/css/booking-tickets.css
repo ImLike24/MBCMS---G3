@@ -1,41 +1,13 @@
-/* Layout for booking tickets page */
-.content-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.1fr);
-    gap: 24px;
-    align-items: flex-start;
-}
 
-.booking-summary {
-    background: #121212;
-    border-radius: 16px;
-    padding: 18px 20px;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.booking-summary h3 {
-    font-size: 18px;
-    margin-bottom: 14px;
-}
-
-.info-box {
-    background: linear-gradient(145deg, #191919, #101010);
-    border-radius: 12px;
-    padding: 14px 16px;
-}
-
-.seat-map-section {
-    background: #111;
-    border-radius: 16px;
-    padding: 16px 18px 18px;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+.booking-tickets-counter-style {
+    max-width: 1600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .seat-checkbox { display: none; }
-.seat input:checked + span,
-label.seat:has(.seat-checkbox:checked) {
+/* Không dùng :has() — tương thích NetBeans / CSS cũ; ghế: input rồi span trong label */
+label.seat.available input.seat-checkbox:checked + span {
     background: #d96c2c !important;
     color: #fff !important;
 }
@@ -44,9 +16,20 @@ label.seat:has(.seat-checkbox:checked) {
 .booking-summary .ticket-type-selector {
     display: flex;
     gap: 8px;
+    position: relative;
+    flex-wrap: wrap;
 }
-.booking-summary .ticket-type-selector input[type="radio"] {
-    display: none;
+/* Radio ẩn nhưng vẫn focus được; cặp input + label để style bằng :checked + label (không cần :has()) */
+.booking-summary .ticket-type-selector input.ticket-type-radio {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 .booking-summary .ticket-type-selector .ticket-type-btn {
     flex: 1;
@@ -70,7 +53,7 @@ label.seat:has(.seat-checkbox:checked) {
     color: #d96c2c;
 }
 .booking-summary .ticket-type-selector .ticket-type-btn.active,
-.booking-summary .ticket-type-selector label:has(input:checked) {
+.booking-summary .ticket-type-selector input.ticket-type-radio:checked + label.ticket-type-btn {
     background: #d96c2c;
     border-color: #d96c2c;
     color: #fff;
@@ -85,23 +68,6 @@ label.seat:has(.seat-checkbox:checked) {
 
 .booking-summary .selected-seat-item .seat-price {
     margin-left: 0;
-}
-
-.price-summary {
-    border-top: 1px solid #eee;
-    padding-top: 8px;
-    margin-top: 4px;
-    font-size: 14px;
-}
-
-.price-row.total {
-    display: flex;
-    justify-content: space-between;
-    font-weight: 600;
-}
-
-.price-amount {
-    color: #d96c2c;
 }
 
 .btn-remove-seat {
