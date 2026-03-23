@@ -1,0 +1,461 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+    <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+        <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+            <!DOCTYPE html>
+            <html lang="vi">
+
+            <head>
+                <meta charset="UTF-8">
+                <title>Quản lý Suất Chiếu</title>
+                <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin-layout.css">
+                <style>
+                    .stat-card {
+                        border-left: 4px solid;
+                        border-radius: 8px;
+                    }
+
+                    .stat-card.scheduled {
+                        border-color: #0d6efd;
+                    }
+
+                    .stat-card.ongoing {
+                        border-color: #198754;
+                    }
+
+                    .stat-card.completed {
+                        border-color: #6c757d;
+                    }
+
+                    .stat-card.cancelled {
+                        border-color: #dc3545;
+                    }
+
+                    .badge-scheduled {
+                        background-color: #0d6efd;
+                    }
+
+                    .badge-ongoing {
+                        background-color: #198754;
+                    }
+
+                    .badge-completed {
+                        background-color: #6c757d;
+                    }
+
+                    .badge-cancelled {
+                        background-color: #dc3545;
+                    }
+
+                    .filter-card {
+                        background: #f8f9fa;
+                        border-radius: 10px;
+                    }
+
+                    .btn-orange {
+                        background-color: #d96c2c;
+                        border-color: #d96c2c;
+                        color: #fff;
+                    }
+
+                    .btn-orange:hover {
+                        background-color: #b85a22;
+                        border-color: #b85a22;
+                        color: #fff;
+                    }
+
+                    .table-custom th {
+                        background-color: #070707;
+                        font-weight: 600;
+                        font-size: 0.85rem;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+                </style>
+            </head>
+
+            <body>
+
+                <jsp:include page="/components/layout/dashboard/dashboard_header.jsp" />
+                <jsp:include page="/components/layout/dashboard/manager_sidebar.jsp">
+                    <jsp:param name="page" value="showtimes" />
+                </jsp:include>
+
+                <main>
+                    <div class="container-fluid">
+
+                        <!-- Page Header -->
+                        <div class="d-flex justify-content-between align-items-end mb-4">
+                            <div>
+                                <h3 class="fw-bold text-dark mb-1">
+                                    <i class="fa-solid fa-film me-2" style="color:#d96c2c;"></i>Quản lý Suất Chiếu
+                                </h3>
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb mb-0">
+                                        <li class="breadcrumb-item"><a href="#"
+                                                class="text-decoration-none text-secondary">Manager</a></li>
+                                        <li class="breadcrumb-item active" style="color: #d96c2c;">Suất chiếu</li>
+                                    </ol>
+                                </nav>
+                            </div>
+                            
+                            <div class="d-flex gap-3 align-items-center">
+                                <form action="${pageContext.request.contextPath}/branch-manager/manage-showtimes" method="get" id="branchSelectForm" class="mb-0">
+                                    <div class="input-group shadow-sm">
+                                        <span class="input-group-text bg-dark text-white border-dark"><i class="fa-solid fa-building"></i></span>
+                                        <select class="form-select border-dark" name="branchId" onchange="document.getElementById('branchSelectForm').submit()" style="min-width: 200px; font-weight: 500;">
+                                            <c:forEach var="b" items="${managedBranches}">
+                                                <option value="${b.branchId}" ${b.branchId == selectedBranchId ? 'selected' : ''}>
+                                                        ${b.branchName}
+                                                </option>
+                                            </c:forEach>
+                                        </select>
+                                    </div>
+                                </form>
+
+                                <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=create&branchId=${selectedBranchId}"
+                                    class="btn btn-orange shadow-sm px-4 h-100 d-flex align-items-center">
+                                    <i class="fa-solid fa-plus me-2"></i>Lên lịch suất chiếu
+                                </a>
+                            </div>
+                        </div>
+                        
+                        
+                        <!-- Alerts -->
+                        <c:if test="${param.message == 'created'}">
+                            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert"
+                                style="border-left:4px solid #198754 !important;">
+                                <i class="fa-solid fa-circle-check me-2"></i>Lên lịch suất chiếu thành công!
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </c:if>
+                        <c:if test="${param.message == 'updated'}">
+                            <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm" role="alert">
+                                <i class="fa-solid fa-pencil me-2"></i>Cập nhật suất chiếu thành công!
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </c:if>
+                        <c:if test="${param.message == 'cancelled'}">
+                            <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm" role="alert"
+                                style="border-left:4px solid #e97d2c !important;">
+                                <i class="fa-solid fa-ban me-2"></i>
+                                <strong>Đã huỷ suất chiếu thành công.</strong>
+                                <c:if test="${param.onlineRefunds > 0 or param.counterRefunds > 0}">
+                                    &nbsp;·&nbsp;
+                                    <span class="badge bg-primary">${param.onlineRefunds} online → REFUND_PENDING</span>
+                                    <c:if test="${param.counterRefunds > 0}">
+                                        &nbsp;<span class="badge bg-warning text-dark">${param.counterRefunds} vé →
+                                            hoàn tay</span>
+                                    </c:if>
+                                    <c:if test="${not empty param.refundAmt and param.refundAmt != '0'}">
+                                        &nbsp;·&nbsp;Tổng hoàn dự kiến:
+                                        <fmt:parseNumber value="${param.refundAmt}" var="rAmt" integerOnly="true"
+                                            parseLocale="en_US" />
+                                        <strong>
+                                            <fmt:formatNumber value="${rAmt}" type="number" groupingUsed="true"
+                                                maxFractionDigits="0" minFractionDigits="0" /> ₫
+                                        </strong>
+                                    </c:if>
+                                </c:if>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </c:if>
+                        <c:if test="${param.error == 'cancelfailed'}">
+                            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+                                <i class="fa-solid fa-circle-xmark me-2"></i>
+                                Huỷ suất chiếu thất bại: ${param.detail}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </c:if>
+                        <c:if test="${param.error == 'noteditable'}">
+                            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+                                <i class="fa-solid fa-triangle-exclamation me-2"></i>Chỉ có thể chỉnh sửa suất chiếu ở
+                                trạng thái Đã lên lịch.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </c:if>
+                        <c:if test="${param.message == 'deleted'}">
+                            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm"
+                                role="alert">
+                                <i class="fa-solid fa-trash-can me-2"></i>Đã xóa suất chiếu thành công.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </c:if>
+                        <c:if test="${param.error == 'deletefailed'}">
+                            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+                                <i class="fa-solid fa-circle-xmark me-2"></i>Không thể xóa suất chiếu. Suất chiếu có thể
+                                đã phát sinh vé hoặc có lỗi hệ thống.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </c:if>
+                        <c:if test="${param.error == 'notdeletable'}">
+                            <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm"
+                                role="alert">
+                                <i class="fa-solid fa-triangle-exclamation me-2"></i>Chỉ có thể xóa suất chiếu đã Hoàn
+                                thành hoặc đã Hủy.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </c:if>
+
+                        <!-- Stats Cards -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-6 col-md-3">
+                                <div class="card stat-card scheduled shadow-sm h-100 p-3">
+                                    <div class="small text-muted text-uppercase fw-semibold mb-1">Tổng cộng</div>
+                                    <div class="fs-3 fw-bold">${stats.total}</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card stat-card scheduled shadow-sm h-100 p-3">
+                                    <div class="small text-muted text-uppercase fw-semibold mb-1">Đã lên lịch</div>
+                                    <div class="fs-3 fw-bold text-primary">${stats.SCHEDULED}</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card stat-card ongoing shadow-sm h-100 p-3">
+                                    <div class="small text-muted text-uppercase fw-semibold mb-1">Đang chiếu</div>
+                                    <div class="fs-3 fw-bold text-success">${stats.ONGOING}</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card stat-card cancelled shadow-sm h-100 p-3">
+                                    <div class="small text-muted text-uppercase fw-semibold mb-1">Đã huỷ</div>
+                                    <div class="fs-3 fw-bold text-danger">${stats.CANCELLED}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filter Panel -->
+                        <div class="filter-card p-3 mb-4 shadow-sm">
+                            <form method="get"
+                                action="${pageContext.request.contextPath}/branch-manager/manage-showtimes"
+                                class="row g-2 align-items-end">
+                                <input type="hidden" name="branchId" value="${selectedBranchId}">
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold mb-1">Ngày chiếu</label>
+                                    <input type="date" name="filterDate" class="form-control form-control-sm"
+                                        value="${filterDate}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold mb-1">Trạng thái</label>
+                                    <select name="filterStatus" class="form-select form-select-sm">
+                                        <option value="">-- Tất cả --</option>
+                                        <option value="SCHEDULED" ${filterStatus=='SCHEDULED' ? 'selected' : '' }>Đã lên
+                                            lịch</option>
+                                        <option value="ONGOING" ${filterStatus=='ONGOING' ? 'selected' : '' }>Đang chiếu
+                                        </option>
+                                        <option value="COMPLETED" ${filterStatus=='COMPLETED' ? 'selected' : '' }>Đã
+                                            hoàn thành</option>
+                                        <option value="CANCELLED" ${filterStatus=='CANCELLED' ? 'selected' : '' }>Đã huỷ
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold mb-1">Tên phim</label>
+                                    <input type="text" name="filterMovie" class="form-control form-control-sm"
+                                        placeholder="Tìm kiếm theo tên phim..." value="${filterMovie}">
+                                </div>
+                                <div class="col-md-2 d-flex gap-2">
+                                    <button type="submit" class="btn btn-orange btn-sm flex-fill">
+                                        <i class="fa-solid fa-magnifying-glass me-1"></i>Lọc
+                                    </button>
+                                    <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes"
+                                        class="btn btn-outline-secondary btn-sm flex-fill">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Showtimes Table -->
+                        <div class="card card-custom shadow-sm">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-custom table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="ps-4">#ID</th>
+                                                <th>Phim</th>
+                                                <th>Phòng chiếu</th>
+                                                <th>Ngày chiếu</th>
+                                                <th>Giờ bắt đầu</th>
+                                                <th>Giờ kết thúc</th>
+                                                <th>Giá (VNĐ)</th>
+                                                <th>Trạng thái</th>
+                                                <th class="text-end pe-4">Hành động</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <c:forEach var="st" items="${showtimes}">
+                                                <tr>
+                                                    <td class="ps-4 fw-bold" style="color:#d96c2c;">#${st.showtimeId}
+                                                    </td>
+                                                    <td>
+                                                        <div class="fw-semibold">${st.movieTitle}</div>
+                                                        <div class="text-muted small">${st.duration} phút</div>
+                                                    </td>
+                                                    <td>${st.roomName}</td>
+                                                    <td>
+                                                        <fmt:parseDate value="${st.showDate}" pattern="yyyy-MM-dd"
+                                                            var="parsedDate" type="date" />
+                                                        <fmt:formatDate value="${parsedDate}" pattern="dd/MM/yyyy" />
+                                                    </td>
+                                                    <td class="fw-semibold">${st.startTime}</td>
+                                                    <td class="text-muted">${st.endTime}</td>
+                                                    <td>
+                                                        <fmt:formatNumber value="${st.basePrice}" type="number"
+                                                            groupingUsed="true" />
+                                                    </td>
+                                                    <td>
+                                                        <c:choose>
+                                                            <c:when test="${st.status == 'SCHEDULED'}">
+                                                                <span class="badge badge-scheduled rounded-pill px-3">Đã
+                                                                    lên lịch</span>
+                                                            </c:when>
+                                                            <c:when test="${st.status == 'ONGOING'}">
+                                                                <span class="badge badge-ongoing rounded-pill px-3">Đang
+                                                                    chiếu</span>
+                                                            </c:when>
+                                                            <c:when test="${st.status == 'COMPLETED'}">
+                                                                <span
+                                                                    class="badge badge-completed rounded-pill px-3">Hoàn
+                                                                    thành</span>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <span class="badge badge-cancelled rounded-pill px-3">Đã
+                                                                    huỷ</span>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </td>
+                                                    <td class="text-end pe-4">
+                                                        <%-- Nút xem chi tiết (SCHEDULED / ONGOING / COMPLETED) --%>
+                                                            <c:if
+                                                                test="${st.status == 'SCHEDULED' or st.status == 'ONGOING' or st.status == 'COMPLETED'}">
+                                                                <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=view-detail&id=${st.showtimeId}"
+                                                                    class="btn btn-outline-success btn-sm me-1"
+                                                                    title="Xem chi tiết">
+                                                                    <i class="fa-solid fa-eye"></i>
+                                                                </a>
+                                                            </c:if>
+
+                                                            <%-- Nút sửa + huỷ (chỉ SCHEDULED) --%>
+                                                                <c:if test="${st.status == 'SCHEDULED'}">
+                                                                    <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=edit&id=${st.showtimeId}"
+                                                                        class="btn btn-outline-primary btn-sm me-1"
+                                                                        title="Chỉnh sửa">
+                                                                        <i class="fa-solid fa-pencil"></i>
+                                                                    </a>
+                                                                    <!-- Cancel → confirmation page -->
+                                                                    <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=cancel-preview&id=${st.showtimeId}"
+                                                                        class="btn btn-outline-danger btn-sm"
+                                                                        title="Huỷ suất chiếu">
+                                                                        <i class="fa-solid fa-ban"></i>
+                                                                    </a>
+                                                                </c:if>
+
+                                                                <%-- Nút xoá + xem chi tiết huỷ (COMPLETED hoặc
+                                                                    CANCELLED) --%>
+                                                                    <c:if
+                                                                        test="${st.status == 'COMPLETED' or st.status == 'CANCELLED'}">
+                                                                        <c:if test="${st.status == 'CANCELLED'}">
+                                                                            <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?action=view-cancelled&amp;id=${st.showtimeId}"
+                                                                                class="btn btn-outline-info btn-sm me-1"
+                                                                                title="Xem chi tiết vé đã hủy">
+                                                                                <i class="fa-solid fa-circle-info"></i>
+                                                                            </a>
+                                                                        </c:if>
+                                                                        <button type="button"
+                                                                            class="btn btn-outline-secondary btn-sm"
+                                                                            data-id="${st.showtimeId}"
+                                                                            data-status="${st.status}"
+                                                                            onclick="confirmDelete(this.dataset.id, this.dataset.status)"
+                                                                            title="Xóa">
+                                                                            <i class="fa-solid fa-trash-can"></i>
+                                                                        </button>
+                                                                    </c:if>
+                                                    </td>
+
+                                                </tr>
+                                            </c:forEach>
+                                            <c:if test="${empty showtimes}">
+                                                <tr>
+                                                    <td colspan="9" class="text-center py-5 text-muted">
+                                                        <i class="fa-solid fa-calendar-xmark fa-2x mb-2 d-block"></i>
+                                                        Không có suất chiếu nào.
+                                                    </td>
+                                                </tr>
+                                            </c:if>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <%-- ── Phân trang ──────────────────────────────────────── --%>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <span class="text-muted small">
+                                    Tổng: <strong>${totalShowtimes}</strong> suất chiếu &nbsp;|&nbsp;
+                                    Trang <strong>${currentPage}</strong> / <strong>${totalPages}</strong>
+                                </span>
+
+                                <c:if test="${totalPages > 1}">
+                                    <nav aria-label="Phân trang suất chiếu">
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <li class="page-item ${currentPage <= 1 ? 'disabled' : ''}">
+                                                <a class="page-link"
+                                                    href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${currentPage - 1}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}&branchId=${selectedBranchId}">
+                                                    &laquo;
+                                                </a>
+                                            </li>
+                                            <c:forEach begin="1" end="${totalPages}" var="p">
+                                                <li class="page-item ${p == currentPage ? 'active' : ''}">
+                                                    <a class="page-link"
+                                                        href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${p}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}&branchId=${selectedBranchId}">
+                                                        ${p}
+                                                    </a>
+                                                </li>
+                                            </c:forEach>
+                                            <li class="page-item ${currentPage >= totalPages ? 'disabled' : ''}">
+                                                <a class="page-link"
+                                                    href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?page=${currentPage + 1}&filterDate=${filterDate}&filterStatus=${filterStatus}&filterMovie=${filterMovie}&branchId=${selectedBranchId}">
+                                                    &raquo;
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </c:if>
+                            </div>
+                            <%-- ─────────────────────────────────────────────────────── --%>
+
+                    </div>
+                </main>
+
+                <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+
+                <!-- Deletion handling -->
+                <form id="deleteForm" method="post"
+                    action="${pageContext.request.contextPath}/branch-manager/manage-showtimes">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="showtimeId" id="deleteShowtimeId">
+                </form>
+
+                <script>
+                    function confirmDelete(id, status) {
+                        let msg;
+                        if (status === 'CANCELLED') {
+                            msg = 'Bạn có chắc chắn muốn XÓA VĨNH VIỄN suất chiếu đã hủy này?\n\n' +
+                                '⚠️  Toàn bộ vé (online & quầy) và đơn đặt liên quan sẽ bị XÓA khỏi hệ thống.\n' +
+                                'Hành động này KHÔNG THỂ HOÀN TÁC.';
+                        } else {
+                            msg = 'Bạn có chắc chắn muốn xóa suất chiếu này khỏi hệ thống?\nHành động này không thể hoàn tác.';
+                        }
+                        if (confirm(msg)) {
+                            document.getElementById('deleteShowtimeId').value = id;
+                            document.getElementById('deleteForm').submit();
+                        }
+                    }
+                </script>
+            </body>
+
+            </html>

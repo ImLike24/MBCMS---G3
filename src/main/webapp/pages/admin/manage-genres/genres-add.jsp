@@ -1,0 +1,59 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm Thể Loại Mới - Admin</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin-layout.css">
+    <style>
+        body {
+            margin-left: 350px;
+            margin-right: 80px;
+        }
+        .genre-checkbox {
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+<jsp:include page="/components/layout/dashboard/dashboard_header.jsp" />
+<jsp:include page="/components/layout/dashboard/admin_sidebar.jsp">
+    <jsp:param name="page" value="genre"/>
+</jsp:include>
+
+<main class="container-fluid py-4">
+    <h3 class="mb-4">Thêm Thể Loại Mới</h3>
+
+    <c:if test="${not empty error}">
+        <div class="alert alert-danger">${error}</div>
+    </c:if>
+
+    <form action="${pageContext.request.contextPath}/admin/genres/add" method="post">
+        <div class="mb-3">
+            <label for="genreName" class="form-label">Tên thể loại <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="genreName" name="genreName" required
+                   value="${genre.genreName}">
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Mô tả</label>
+            <textarea class="form-control" id="description" name="description" rows="4">${genre.description}</textarea>
+        </div>
+
+        <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" id="isActive" name="isActive" ${genre.active || genre.active == null ? 'checked' : ''}>
+            <label class="form-check-label" for="isActive">Hoạt động</label>
+        </div>
+
+        <button type="submit" class="btn btn-orange px-5">Thêm Thể Loại</button>
+        <a href="${pageContext.request.contextPath}/admin/manage-genres" class="btn btn-secondary px-5 ms-3">Quay lại</a>
+    </form>
+</main>
+
+<script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
