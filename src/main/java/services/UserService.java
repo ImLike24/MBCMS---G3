@@ -48,11 +48,17 @@ public class UserService {
 
         // Parse birthday if provided
         if (birthdayStr != null && !birthdayStr.trim().isEmpty()) {
+            LocalDateTime birthday = null;
             try {
-                LocalDateTime birthday = LocalDateTime.parse(birthdayStr + "T00:00:00");
-                newUser.setBirthday(birthday);
+                birthday = LocalDateTime.parse(birthdayStr + "T00:00:00");
             } catch (Exception e) {
                 // Invalid date format, skip
+            }
+            if (birthday != null) {
+                if (birthday.isAfter(LocalDateTime.now())) {
+                    throw new IllegalArgumentException("Birthday cannot be in the future");
+                }
+                newUser.setBirthday(birthday);
             }
         }
 
