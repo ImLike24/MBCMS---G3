@@ -87,41 +87,44 @@
                         <div class="col-md-6">
                             <label class="form-label">Số tiền giảm giá (VNĐ) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="discountAmount"
-                                value="${voucher.discountAmount.intValue()}" min="1000" step="1000" required>
-                            <div class="invalid-feedback">Vui lòng nhập số tiền giảm hợp lệ</div>
+                                value="${voucher.discountAmount.intValue()}" min="1000" max="500000" step="1000" required>
+                            <div class="invalid-feedback">Vui lòng nhập số tiền giảm hợp lệ.(≤ 500.000đ)</div>
                         </div>
 
                         <!-- Giá đổi điểm (chỉ LOYALTY) -->
                         <div class="col-md-4" id="pointsCostGroup">
                             <label class="form-label">Giá đổi (Điểm) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="pointsCost" id="pointsCost"
-                                value="${voucher.pointsCost}" min="0">
+                                   value="${voucher.pointsCost}" min="0" max="1000">
                             <div class="form-text">Số điểm khách cần tiêu để lấy voucher này.</div>
+                            <div class="invalid-feedback">Vui lòng nhập số điểm hợp lệ.(≤ 1000)</div>
                         </div>
 
                         <!-- Lượt dùng tối đa -->
                         <div class="col-md-4">
                             <label class="form-label">Lượt dùng tối đa</label>
                             <input type="number" class="form-control" name="maxUsage" id="maxUsage"
-                                value="${voucher.maxUsageLimit}" min="1">
+                                   value="${voucher.maxUsageLimit}" min="1" max="100">
                             <div class="form-text" id="usageHint">Nhập số lượt dùng tối đa.</div>
+                            <div class="invalid-feedback">Vui lòng nhập số lượt dùng hợp lệ. (≤ 100)</div>
                         </div>
 
                         <!-- Lượt dùng hiện tại -->
                         <div class="col-md-4">
                             <label class="form-label">Lượt dùng hiện tại</label>
                             <input type="number" class="form-control" name="currentUsage"
-                                value="${voucher.currentUsage}" min="0">
+                                   value="${voucher.currentUsage}" min="0" max="${voucher.maxUsageLimit}">
                             <div class="form-text">Số lượt voucher đã được sử dụng.</div>
+                            <div class="invalid-feedback">Số lượt đã được sử dụng phải nhỏ hơn ${voucher.maxUsageLimit}</div>
                         </div>
 
                         <!-- Hạn sử dụng -->
                         <div class="col-md-4">
                             <label class="form-label">Hạn sử dụng (Ngày) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="validDays" value="${voucher.validDays}"
-                                min="1" required>
+                                   min="1" max="30" required>
                             <div class="form-text">Với LOYALTY: tính từ lúc khách đổi quà thành công.</div>
-                            <div class="invalid-feedback">Vui lòng nhập số ngày hợp lệ</div>
+                            <div class="invalid-feedback">Vui lòng nhập số ngày hợp lệ. (≤ 30)</div>
                         </div>
 
                         <!-- Trạng thái -->

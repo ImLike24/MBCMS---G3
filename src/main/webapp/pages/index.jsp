@@ -120,7 +120,7 @@
                 <c:forEach var="m" items="${comingSoon}">
                     <div class="col-md-3 mb-4">
                         <div class="movie-card">
-                            <a href="${pageContext.request.contextPath}/admin/movie?movieId=${m.movieId}">
+                            <a href="${pageContext.request.contextPath}/movie?movieId=${m.movieId}">
                                 <img src="${m.posterUrl}" alt="${m.title}" onerror="this.src='https://via.placeholder.com/300x450?text=No+Image'">
                             </a>
                             <div class="movie-info">
@@ -149,7 +149,7 @@
                 <c:forEach var="m" items="${topRated}">
                     <div class="col-md-3 mb-4">
                         <div class="movie-card">
-                            <a href="${pageContext.request.contextPath}/admin/movie?movieId=${m.movieId}">
+                            <a href="${pageContext.request.contextPath}/movie?movieId=${m.movieId}">
                                 <img src="${m.posterUrl}" alt="${m.title}">
                             </a>
                             <div class="movie-info">

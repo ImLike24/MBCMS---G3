@@ -70,8 +70,8 @@ public class FinalizeBooking extends HttpServlet {
 
                         // Increment global usage
                         voucherRepo.incrementVoucherUsage(appliedVoucherCode);
-                        // Mark personalized voucher as USED
-                        uvRepo.markVoucherAsUsed(appliedVoucherCode);
+                        // Delete voucher from user's wallet
+                        uvRepo.deleteVoucherByCode(appliedVoucherCode);
                     }
                 }
 

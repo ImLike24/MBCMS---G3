@@ -172,14 +172,13 @@ public class CreateUserServlet extends HttpServlet {
                 return;
             }
 
-            // Validate role is ADMIN, CINEMA_STAFF, STAFF or BRANCH_MANAGER
+            // Validate role is ADMIN, CINEMA_STAFF or BRANCH_MANAGER
             int roleId = Integer.parseInt(roleIdStr);
             Role selectedRole = rolesRepo.getRoleById(roleId);
 
             if (selectedRole == null ||
                     (!selectedRole.getRoleName().equals("ADMIN") &&
                             !selectedRole.getRoleName().equals("CINEMA_STAFF") &&
-                            !selectedRole.getRoleName().equals("STAFF") &&
                             !selectedRole.getRoleName().equals("BRANCH_MANAGER"))) {
                 request.setAttribute("error", "Invalid role selection");
                 doGet(request, response);
