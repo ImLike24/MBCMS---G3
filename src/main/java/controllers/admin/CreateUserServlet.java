@@ -9,16 +9,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import models.Role;
 import models.User;
-import repositories.Roles;
-import repositories.Users;
-import utils.Password;
+import services.UserService;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @WebServlet("/admin/create-user")
 public class CreateUserServlet extends HttpServlet {
+
+    private final UserService userService = new UserService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -37,8 +36,7 @@ public class CreateUserServlet extends HttpServlet {
         DBContext dbContext = null;
         try {
             dbContext = new DBContext();
-            Roles rolesRepo = new Roles();
-            Role userRole = rolesRepo.getRoleById(currentUser.getRoleId());
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
 
             if (userRole == null || !"ADMIN".equals(userRole.getRoleName())) {
                 response.sendRedirect(request.getContextPath() + "/home");
@@ -58,8 +56,7 @@ public class CreateUserServlet extends HttpServlet {
         DBContext rolesDbContext = null;
         try {
             rolesDbContext = new DBContext();
-            Roles rolesRepo = new Roles();
-            List<Role> creatableRoles = rolesRepo.getCreatableRoles();
+            List<Role> creatableRoles = userService.getCreatableRoles();
 
             request.setAttribute("creatableRoles", creatableRoles);
             request.getRequestDispatcher("/pages/admin/user/create-user.jsp").forward(request, response);
@@ -92,8 +89,7 @@ public class CreateUserServlet extends HttpServlet {
         DBContext authDbContext = null;
         try {
             authDbContext = new DBContext();
-            Roles rolesRepo = new Roles();
-            Role userRole = rolesRepo.getRoleById(currentUser.getRoleId());
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
 
             if (userRole == null || !"ADMIN".equals(userRole.getRoleName())) {
                 response.sendRedirect(request.getContextPath() + "/home");
@@ -144,82 +140,18 @@ public class CreateUserServlet extends HttpServlet {
         }
 
         DBContext usersDbContext = null;
-        DBContext rolesDbContext = null;
-
         try {
             usersDbContext = new DBContext();
-            rolesDbContext = new DBContext();
-
-            Users usersRepo = new Users();
-            Roles rolesRepo = new Roles();
-
-            // Check for duplicates
-            if (usersRepo.checkUsernameExists(username.trim())) {
-                request.setAttribute("error", "Username already exists");
-                doGet(request, response);
-                return;
-            }
-
-            if (usersRepo.checkEmailExists(email.trim())) {
-                request.setAttribute("error", "Email already exists");
-                doGet(request, response);
-                return;
-            }
-
-            if (phone != null && !phone.trim().isEmpty() && usersRepo.checkPhoneExists(phone.trim())) {
-                request.setAttribute("error", "Phone number already exists");
-                doGet(request, response);
-                return;
-            }
-
-            // Validate role is ADMIN, CINEMA_STAFF or BRANCH_MANAGER
+            
             int roleId = Integer.parseInt(roleIdStr);
-            Role selectedRole = rolesRepo.getRoleById(roleId);
-
-            if (selectedRole == null ||
-                    (!selectedRole.getRoleName().equals("ADMIN") &&
-                            !selectedRole.getRoleName().equals("CINEMA_STAFF") &&
-                            !selectedRole.getRoleName().equals("BRANCH_MANAGER"))) {
-                request.setAttribute("error", "Invalid role selection");
-                doGet(request, response);
-                return;
-            }
-
-            // Create new user
-            User newUser = new User();
-            newUser.setRoleId(roleId);
-            newUser.setUsername(username.trim());
-            newUser.setEmail(email.trim());
-            newUser.setPassword(Password.hashPassword(password)); // Hash password
-            newUser.setFullName(fullName.trim());
-            newUser.setPhone(phone != null && !phone.trim().isEmpty() ? phone.trim() : null);
-
-            // Parse birthday if provided
-            if (birthdayStr != null && !birthdayStr.trim().isEmpty()) {
-                try {
-                    LocalDateTime birthday = LocalDateTime.parse(birthdayStr + "T00:00:00");
-                    newUser.setBirthday(birthday);
-                } catch (Exception e) {
-                    // Invalid date format, skip
-                }
-            }
-
-            newUser.setStatus("ACTIVE");
-            newUser.setPoints(0);
-
-            // Insert user
-            boolean success = usersRepo.insert(newUser);
-
-            if (success) {
-                response.sendRedirect(request.getContextPath() +
-                        "/admin/manage-users?success=User created successfully");
-            } else {
-                request.setAttribute("error", "Failed to create user");
-                doGet(request, response);
-            }
-
+            userService.createUser(username.trim(), email.trim(), password, fullName.trim(), phone != null ? phone.trim() : null, birthdayStr, roleId);
+            
+            response.sendRedirect(request.getContextPath() + "/admin/manage-users?success=User created successfully");
         } catch (NumberFormatException e) {
             request.setAttribute("error", "Invalid role selection");
+            doGet(request, response);
+        } catch (IllegalArgumentException e) {
+            request.setAttribute("error", e.getMessage());
             doGet(request, response);
         } catch (Exception e) {
             e.printStackTrace();
@@ -228,9 +160,6 @@ public class CreateUserServlet extends HttpServlet {
         } finally {
             if (usersDbContext != null) {
                 usersDbContext.closeConnection();
-            }
-            if (rolesDbContext != null) {
-                rolesDbContext.closeConnection();
             }
         }
     }

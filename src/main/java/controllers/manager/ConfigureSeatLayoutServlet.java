@@ -8,14 +8,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import models.*;
-import repositories.*;
+import services.SeatService;
+import services.UserService;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 @WebServlet("/branch-manager/configure-seat-layout")
 public class ConfigureSeatLayoutServlet extends HttpServlet {
+
+    private final SeatService seatService = new SeatService();
+    private final UserService userService = new UserService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -34,8 +37,7 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
         DBContext dbContext = null;
         try {
             dbContext = new DBContext();
-            Roles rolesRepo = new Roles();
-            Role userRole = rolesRepo.getRoleById(currentUser.getRoleId());
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
 
             if (userRole == null || !"BRANCH_MANAGER".equals(userRole.getRoleName())) {
                 response.sendRedirect(request.getContextPath() + "/home");
@@ -51,13 +53,8 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
             }
         }
 
-        // Get all branches managed by this manager
         try {
-            CinemaBranches branchesRepo = new CinemaBranches();
-            ScreeningRooms roomsRepo = new ScreeningRooms();
-            Seats seatsRepo = new Seats();
-
-            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
+            List<CinemaBranch> managedBranches = seatService.getManagedBranches(currentUser.getUserId());
 
             if (managedBranches == null || managedBranches.isEmpty()) {
                 request.setAttribute("error", "You are not assigned to any branch");
@@ -78,7 +75,7 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
             }
 
             // Get all screening rooms for selected branch
-            List<ScreeningRoom> rooms = roomsRepo.getAllRoomsByBranch(branch.getBranchId());
+            List<ScreeningRoom> rooms = seatService.getRoomsByBranch(branch.getBranchId());
 
             // Get selected room if any
             String roomIdParam = request.getParameter("roomId");
@@ -88,11 +85,11 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
             if (roomIdParam != null && !roomIdParam.isEmpty()) {
                 try {
                     int roomId = Integer.parseInt(roomIdParam);
-                    selectedRoom = roomsRepo.getRoomById(roomId);
+                    selectedRoom = seatService.getRoomById(roomId);
 
                     // Verify room belongs to this branch
                     if (selectedRoom != null && selectedRoom.getBranchId() == branch.getBranchId()) {
-                        existingSeats = seatsRepo.getSeatsByRoom(roomId);
+                        existingSeats = seatService.getSeatsByRoom(roomId);
                     } else {
                         selectedRoom = null;
                     }
@@ -107,6 +104,7 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
             request.setAttribute("rooms", rooms);
             request.setAttribute("selectedRoom", selectedRoom);
             request.setAttribute("existingSeats", existingSeats);
+            request.setAttribute("totalAvailableSeatsOfBranch", seatService.getTotalAvailableSeatsByBranch(branch.getBranchId()));
 
             request.getRequestDispatcher("/pages/manager/configure-seat-layout.jsp").forward(request, response);
 
@@ -134,8 +132,7 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
         DBContext dbContext = null;
         try {
             dbContext = new DBContext();
-            Roles rolesRepo = new Roles();
-            Role userRole = rolesRepo.getRoleById(currentUser.getRoleId());
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
 
             if (userRole == null || !"BRANCH_MANAGER".equals(userRole.getRoleName())) {
                 response.sendRedirect(request.getContextPath() + "/home");
@@ -161,13 +158,9 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
         }
 
         try {
-            CinemaBranches branchesRepo = new CinemaBranches();
-            ScreeningRooms roomsRepo = new ScreeningRooms();
-            Seats seatsRepo = new Seats();
-
             // Resolve the target branch from POST param, verified against managed list
             String branchIdStr = request.getParameter("branchId");
-            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
+            List<CinemaBranch> managedBranches = seatService.getManagedBranches(currentUser.getUserId());
             if (managedBranches == null || managedBranches.isEmpty()) {
                 response.sendRedirect(request.getContextPath()
                         + "/branch-manager/configure-seat-layout?error=You are not assigned to any branch");
@@ -184,112 +177,47 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
             }
             final int selectedBranchId = branch.getBranchId();
 
-            boolean success = false;
-            String message = "";
-
             if ("generate".equals(action)) {
                 String roomIdStr = request.getParameter("roomId");
                 String rowsStr = request.getParameter("rows");
                 String columnsStr = request.getParameter("columns");
 
                 if (roomIdStr == null || rowsStr == null || columnsStr == null) {
-                    message = "Invalid parameters";
-                } else {
-                    try {
-                        int roomId = Integer.parseInt(roomIdStr);
-                        int rows = Integer.parseInt(rowsStr);
-                        int columns = Integer.parseInt(columnsStr);
-
-                        // Validate input
-                        if (rows < 1 || rows > 26 || columns < 1 || columns > 50) {
-                            message = "Invalid layout: Rows must be 1-26 (A-Z), Columns must be 1-50";
-                        } else {
-                            ScreeningRoom room = roomsRepo.getRoomById(roomId);
-
-                            if (room == null || room.getBranchId() != branch.getBranchId()) {
-                                message = "Room not found or access denied";
-                            } else {
-                                // Delete existing seats
-                                seatsRepo.deleteSeatsByRoom(roomId);
-
-                                // Generate new seats
-                                List<Seat> newSeats = new ArrayList<>();
-                                for (int row = 0; row < rows; row++) {
-                                    String rowLetter = String.valueOf((char) ('A' + row));
-                                    for (int col = 1; col <= columns; col++) {
-                                        Seat seat = new Seat();
-                                        seat.setRoomId(roomId);
-                                        seat.setSeatCode(rowLetter + col);
-                                        seat.setSeatType("NORMAL");
-                                        seat.setRowNumber(rowLetter);
-                                        seat.setSeatNumber(col);
-                                        seat.setStatus("AVAILABLE");
-                                        newSeats.add(seat);
-                                    }
-                                }
-
-                                // Bulk insert seats
-                                success = seatsRepo.insertSeatsInBatch(newSeats);
-
-                                if (success) {
-                                    // Update room total seats
-                                    room.setTotalSeats(newSeats.size());
-                                    roomsRepo.updateRoom(room);
-                                    message = "Seat layout generated successfully: " + rows + " rows × " + columns
-                                            + " columns = " + newSeats.size() + " seats";
-                                } else {
-                                    message = "Failed to generate seat layout";
-                                }
-                            }
-                        }
-                    } catch (NumberFormatException e) {
-                        message = "Invalid number format";
-                    }
+                    redirectWithError(request, response, selectedBranchId, roomIdStr, "Invalid parameters");
+                    return;
                 }
 
-                if (success) {
-                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?branchId="
-                            + selectedBranchId + "&roomId=" + request.getParameter("roomId") + "&success=" + message);
-                } else {
-                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?branchId="
-                            + selectedBranchId + "&roomId=" + request.getParameter("roomId") + "&error=" + message);
+                try {
+                    int roomId = Integer.parseInt(roomIdStr);
+                    int rows = Integer.parseInt(rowsStr);
+                    int columns = Integer.parseInt(columnsStr);
+
+                    String msg = seatService.generateSeatLayout(selectedBranchId, roomId, rows, columns);
+                    redirectWithSuccess(request, response, selectedBranchId, roomIdStr, msg);
+
+                } catch (NumberFormatException e) {
+                    redirectWithError(request, response, selectedBranchId, roomIdStr, "Invalid number format");
+                } catch (RuntimeException e) {
+                    redirectWithError(request, response, selectedBranchId, roomIdStr, e.getMessage());
                 }
+
             } else if ("clear".equals(action)) {
                 String roomIdStr = request.getParameter("roomId");
 
                 if (roomIdStr == null) {
-                    message = "Invalid parameters";
-                } else {
-                    try {
-                        int roomId = Integer.parseInt(roomIdStr);
-                        ScreeningRoom room = roomsRepo.getRoomById(roomId);
-
-                        if (room == null || room.getBranchId() != branch.getBranchId()) {
-                            message = "Room not found or access denied";
-                        } else {
-                            // Delete all seats
-                            success = seatsRepo.deleteSeatsByRoom(roomId);
-
-                            if (success) {
-                                // Update room total seats
-                                room.setTotalSeats(0);
-                                roomsRepo.updateRoom(room);
-                                message = "Seat layout cleared successfully";
-                            } else {
-                                message = "Failed to clear seat layout";
-                            }
-                        }
-                    } catch (NumberFormatException e) {
-                        message = "Invalid room ID";
-                    }
+                    redirectWithError(request, response, selectedBranchId, null, "Invalid parameters");
+                    return;
                 }
 
-                if (success) {
-                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?branchId="
-                            + selectedBranchId + "&roomId=" + request.getParameter("roomId") + "&success=" + message);
-                } else {
-                    response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?branchId="
-                            + selectedBranchId + "&roomId=" + request.getParameter("roomId") + "&error=" + message);
+                try {
+                    int roomId = Integer.parseInt(roomIdStr);
+                    String msg = seatService.clearSeatLayout(selectedBranchId, roomId);
+                    redirectWithSuccess(request, response, selectedBranchId, roomIdStr, msg);
+
+                } catch (NumberFormatException e) {
+                    redirectWithError(request, response, selectedBranchId, roomIdStr, "Invalid room ID");
+                } catch (RuntimeException e) {
+                    redirectWithError(request, response, selectedBranchId, roomIdStr, e.getMessage());
                 }
             } else {
                 response.sendRedirect(
@@ -299,7 +227,20 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
         } catch (Exception e) {
             e.printStackTrace();
             response.sendRedirect(
-                    request.getContextPath() + "/branch-manager/configure-seat-layout?error=" + e.getMessage());
+                    request.getContextPath() + "/branch-manager/configure-seat-layout?error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
         }
+    }
+
+    private void redirectWithSuccess(HttpServletRequest request, HttpServletResponse response, int branchId, String roomIdStr, String message) throws IOException {
+        response.sendRedirect(request.getContextPath() + "/branch-manager/configure-seat-layout?branchId="
+                + branchId + "&roomId=" + roomIdStr + "&success=" + java.net.URLEncoder.encode(message, "UTF-8"));
+    }
+
+    private void redirectWithError(HttpServletRequest request, HttpServletResponse response, int branchId, String roomIdStr, String message) throws IOException {
+        String url = request.getContextPath() + "/branch-manager/configure-seat-layout?branchId=" + branchId + "&error=" + java.net.URLEncoder.encode(message, "UTF-8");
+        if (roomIdStr != null) {
+            url += "&roomId=" + roomIdStr;
+        }
+        response.sendRedirect(url);
     }
 }
