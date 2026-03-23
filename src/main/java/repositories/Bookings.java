@@ -32,16 +32,20 @@ public class Bookings {
     public int createOnlineBooking(int userId,
                                    int showtimeId,
                                    String paymentMethod,
-                                   String bookingCode) throws SQLException {
+                                   String bookingCode,
+                                   BigDecimal totalAmount,
+                                   BigDecimal discountAmount,
+                                   BigDecimal finalAmount,
+                                   String appliedVoucherCode) throws SQLException {
 
         String sql = """
                 INSERT INTO bookings
                 (user_id, showtime_id, booking_code,
                  total_amount, discount_amount, final_amount,
-                 payment_method, payment_status, status, payment_time)
+                 payment_method, payment_status, status, payment_time, applied_voucher_code)
                 VALUES (?, ?, ?,
-                        0, 0, 0,
-                        ?, 'PENDING', 'PENDING', SYSDATETIME())
+                        ?, ?, ?,
+                        ?, 'PENDING', 'PENDING', SYSDATETIME(), ?)
                 """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -49,7 +53,11 @@ public class Bookings {
             ps.setInt(1, userId);
             ps.setInt(2, showtimeId);
             ps.setString(3, bookingCode);
-            ps.setString(4, paymentMethod);
+            ps.setBigDecimal(4, totalAmount);
+            ps.setBigDecimal(5, discountAmount);
+            ps.setBigDecimal(6, finalAmount);
+            ps.setString(7, paymentMethod);
+            ps.setString(8, appliedVoucherCode);
 
             int affectedRows = ps.executeUpdate();
 

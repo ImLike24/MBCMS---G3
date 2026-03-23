@@ -205,6 +205,14 @@ public class ManageStaffServlet extends HttpServlet {
             String note = request.getParameter("note");
             String dateParam = request.getParameter("date");
 
+            // Validate workDate not in the past
+            if (workDate.isBefore(LocalDate.now())) {
+                response.sendRedirect(request.getContextPath()
+                        + "/branch-manager/manage-staff?action=schedule&error=past_date&branchId=" + branchId
+                        + (dateParam != null ? "&date=" + dateParam : ""));
+                return;
+            }
+
             // Validate shift value
             if (!List.of("MORNING", "AFTERNOON", "EVENING", "NIGHT").contains(shift)) {
                 response.sendRedirect(request.getContextPath()

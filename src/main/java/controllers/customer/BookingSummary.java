@@ -300,7 +300,7 @@ public class BookingSummary extends HttpServlet {
             String vnp_TxnRef = payment.Config.getRandomNumber(8);
             repositories.Bookings bookingRepo = new repositories.Bookings();
 
-            int bookingId = bookingRepo.createOnlineBooking(customerId, showtimeId, "BANKING", vnp_TxnRef);
+            int bookingId = bookingRepo.createOnlineBooking(customerId, showtimeId, "BANKING", vnp_TxnRef, totalAmount, discountAmount, finalAmount, appliedVoucherCode);
 
             // Lưu từng chiếc vé khách đã chọn
             for (Map<String, Object> seat : seatsList) {
