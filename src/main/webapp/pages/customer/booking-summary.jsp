@@ -165,19 +165,6 @@
                         <form method="post" action="${pageContext.request.contextPath}/customer/booking-summary">
                             <input type="hidden" name="showtimeId" value="${showtimeId}">
                             <input type="hidden" name="appliedVoucherCode" value="${appliedVoucherCode}">
-                            <div class="mb-4">
-                                <h5 class="mb-3">Thông tin người nhận vé</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label text-light">Họ tên</label>
-                                        <input type="text" name="customerName" class="form-control" value="<c:out value='${customerName}'/>" placeholder="Nguyễn Văn A">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label text-light">Email (nhận e-ticket)</label>
-                                        <input type="email" name="customerEmail" class="form-control" value="<c:out value='${customerEmail}'/>" placeholder="email@example.com">
-                                    </div>
-                                </div>
-                            </div>
 
                             <div class="mb-4">
                                 <h5 class="mb-3">Phương thức thanh toán</h5>
@@ -204,7 +191,7 @@
                             </p>
                         </div>
                         <div class="mt-3">
-                            <a href="${pageContext.request.contextPath}/movies" class="btn btn-primary">Quay lại danh sách phim</a>
+                            <a href="${pageContext.request.contextPath}/showtimes" class="btn btn-primary">Quay lại danh sách suất chiếu</a>
                         </div>
                     </c:if>
                 </div>

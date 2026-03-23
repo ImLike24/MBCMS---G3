@@ -1,14 +1,14 @@
 package services;
 
-import models.TicketPrice;
-import repositories.TicketPrices;
-
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
+
+import models.TicketPrice;
+import repositories.TicketPrices;
 
 public class TicketPriceService {
 
@@ -188,6 +188,16 @@ public class TicketPriceService {
         } else {
             return "NIGHT";
         }
+    }
+
+    public String resolveDayTypeForTicketPrice(int branchId, LocalDate showDate, LocalTime startTime,
+            TicketPrices priceDao) {
+        String timeSlot = getTimeSlot(startTime);
+        BigDecimal holidayAdult = priceDao.getTicketPrice(branchId, "ADULT", "HOLIDAY", timeSlot, showDate);
+        if (holidayAdult != null) {
+            return "HOLIDAY";
+        }
+        return getDayType(showDate);
     }
 
     public BigDecimal getBasePriceForShowtime(int branchId, LocalDate date, LocalTime time) {

@@ -82,34 +82,57 @@
                         <!-- Số tiền giảm -->
                         <div class="col-md-6">
                             <label class="form-label">Số tiền giảm giá (VNĐ) <span class="text-danger">*</span></label>
+<<<<<<< HEAD
                             <input type="number" class="form-control" name="discountAmount" min="1000" max="500000" step="1000"
                                 required>
                             <div class="invalid-feedback">Vui lòng nhập số tiền giảm hợp lệ. (≤ 500.000đ)</div>
+=======
+                            <input type="number" class="form-control" name="discountAmount" min="1000" step="1000"
+                                required>
+                            <div class="invalid-feedback">Vui lòng nhập số tiền giảm hợp lệ</div>
+>>>>>>> ducanhtran
                         </div>
 
                         <!-- Giá đổi điểm (chỉ LOYALTY) -->
                         <div class="col-md-4" id="pointsCostGroup">
                             <label class="form-label">Giá đổi (Điểm) <span class="text-danger">*</span></label>
+<<<<<<< HEAD
                             <input type="number" class="form-control" name="pointsCost" id="pointsCost" min="1" max="1000"
                                 value="100">
                             <div class="form-text">Số điểm khách cần tiêu để lấy voucher này.</div>
                             <div class="invalid-feedback">Vui lòng nhập số điểm hợp lệ.(≤ 1000)</div>
+=======
+                            <input type="number" class="form-control" name="pointsCost" id="pointsCost" min="1"
+                                value="100">
+                            <div class="form-text">Số điểm khách cần tiêu để lấy voucher này.</div>
+>>>>>>> ducanhtran
                         </div>
 
                         <!-- Lượt dùng tối đa -->
                         <div class="col-md-4">
                             <label class="form-label">Lượt dùng tối đa</label>
+<<<<<<< HEAD
                             <input type="number" class="form-control" name="maxUsage" id="maxUsage" min="1" max="100" value="1">
                             <div class="form-text" id="usageHint">Nhập số lượt dùng tối đa.</div>
                             <div class="invalid-feedback">Vui lòng nhập số lượt dùng hợp lệ.(≤ 100)</div>
+=======
+                            <input type="number" class="form-control" name="maxUsage" id="maxUsage" min="1" value="1">
+                            <div class="form-text" id="usageHint">Nhập số lượt dùng tối đa.</div>
+>>>>>>> ducanhtran
                         </div>
 
                         <!-- Hạn sử dụng -->
                         <div class="col-md-4">
                             <label class="form-label">Hạn sử dụng (Ngày) <span class="text-danger">*</span></label>
+<<<<<<< HEAD
                             <input type="number" class="form-control" name="validDays" min="1" max="30" value="30" required>
                             <div class="form-text">Với LOYALTY: tính từ lúc khách đổi quà thành công.</div>
                             <div class="invalid-feedback">Vui lòng nhập số ngày hợp lệ. (≤ 30)</div>
+=======
+                            <input type="number" class="form-control" name="validDays" min="1" value="30" required>
+                            <div class="form-text">Với LOYALTY: tính từ lúc khách đổi quà thành công.</div>
+                            <div class="invalid-feedback">Vui lòng nhập số ngày hợp lệ</div>
+>>>>>>> ducanhtran
                         </div>
 
                         <!-- Buttons -->

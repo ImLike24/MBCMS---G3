@@ -71,7 +71,7 @@
 <div class="container mt-4 mb-5">
     <div class="history-hero">
         <h1><i class="fa fa-history me-2" style="color: var(--orange);"></i> Lịch sử đặt vé</h1>
-        <p class="text-white-50 mb-0 mt-2">Các hóa đơn đặt vé online của bạn. Mỗi hóa đơn kèm chi tiết vé.</p>
+        <p class="text-white-50 mb-0 mt-2">Danh sách hóa đơn đã mua của bạn</p>
     </div>
 
     <!-- force update-->
@@ -103,29 +103,38 @@
     </form>
 
     <c:choose>
-        <c:when test="${not empty invoices}">
-            <c:forEach var="inv" items="${invoices}" varStatus="st">
+        <c:when test="${not empty bookings}">
+            <c:forEach var="bk" items="${bookings}" varStatus="st">
                 <div class="invoice-card" data-invoice-index="${st.index}">
                     <div class="invoice-header" role="button" tabindex="0" aria-expanded="false" aria-controls="invoice-detail-${st.index}" id="invoice-header-${st.index}">
                         <div class="invoice-header-left">
-                            <span class="invoice-code">#${inv.invoiceCode}</span>
+                            <span class="invoice-code">#${bk.bookingId}</span>
                             <span class="invoice-meta">
                                 <i class="fa fa-calendar me-1"></i>
-                                <fmt:formatDate value="${inv.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
+                                <fmt:formatDate value="${bk.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
                             </span>
                             <span class="invoice-meta">
-                                <i class="fa fa-building me-1"></i><c:out value="${inv.branchName}"/>
+                                <i class="fa fa-building me-1"></i><c:out value="${bk.branchName}"/>
                             </span>
-                            <c:if test="${not empty inv.bookingCode}">
-                                <span class="invoice-meta"><i class="fa fa-ticket me-1"></i>${inv.bookingCode}</span>
+                            <c:if test="${not empty bk.bookingCode}">
+                                <span class="invoice-meta"><i class="fa fa-ticket me-1"></i>${bk.bookingCode}</span>
                             </c:if>
-                            <span class="badge bg-secondary badge-method">${inv.paymentMethod}</span>
+                            <span class="badge bg-secondary badge-method">${bk.paymentMethod}</span>
                             <span class="invoice-meta ms-2 text-white-50">(Ấn để xem chi tiết vé & ghế)</span>
                         </div>
                         <div class="d-flex align-items-center gap-3">
-                            <span class="invoice-total">
-                                <fmt:formatNumber value="${inv.finalAmount}" type="currency" currencyCode="VND" currencySymbol="₫"/>
-                            </span>
+                            <div>
+                                <span class="invoice-total">
+                                    <fmt:formatNumber value="${bk.finalAmount}" type="currency" currencyCode="VND" currencySymbol="₫"/>
+                                </span>
+                                <c:if test="${bk.discountAmount != null && bk.discountAmount.signum() > 0}">
+                                    <div class="text-white-50 small mt-1">
+                                        Giảm giá:
+                                        -<fmt:formatNumber value="${bk.discountAmount}" type="number" maxFractionDigits="0"/>
+                                        ₫
+                                    </div>
+                                </c:if>
+                            </div>
                             <i class="fa fa-chevron-down invoice-toggle"></i>
                         </div>
                     </div>
@@ -144,7 +153,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <c:forEach var="item" items="${inv.items}">
+                                        <c:forEach var="item" items="${bk.items}">
                                             <tr>
                                                 <td><c:out value="${item.movieTitle}"/></td>
                                                 <td>
@@ -157,42 +166,49 @@
                                                 <td class="text-end"><fmt:formatNumber value="${item.amount}" type="currency" currencyCode="VND" currencySymbol="₫"/></td>
                                             </tr>
                                         </c:forEach>
-                                        <c:if test="${empty inv.items}">
+                                        <c:if test="${empty bk.items}">
                                             <tr><td colspan="5" class="text-center text-muted py-3">Chưa có chi tiết vé.</td></tr>
                                         </c:if>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
+                    <div class="detail-section">
+                        <h6><i class="fa fa-utensils me-2"></i>Đồ ăn & thức uống</h6>
+                        <p class="text-white-50 small mb-0">
+                            Tổng:
+                            <fmt:formatNumber value="${bk.concessionTotal}" type="currency" currencyCode="VND" currencySymbol="₫"/>
+                        </p>
+                    </div>
                         <div class="detail-section">
                             <h6><i class="fa fa-chair me-2"></i>Ghế đã đặt</h6>
                             <div class="table-responsive">
                                 <table class="ticket-table">
                                     <thead>
                                         <tr>
-                                            <th>Mã ghế</th>
+                                            <th>BookingCode (ghế)</th>
                                             <th>Vị trí ghế</th>
                                             <th>Loại ghế</th>
                                             <th>Loại vé</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <c:forEach var="item" items="${inv.items}">
+                                        <c:forEach var="item" items="${bk.items}">
                                             <tr>
-                                                <td><span class="badge bg-dark">${item.seatCode}</span></td>
+                                                <td><span class="badge bg-dark">${item.bookingSeatCode}</span></td>
                                                 <td>
                                                     <c:choose>
                                                         <c:when test="${not empty item.seatRow || item.seatCol != null}">
                                                             Hàng <c:out value="${item.seatRow}"/><c:if test="${item.seatCol != null}">, Số ${item.seatCol}</c:if>
                                                         </c:when>
-                                                        <c:otherwise><c:out value="${item.seatCode}"/></c:otherwise>
+                                                        <c:otherwise>—</c:otherwise>
                                                     </c:choose>
                                                 </td>
                                                 <td><c:out value="${item.seatType != null ? item.seatType : '—'}"/></td>
                                                 <td>${item.ticketType == 'ADULT' ? 'Người lớn' : 'Trẻ em'}</td>
                                             </tr>
                                         </c:forEach>
-                                        <c:if test="${empty inv.items}">
+                                        <c:if test="${empty bk.items}">
                                             <tr><td colspan="4" class="text-center text-muted py-3">Chưa có ghế nào.</td></tr>
                                         </c:if>
                                     </tbody>
@@ -206,8 +222,8 @@
             <div class="pagination-wrap d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div class="text-muted">
                     <c:choose>
-                        <c:when test="${totalCount == 0}">Hiển thị 0 / 0 hóa đơn</c:when>
-                        <c:otherwise>Hiển thị ${(page - 1) * pageSize + 1}–${(page - 1) * pageSize + invoices.size()} / ${totalCount} hóa đơn</c:otherwise>
+                        <c:when test="${totalCount == 0}">Hiển thị 0 / 0 booking</c:when>
+                        <c:otherwise>Hiển thị ${(page - 1) * pageSize + 1}–${(page - 1) * pageSize + bookings.size()} / ${totalCount} booking</c:otherwise>
                     </c:choose>
                 </div>
                 <nav>
@@ -249,8 +265,8 @@
         <c:otherwise>
             <div class="empty-state">
                 <i class="fa fa-receipt fa-4x text-muted mb-3"></i>
-                <h5>Chưa có hóa đơn nào</h5>
-                <p class="mb-0">Bạn chưa đặt vé online. Đặt vé tại <a href="${pageContext.request.contextPath}/movies" class="text-warning">Phim đang chiếu</a> hoặc <a href="${pageContext.request.contextPath}/showtimes" class="text-warning">Lịch chiếu</a>.</p>
+                <h5>Chưa có booking nào</h5>
+                <p class="mb-0">Bạn chưa đặt vé online. Đặt vé tại <a href="${pageContext.request.contextPath}/showtimes" class="text-warning">Lịch chiếu</a>.</p>
             </div>
         </c:otherwise>
     </c:choose>

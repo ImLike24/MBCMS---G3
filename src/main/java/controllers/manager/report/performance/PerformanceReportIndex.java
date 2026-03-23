@@ -1,115 +1,174 @@
 package controllers.manager.report.performance;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import models.CinemaBranch;
 import models.User;
 import repositories.CinemaBranches;
-import repositories.PerformanceReportRepository;
+import repositories.PerformanceReports;
+import repositories.PerformanceReports.BranchPerformanceRow;
+import repositories.PerformanceReports.MovieTicketRow;
+import services.AuthService;
 
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-
-@WebServlet(name = "PerformanceReportIndex", urlPatterns = {"/manager/report/performance"})
+@WebServlet(name = "PerformanceReportIndex", urlPatterns = {
+        "/manager/report/performance",
+        "/manager/report/performance/movies"
+})
 public class PerformanceReportIndex extends HttpServlet {
 
+    private static final String FLASH_REPORT_FILTER = "reportFilterError";
+
+    private final AuthService authService = new AuthService();
     private final CinemaBranches branchDao = new CinemaBranches();
-    private final PerformanceReportRepository perfRepo = new PerformanceReportRepository();
+    private final PerformanceReports performanceRepo = new PerformanceReports();
+
+    private static void consumeReportFlash(HttpServletRequest request, HttpSession session) {
+        if (session == null) {
+            return;
+        }
+        Object msg = session.getAttribute(FLASH_REPORT_FILTER);
+        if (msg != null) {
+            session.removeAttribute(FLASH_REPORT_FILTER);
+            request.setAttribute(FLASH_REPORT_FILTER, msg);
+        }
+    }
+
+    private static String buildReportRedirectUrl(HttpServletRequest req, String servletPath) {
+        StringBuilder sb = new StringBuilder(req.getContextPath());
+        if (servletPath != null && servletPath.endsWith("/movies")) {
+            sb.append("/manager/report/performance/movies");
+        } else {
+            sb.append("/manager/report/performance");
+        }
+        String bp = req.getParameter("branchId");
+        if (bp != null && !bp.isBlank() && !"all".equalsIgnoreCase(bp.trim())) {
+            sb.append("?branchId=").append(URLEncoder.encode(bp.trim(), StandardCharsets.UTF_8));
+        }
+        return sb.toString();
+    }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        var user = (User) request.getSession().getAttribute("user");
-        if (user == null) {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        List<CinemaBranch> managedBranches = branchDao.findListByManagerId(user.getUserId());
-        if (managedBranches == null || managedBranches.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập.");
+        User user = (User) session.getAttribute("user");
+        String role;
+        try {
+            role = authService.getRoleName(user.getRoleId());
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
+        }
+
+        if (!"BRANCH_MANAGER".equals(role)) {
+            response.sendRedirect(request.getContextPath() + "/home");
+            return;
+        }
+
+        consumeReportFlash(request, session);
+
+        int managerId = user.getUserId();
+        List<CinemaBranch> managedBranches = branchDao.findListByManagerId(managerId);
+        if (managedBranches == null || managedBranches.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không quản lý chi nhánh nào.");
+            return;
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate fromDate = YearMonth.from(today).atDay(1);
+        LocalDate toDate = today;
+
+        String fromParam = request.getParameter("from");
+        String toParam = request.getParameter("to");
+        if (fromParam != null && !fromParam.isBlank()) {
+            try {
+                fromDate = LocalDate.parse(fromParam.trim());
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+        if (toParam != null && !toParam.isBlank()) {
+            try {
+                toDate = LocalDate.parse(toParam.trim());
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+
+        String servletPath = request.getServletPath();
+        if (fromDate.isAfter(toDate)) {
+            session.setAttribute(FLASH_REPORT_FILTER,
+                    "Không được để khoảng thời gian bên trái lớn hơn khoảng thời gian bên phải!");
+            response.sendRedirect(buildReportRedirectUrl(request, servletPath));
+            return;
+        }
+        if (toDate.isAfter(today)) {
+            session.setAttribute(FLASH_REPORT_FILTER, "Chỉ có thể để thời gian hiện tại!");
+            response.sendRedirect(buildReportRedirectUrl(request, servletPath));
+            return;
+        }
+
+        Integer filterBranchId = null;
+        String branchParam = request.getParameter("branchId");
+        if (branchParam != null && !branchParam.isBlank() && !"all".equalsIgnoreCase(branchParam.trim())) {
+            try {
+                int bid = Integer.parseInt(branchParam.trim());
+                boolean allowed = managedBranches.stream()
+                        .anyMatch(b -> b.getBranchId() != null && b.getBranchId().equals(bid));
+                if (allowed) {
+                    filterBranchId = bid;
+                }
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         List<Integer> branchIds = new ArrayList<>();
         for (CinemaBranch b : managedBranches) {
-            branchIds.add(b.getBranchId());
+            if (b.getBranchId() != null) {
+                branchIds.add(b.getBranchId());
+            }
+        }
+        if (filterBranchId != null) {
+            branchIds = List.of(filterBranchId);
         }
 
-        String periodType = request.getParameter("periodType");
-        if (periodType == null || periodType.isEmpty()) periodType = "day";
-        if (!List.of("day", "month", "year").contains(periodType)) periodType = "day";
-
-        LocalDate now = LocalDate.now();
-        LocalDate fromDate;
-        LocalDate toDate;
-        String periodLabel;
-
-        if ("month".equals(periodType)) {
-            int year = parseInt(request.getParameter("year"), now.getYear());
-            int month = parseInt(request.getParameter("month"), now.getMonthValue());
-            YearMonth ym = YearMonth.of(year, month);
-            fromDate = ym.atDay(1);
-            toDate = ym.atEndOfMonth();
-            periodLabel = "Tháng %d/%d".formatted(month, year);
-        } else if ("year".equals(periodType)) {
-            int year = parseInt(request.getParameter("year"), now.getYear());
-            fromDate = LocalDate.of(year, 1, 1);
-            toDate = LocalDate.of(year, 12, 31);
-            periodLabel = "Năm %d".formatted(year);
-        } else {
-            fromDate = parseDate(request.getParameter("fromDate"), now.minusDays(30));
-            toDate = parseDate(request.getParameter("toDate"), now);
-            if (fromDate.isAfter(toDate)) fromDate = toDate.minusDays(30);
-            periodLabel = "%s - %s".formatted(
-                    fromDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                    toDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-        }
-
-        var branchRows = perfRepo.getTotalShowtimesByBranch(branchIds, fromDate, toDate);
-        var seatMetrics = perfRepo.getSeatUtilizationMetrics(branchIds, fromDate, toDate);
-        var peakLow = perfRepo.getPeakAndLowHours(branchIds, fromDate, toDate);
+        int totalShowtimes = performanceRepo.countShowtimes(branchIds, fromDate, toDate);
+        int totalTicketsSold = performanceRepo.countTicketsSold(branchIds, fromDate, toDate);
+        List<BranchPerformanceRow> byBranch = performanceRepo.listShowtimesByBranch(branchIds, fromDate, toDate);
 
         request.setAttribute("managedBranches", managedBranches);
-        request.setAttribute("branchRows", branchRows);
-        request.setAttribute("seatMetrics", seatMetrics);
-        request.setAttribute("peakLow", peakLow);
+        request.setAttribute("selectedBranchId", filterBranchId);
         request.setAttribute("fromDate", fromDate);
         request.setAttribute("toDate", toDate);
-        request.setAttribute("periodType", periodType);
-        request.setAttribute("periodLabel", periodLabel);
-        if ("month".equals(periodType) || "year".equals(periodType)) {
-            request.setAttribute("selectedYear", request.getParameter("year") != null ? request.getParameter("year") : String.valueOf(fromDate.getYear()));
-            request.setAttribute("selectedMonth", "month".equals(periodType) ? (request.getParameter("month") != null ? request.getParameter("month") : String.valueOf(fromDate.getMonthValue())) : null);
-        } else {
-            request.setAttribute("selectedYear", null);
-            request.setAttribute("selectedMonth", null);
+        request.setAttribute("todayMaxDate", today.toString());
+        request.setAttribute("totalShowtimes", totalShowtimes);
+        request.setAttribute("totalTicketsSold", totalTicketsSold);
+        request.setAttribute("showtimesByBranch", byBranch);
+
+        if (servletPath != null && servletPath.endsWith("/movies")) {
+            List<MovieTicketRow> topMovies = performanceRepo.listTopMoviesByTickets(branchIds, fromDate, toDate);
+            request.setAttribute("topMovies", topMovies);
+            request.getRequestDispatcher("/pages/manager/report/performance/movies.jsp").forward(request, response);
+            return;
         }
 
-        request.getRequestDispatcher("/pages/manager/report/performance/index.jsp").forward(request, response);
-    }
-
-    private LocalDate parseDate(String value, LocalDate defaultVal) {
-        if (value == null || value.trim().isEmpty()) return defaultVal;
-        try {
-            return LocalDate.parse(value);
-        } catch (Exception e) {
-            return defaultVal;
-        }
-    }
-
-    private int parseInt(String value, int defaultVal) {
-        if (value == null || value.trim().isEmpty()) return defaultVal;
-        try {
-            return Integer.parseInt(value.trim());
-        } catch (Exception e) {
-            return defaultVal;
-        }
+        request.getRequestDispatcher("/pages/manager/report/performance/performance.jsp").forward(request, response);
     }
 }

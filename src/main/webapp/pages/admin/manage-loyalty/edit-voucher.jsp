@@ -87,44 +87,70 @@
                         <div class="col-md-6">
                             <label class="form-label">Số tiền giảm giá (VNĐ) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="discountAmount"
+<<<<<<< HEAD
                                 value="${voucher.discountAmount.intValue()}" min="1000" max="500000" step="1000" required>
                             <div class="invalid-feedback">Vui lòng nhập số tiền giảm hợp lệ.(≤ 500.000đ)</div>
+=======
+                                value="${voucher.discountAmount.intValue()}" min="1000" step="1000" required>
+                            <div class="invalid-feedback">Vui lòng nhập số tiền giảm hợp lệ</div>
+>>>>>>> ducanhtran
                         </div>
 
                         <!-- Giá đổi điểm (chỉ LOYALTY) -->
                         <div class="col-md-4" id="pointsCostGroup">
                             <label class="form-label">Giá đổi (Điểm) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="pointsCost" id="pointsCost"
+<<<<<<< HEAD
                                    value="${voucher.pointsCost}" min="0" max="1000">
                             <div class="form-text">Số điểm khách cần tiêu để lấy voucher này.</div>
                             <div class="invalid-feedback">Vui lòng nhập số điểm hợp lệ.(≤ 1000)</div>
+=======
+                                value="${voucher.pointsCost}" min="0">
+                            <div class="form-text">Số điểm khách cần tiêu để lấy voucher này.</div>
+>>>>>>> ducanhtran
                         </div>
 
                         <!-- Lượt dùng tối đa -->
                         <div class="col-md-4">
                             <label class="form-label">Lượt dùng tối đa</label>
                             <input type="number" class="form-control" name="maxUsage" id="maxUsage"
+<<<<<<< HEAD
                                    value="${voucher.maxUsageLimit}" min="1" max="100">
                             <div class="form-text" id="usageHint">Nhập số lượt dùng tối đa.</div>
                             <div class="invalid-feedback">Vui lòng nhập số lượt dùng hợp lệ. (≤ 100)</div>
+=======
+                                value="${voucher.maxUsageLimit}" min="1">
+                            <div class="form-text" id="usageHint">Nhập số lượt dùng tối đa.</div>
+>>>>>>> ducanhtran
                         </div>
 
                         <!-- Lượt dùng hiện tại -->
                         <div class="col-md-4">
                             <label class="form-label">Lượt dùng hiện tại</label>
                             <input type="number" class="form-control" name="currentUsage"
+<<<<<<< HEAD
                                    value="${voucher.currentUsage}" min="0" max="${voucher.maxUsageLimit}">
                             <div class="form-text">Số lượt voucher đã được sử dụng.</div>
                             <div class="invalid-feedback">Số lượt đã được sử dụng phải nhỏ hơn ${voucher.maxUsageLimit}</div>
+=======
+                                value="${voucher.currentUsage}" min="0">
+                            <div class="form-text">Số lượt voucher đã được sử dụng.</div>
+>>>>>>> ducanhtran
                         </div>
 
                         <!-- Hạn sử dụng -->
                         <div class="col-md-4">
                             <label class="form-label">Hạn sử dụng (Ngày) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="validDays" value="${voucher.validDays}"
+<<<<<<< HEAD
                                    min="1" max="30" required>
                             <div class="form-text">Với LOYALTY: tính từ lúc khách đổi quà thành công.</div>
                             <div class="invalid-feedback">Vui lòng nhập số ngày hợp lệ. (≤ 30)</div>
+=======
+                                min="1" required>
+                            <div class="form-text">Với LOYALTY: tính từ lúc khách đổi quà thành công.</div>
+                            <div class="invalid-feedback">Vui lòng nhập số ngày hợp lệ</div>
+>>>>>>> ducanhtran
                         </div>
 
                         <!-- Trạng thái -->
