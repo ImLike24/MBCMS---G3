@@ -66,7 +66,7 @@
         <div class="col-md-3">
             <label class="form-label">Hệ số nhân (Multiplier) <span class="text-danger">*</span></label>
             <input type="number" class="form-control" name="multiplier"
-                   step="0.1" min="1.0" value="${tier.pointMultiplier}" required>
+                   step="0.1" min="1.0" max="2.0" value="${tier.pointMultiplier}" required>
             <div class="form-text">VD: 1.0, 1.2, 1.5, 2.0</div>
             <div class="invalid-feedback">Vui lòng nhập hệ số hợp lệ (≥ 1.0)</div>
         </div>
