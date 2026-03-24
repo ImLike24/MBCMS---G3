@@ -1,52 +1,69 @@
 package services;
 
+import repositories.Bookings;
 import repositories.Showtimes;
-
-import java.time.LocalDate;
-import java.util.List;
+import repositories.Users;
+import repositories.Vouchers;
+import repositories.UserVouchers;
+import java.math.BigDecimal;
 import java.util.Map;
 
 public class BookingService {
 
-    // SHOWTIMES LIST
+    // Khai báo các DAO (Công cụ) ở đây
+    private final Showtimes showtimeDao = new Showtimes();
+    private Bookings bookingDao;
 
-    // Lay danh sach Showtime
-    private Showtimes showtimeList = new Showtimes();
-
-    public List<?> getShowtimesForMovieOnDate(int movieId, LocalDate date) {
-        return showtimeList.getShowtimesForMovieOnDate(movieId, date);
+    public BookingService() {
+        try {
+            this.bookingDao = new Bookings();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    // lay suat chieu theo ID
-    public Object getShowtimeById(int showtimeId) {
-        return showtimeList.getShowtimeById(showtimeId);
-    }
-
-    // lay danh sach chi tiet suat chieu (phong, chi nhanh cu the, phim chieu)
+    // Giữ nguyên hàm cũ
     public Map<String, Object> getShowtimeDetails(int showtimeId) {
-        return showtimeList.getShowtimeDetails(showtimeId);
+        return showtimeDao.getShowtimeDetails(showtimeId);
     }
 
-    // SEATS
+    // ---------------------------------------------------------
+    // LOGIC NGHIỆP VỤ THANH TOÁN (Chuyển từ FinalizeBooking sang)
+    // ---------------------------------------------------------
 
-    // dem so ghe con trong dua vao suat chieu
-    // cu the, chon thoi gian chieu -> tuong ung voi phong chieu theo thoi gian do
-    public int countAvailableSeats(int showtimeId) {
-        return showtimeList.countAvailableSeats(showtimeId);
+    // 1. Xử lý khi thanh toán THÀNH CÔNG
+    public void processSuccessfulPayment(String bookingCode) throws Exception {
+        // 1. Cập nhật trạng thái Booking
+        bookingDao.confirmBooking(bookingCode);
+
+        // 2. Xử lý điểm thưởng & Hạng thành viên
+        Map<String, Object> bookingInfo = bookingDao.getBookingInfoForPoints(bookingCode);
+        if (bookingInfo != null) {
+            int userId = (int) bookingInfo.get("userId");
+            BigDecimal finalAmount = (BigDecimal) bookingInfo.get("finalAmount");
+            String appliedVoucherCode = (String) bookingInfo.get("voucherCode");
+
+            Users userRepo = new Users();
+            // Tính toán và cộng điểm
+            int earnedPoints = finalAmount.divide(new BigDecimal(1000)).intValue();
+            if (earnedPoints > 0) {
+                userRepo.addPoints(userId, earnedPoints);
+                userRepo.updateTier(userId); // Cập nhật hạng
+            }
+
+            // 3. Xử lý Voucher (Nếu có dùng)
+            if (appliedVoucherCode != null && !appliedVoucherCode.isEmpty()) {
+                Vouchers voucherRepo = new Vouchers();
+                UserVouchers uvRepo = new UserVouchers();
+                voucherRepo.incrementVoucherUsage(appliedVoucherCode);
+                uvRepo.deleteVoucherByCode(appliedVoucherCode);
+            }
+        }
     }
 
-    // lay danh sach ghe con trong theo suat chieu
-
-    public List<?> getAvailableSeats(int showtimeId) {
-        return showtimeList.getAvailableSeats(showtimeId);
+    // 2. Xử lý khi thanh toán THẤT BẠI / HỦY
+    public void processFailedPayment(String bookingCode) throws Exception {
+        // Hủy booking, giải phóng ghế cho người khác mua
+        bookingDao.deleteBooking(bookingCode);
     }
-
-    // lay danh sach ghe va trang thai dat theo suat chieu
-    public List<Map<String, Object>> getSeatWithBookingStatus(int showtimeId) {
-        return showtimeList.getSeatsWithBookingStatus(showtimeId);
-    }
-
-    // TICKETS
-
-    //
 }

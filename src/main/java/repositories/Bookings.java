@@ -20,15 +20,6 @@ public class Bookings {
         conn = new DBContext().getConnection();
     }
 
-    public String generateBookingCode() {
-        String timestamp = LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-
-        int randomNumber = new Random().nextInt(900) + 100; // 100-999
-
-        return "BK" + timestamp + randomNumber;
-    }
-
     public int createOnlineBooking(int userId,
                                    int showtimeId,
                                    String paymentMethod,
@@ -126,96 +117,6 @@ public class Bookings {
         ps2.executeUpdate();
     }
 
-    public int getShowtimeIdByCode(String bookingCode) throws Exception {
-        String sql = "SELECT showtime_id FROM bookings WHERE booking_code=?";
-
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setString(1, bookingCode);
-
-        ResultSet rs = ps.executeQuery();
-
-        if (rs.next()) {
-            return rs.getInt("showtime_id");
-        }
-
-        return 0;
-    }
-
-    public int getBookingIdByCode(String bookingCode) throws Exception {
-
-        String sql = "SELECT booking_id FROM bookings WHERE booking_code = ?";
-
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setString(1, bookingCode);
-
-        ResultSet rs = ps.executeQuery();
-
-        if (rs.next()) {
-            return rs.getInt("booking_id");
-        }
-
-        return 0;
-    }
-
-    public String getSeatIdsByBookingCode(String bookingCode) throws Exception {
-
-        String sql = """
-                    SELECT seat_id
-                    FROM online_tickets
-                    WHERE booking_id = (
-                        SELECT booking_id
-                        FROM bookings
-                        WHERE booking_code = ?
-                    )
-                """;
-
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setString(1, bookingCode);
-
-        ResultSet rs = ps.executeQuery();
-
-        StringBuilder seatIds = new StringBuilder();
-
-        while (rs.next()) {
-
-            if (seatIds.length() > 0) {
-                seatIds.append(",");
-            }
-
-            seatIds.append(rs.getInt("seat_id"));
-        }
-
-        return seatIds.toString();
-    }
-
-    public int insertBooking(int userId, int showtimeId, String bookingCode, BigDecimal totalAmount,
-            BigDecimal discountAmount, BigDecimal finalAmount, String appliedVoucherCode) throws Exception {
-        String sql = """
-                INSERT INTO bookings
-                (user_id, showtime_id, booking_code, total_amount, discount_amount, final_amount, payment_status, applied_voucher_code)
-                VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?)
-                """;
-
-        PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-
-        ps.setInt(1, userId);
-        ps.setInt(2, showtimeId);
-        ps.setString(3, bookingCode);
-        ps.setBigDecimal(4, totalAmount);
-        ps.setBigDecimal(5, discountAmount);
-        ps.setBigDecimal(6, finalAmount);
-        ps.setString(7, appliedVoucherCode);
-
-        ps.executeUpdate();
-
-        ResultSet rs = ps.getGeneratedKeys();
-
-        if (rs.next()) {
-            return rs.getInt(1);
-        }
-        return 0;
-    }
-
     public void confirmBooking(String bookingCode) throws Exception {
         String sql = """
                 UPDATE bookings
@@ -264,6 +165,21 @@ public class Bookings {
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }
+        }
+    }
+
+    public void cleanupExpiredBookings() {
+        // Tìm các booking trạng thái PENDING mà thời gian tạo đã quá 10 phút
+        String sql = """
+        UPDATE bookings 
+        SET status = 'EXPIRED' 
+        WHERE status = 'PENDING' 
+        AND DATEDIFF(MINUTE, booking_time, SYSDATETIME()) >= 10
+    """;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

@@ -17,68 +17,23 @@ public class FinalizeBooking extends HttpServlet {
             throws ServletException, IOException {
 
         try {
-            Bookings bookingRepo = new Bookings();
+            // Khởi tạo Service
+            services.BookingService bookingService = new services.BookingService();
 
             String bookingCode = request.getParameter("vnp_TxnRef");
             String transactionStatus = request.getParameter("vnp_TransactionStatus");
 
             if ("00".equals(transactionStatus)) {
-                // Call confirmBooking
-                bookingRepo.confirmBooking(bookingCode);
+                // Nhờ Service xử lý toàn bộ logic phức tạp
+                bookingService.processSuccessfulPayment(bookingCode);
 
-                Map<String, Object> bookingInfo = bookingRepo.getBookingInfoForPoints(bookingCode);
-                if (bookingInfo != null) {
-                    int userId = (int) bookingInfo.get("userId");
-                    BigDecimal finalAmount = (BigDecimal) bookingInfo.get("finalAmount");
-                    String appliedVoucherCode = (String) bookingInfo.get("voucherCode");
-
-                    repositories.Users userRepo = new repositories.Users();
-                    repositories.LoyaltyConfigs configRepo = new repositories.LoyaltyConfigs();
-                    repositories.MembershipTiers tiersRepo = new repositories.MembershipTiers();
-
-                    models.User user = userRepo.getUserById(userId);
-                    models.LoyaltyConfig config = configRepo.getConfig();
-
-                    if (user != null && config != null) {
-                        models.MembershipTier tier = tiersRepo.getTierById(user.getTierId());
-                        BigDecimal multiplier = (tier != null) ? tier.getPointMultiplier()
-                                : BigDecimal.ONE;
-
-                        // Points = (FinalAmount / EarnRateAmount) * EarnPoints * Multiplier
-                        BigDecimal earnRateAmount = config.getEarnRateAmount();
-                        int earnPointsPerRate = config.getEarnPoints();
-                        
-                        // (finalAmount / earnRateAmount) * earnPointsPerRate * multiplier
-                        BigDecimal earnedPointsBD = finalAmount
-                                .divide(earnRateAmount, 4, java.math.RoundingMode.HALF_UP)
-                                .multiply(BigDecimal.valueOf(earnPointsPerRate))
-                                .multiply(multiplier);
-
-                        int earnedPoints = earnedPointsBD.intValue();
-
-                        if (earnedPoints > 0) {
-                            userRepo.addPoints(userId, earnedPoints);
-                            // Cập nhật hạng thành viên (Logic tự động dựa trên tổng điểm tích lũy)
-                            userRepo.updateTier(userId);
-                        }
-                    }
-
-                    // 3. Increment Voucher Usage
-                    if (appliedVoucherCode != null && !appliedVoucherCode.isEmpty()) {
-                        repositories.Vouchers voucherRepo = new repositories.Vouchers();
-                        repositories.UserVouchers uvRepo = new repositories.UserVouchers();
-
-                        // Increment global usage
-                        voucherRepo.incrementVoucherUsage(appliedVoucherCode);
-                        // Delete voucher from user's wallet
-                        uvRepo.deleteVoucherByCode(appliedVoucherCode);
-                    }
-                }
-
+                // Trả kết quả cho VNPay
                 response.getWriter().write("{\"RspCode\":\"00\",\"Message\":\"Confirm Success\"}");
+
             } else {
-                // Nếu thanh toán thất bại/hủy -> Xóa Booking và giải phóng ghế
-                bookingRepo.deleteBooking(bookingCode);
+                // Nhờ Service xử lý dọn dẹp khi thất bại
+                bookingService.processFailedPayment(bookingCode);
+
                 System.out.println("TransactionStatus Failed: " + transactionStatus);
                 response.getWriter().write("FAILED");
             }

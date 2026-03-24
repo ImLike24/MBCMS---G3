@@ -20,10 +20,7 @@ import models.Concession;
 import models.Seat;
 import models.SeatTypeSurcharge;
 import models.Showtime;
-import repositories.Concessions;
-import repositories.SeatTypeSurcharges;
-import repositories.Showtimes;
-import repositories.TicketPrices;
+import repositories.*;
 
 @WebServlet(name = "TicketsOfChosenMovie", urlPatterns = { "/customer/booking-tickets" })
 public class BookingTickets extends HttpServlet {
@@ -59,6 +56,13 @@ public class BookingTickets extends HttpServlet {
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/movies");
             return;
+        }
+
+        try {
+            Bookings bookingDao = new Bookings();
+            bookingDao.cleanupExpiredBookings();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         Showtimes showtimesRepo = null;
