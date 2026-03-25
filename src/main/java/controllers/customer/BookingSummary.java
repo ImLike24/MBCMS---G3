@@ -93,7 +93,8 @@ public class BookingSummary extends HttpServlet {
             // ==========================================================
             // CALL SERVICE
             // ==========================================================
-            Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode);
+            User currentUser = (User) session.getAttribute("user");
+            Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode, currentUser.getUserId());
 
             // Bắn dữ liệu về cho giao diện (JSP)
             request.setAttribute("bookingData", bookingData);
@@ -138,7 +139,10 @@ public class BookingSummary extends HttpServlet {
 
         try {
             String voucherCode = request.getParameter("voucherCode");
-            Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode);
+            if (voucherCode == null || voucherCode.trim().isEmpty()) {
+                voucherCode = (String) bookingData.get("voucherCode");
+            }
+            Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode, user.getUserId());
 
             BigDecimal finalAmount = (BigDecimal) summaryResult.get("finalAmount");
             BigDecimal discountAmount = (BigDecimal) summaryResult.get("discountAmount");
