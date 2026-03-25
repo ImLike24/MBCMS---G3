@@ -133,12 +133,13 @@ public class Bookings {
     }
 
     public java.util.Map<String, Object> getBookingInfoForPoints(String bookingCode) throws Exception {
-        String sql = "SELECT user_id, final_amount, applied_voucher_code FROM bookings WHERE booking_code = ?";
+        String sql = "SELECT booking_id, user_id, final_amount, applied_voucher_code FROM bookings WHERE booking_code = ?";
         PreparedStatement ps = conn.prepareStatement(sql);
         ps.setString(1, bookingCode);
         ResultSet rs = ps.executeQuery();
         if (rs.next()) {
             java.util.Map<String, Object> info = new java.util.HashMap<>();
+            info.put("bookingId", rs.getInt("booking_id"));
             info.put("userId", rs.getInt("user_id"));
             info.put("finalAmount", rs.getBigDecimal("final_amount"));
             info.put("voucherCode", rs.getString("applied_voucher_code"));

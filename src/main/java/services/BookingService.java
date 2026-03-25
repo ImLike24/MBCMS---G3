@@ -3,6 +3,7 @@ package services;
 import models.User;
 import models.MembershipTier;
 import models.LoyaltyConfig;
+import models.PointHistory;
 import models.Movie;
 import models.Showtime;
 import models.Voucher;
@@ -50,6 +51,7 @@ public class BookingService {
         Map<String, Object> bookingInfo = bookingDao.getBookingInfoForPoints(bookingCode);
         if (bookingInfo != null) {
             int userId = (int) bookingInfo.get("userId");
+            int bookingId = (int) bookingInfo.get("bookingId");
             BigDecimal finalAmount = (BigDecimal) bookingInfo.get("finalAmount");
             String appliedVoucherCode = (String) bookingInfo.get("voucherCode");
 
@@ -84,6 +86,15 @@ public class BookingService {
             if (earnedPoints > 0) {
                 userRepo.addPoints(userId, earnedPoints);
                 userRepo.updateTier(userId); // Cập nhật hạng
+
+                PointHistories phRepo = new PointHistories();
+                PointHistory ph = new PointHistory();
+                ph.setUserId(userId);
+                ph.setPointsChanged(earnedPoints);
+                ph.setTransactionType("EARN");
+                ph.setDescription("Tích điểm từ hóa đơn vé " + bookingCode);
+                ph.setReferenceId(bookingId);
+                phRepo.insert(ph);
             }
 
             // Xử lý Voucher (Nếu có dùng)
