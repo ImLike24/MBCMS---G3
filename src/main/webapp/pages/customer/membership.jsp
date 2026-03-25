@@ -305,7 +305,6 @@
                                                 <th>Loại giao dịch</th>
                                                 <th>Số điểm</th>
                                                 <th>Nội dung</th>
-                                                <th>Hóa đơn</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -338,14 +337,6 @@
                                                     </td>
                                                     <td>
                                                         <div class="text-muted small">${item.description}</div>
-                                                    </td>
-                                                    <td>
-                                                        <c:if test="${item.transactionType == 'EARN' && item.referenceId != null}">
-                                                            <a href="${pageContext.request.contextPath}/customer/booking-history" class="btn btn-sm btn-outline-secondary">Xem hóa đơn</a>
-                                                        </c:if>
-                                                        <c:if test="${item.transactionType != 'EARN' || item.referenceId == null}">
-                                                            <span class="text-muted">—</span>
-                                                        </c:if>
                                                     </td>
                                                 </tr>
                                             </c:forEach>
