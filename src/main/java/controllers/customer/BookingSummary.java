@@ -2,6 +2,7 @@ package controllers.customer;
 
 import java.io.IOException;
 
+import config.VNPayConfig;
 import models.User;
 import models.Showtime;
 import repositories.Showtimes;
@@ -16,6 +17,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import utils.VNPay;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
@@ -193,8 +195,8 @@ public class BookingSummary extends HttpServlet {
             String vnp_Version = "2.1.0";
             String vnp_Command = "pay";
             String vnp_TxnRef = bookingCode; // Dùng mã cũ hoặc mới
-            String vnp_IpAddr = payment.Config.getIpAddress(request);
-            String vnp_TmnCode = payment.Config.vnp_TmnCode;
+            String vnp_IpAddr = VNPay.getIpAddress(request);
+            String vnp_TmnCode = VNPayConfig.vnp_TmnCode;
 
             long amount = finalAmount.longValue() * 100;
 
@@ -208,7 +210,7 @@ public class BookingSummary extends HttpServlet {
             vnp_Params.put("vnp_OrderInfo", "Thanh toan ve phim " + vnp_TxnRef);
             vnp_Params.put("vnp_OrderType", "other");
             vnp_Params.put("vnp_Locale", "vn");
-            vnp_Params.put("vnp_ReturnUrl", payment.Config.vnp_ReturnUrl);
+            vnp_Params.put("vnp_ReturnUrl", VNPayConfig.vnp_ReturnUrl);
             vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
             java.util.Calendar cld = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Etc/GMT+7"));
@@ -237,9 +239,9 @@ public class BookingSummary extends HttpServlet {
             }
 
             String queryUrl = query.toString();
-            String vnp_SecureHash = payment.Config.hmacSHA512(payment.Config.secretKey, hashData.toString());
+            String vnp_SecureHash = VNPay.hmacSHA512(VNPayConfig.secretKey, hashData.toString());
             queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
-            String paymentUrl = payment.Config.vnp_PayUrl + "?" + queryUrl;
+            String paymentUrl = VNPayConfig.vnp_PayUrl + "?" + queryUrl;
 
             response.sendRedirect(paymentUrl);
 

@@ -169,16 +169,33 @@ public class Bookings {
     }
 
     public void cleanupExpiredBookings() {
-        // Tìm các booking trạng thái PENDING mà thời gian tạo đã quá 10 phút
-        String sql = """
-        UPDATE bookings 
-        SET status = 'EXPIRED' 
-        WHERE status = 'PENDING' 
-        AND DATEDIFF(MINUTE, booking_time, SYSDATETIME()) >= 10
-    """;
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.executeUpdate();
-        } catch (Exception e) {
+        try {
+            // Cập nhật các booking PENDING quá 10 phút thành EXPIRED
+            String updateBookingsSql = """
+                UPDATE bookings 
+                SET status = 'EXPIRED' 
+                WHERE status = 'PENDING' 
+                AND DATEDIFF(MINUTE, booking_time, SYSDATETIME()) >= 10
+            """;
+            try (PreparedStatement ps1 = conn.prepareStatement(updateBookingsSql)) {
+                ps1.executeUpdate();
+            }
+
+            // GIẢI PHÓNG GHẾ
+            // Xóa sạch vé của tất cả những đơn hàng đã bị EXPIRED (Quá hạn) hoặc CANCELLED (Đã hủy).
+            // Lệnh này sẽ tự động "chữa lành" cho toàn bộ các ghế đang bị kẹt trong DB của bạn ngay lập tức.
+            String deleteTicketsSql = """
+                DELETE FROM online_tickets 
+                WHERE booking_id IN (
+                    SELECT booking_id FROM bookings 
+                    WHERE status IN ('EXPIRED', 'CANCELLED')
+                )
+            """;
+            try (PreparedStatement ps2 = conn.prepareStatement(deleteTicketsSql)) {
+                ps2.executeUpdate();
+            }
+
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }

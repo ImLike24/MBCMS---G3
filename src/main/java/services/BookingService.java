@@ -258,16 +258,6 @@ public class BookingService {
         return summaryResult;
     }
 
-    public Map<String, Object> getSummaryShowtimeInfo(int showtimeId) {
-        Map<String, Object> data = new HashMap<>();
-
-        data.put("showtime", showtimeDao.getShowtimeById(showtimeId));
-        data.put("movie", showtimeDao.getMovieByShowtimeId(showtimeId));
-        data.put("room", showtimeDao.getRoomByShowtimeId(showtimeId));
-
-        return data;
-    }
-
     public Map<String, Object> getShowtimeDetails(int showtimeId) {
         return showtimeDao.getShowtimeDetails(showtimeId);
     }
