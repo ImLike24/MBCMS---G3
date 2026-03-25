@@ -8,7 +8,7 @@ import java.util.List;
 
 public class Concessions extends DBContext {
 
-    /** Danh sách đồ ăn/thức uống cho khách đặt (trang chọn ghế). */
+    /** Danh sách tất cả đồ ăn/thức uống (dùng cho customer và các trang không lọc theo staff). */
     public List<Concession> getConcessionsForSale() {
         List<Concession> list = new ArrayList<>();
         String sql = """
@@ -20,6 +20,28 @@ public class Concessions extends DBContext {
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 list.add(mapRowForSale(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /** Danh sách đồ ăn/thức uống do staff đang đăng nhập tạo (trang counter-booking-concessions). */
+    public List<Concession> getConcessionsForSale(int addedBy) {
+        List<Concession> list = new ArrayList<>();
+        String sql = """
+            SELECT concession_id, concession_name, concession_type, price_base, quantity
+            FROM concessions
+            WHERE added_by = ?
+            ORDER BY concession_type, concession_name
+            """;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, addedBy);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRowForSale(rs));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();

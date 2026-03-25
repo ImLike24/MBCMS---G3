@@ -32,14 +32,10 @@ public class CounterBookingSeatsService {
         TicketPrices ticketPricesRepo = null;
         SeatTypeSurcharges seatTypeSurchargesRepo = null;
         try {
-            System.out.println("[CounterBookingSeatsService] === getSeatsForShowtime ===");
-            System.out.println("[CounterBookingSeatsService] showtimeId = " + showtimeId);
-
             showtimesRepo = new Showtimes();
 
             Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
             if (showtimeDetails.isEmpty()) {
-                System.out.println("[CounterBookingSeatsService] showtimeDetails is empty -> return null");
                 return null;
             }
 
@@ -66,9 +62,6 @@ public class CounterBookingSeatsService {
 
                 // ===== Load dynamic ticket prices & seat-type surcharges for this showtime =====
                 Integer branchId = (Integer) showtimeDetails.get("branchId");
-                System.out.println("[CounterBookingSeatsService] branchId from showtimeDetails = " + branchId);
-                System.out.println("[CounterBookingSeatsService] showDate = " + showtime.getShowDate());
-                System.out.println("[CounterBookingSeatsService] startTime = " + showtime.getStartTime());
                 BigDecimal adultPriceBD = null;
                 BigDecimal childPriceBD = null;
 
@@ -85,17 +78,11 @@ public class CounterBookingSeatsService {
                     else if (hour >= 17 && hour < 22) timeSlot = "EVENING";
                     else timeSlot = "NIGHT";
 
-                    System.out.println("[CounterBookingSeatsService] resolved dayType = " + dayType
-                            + ", timeSlot = " + timeSlot);
-
                     ticketPricesRepo = new TicketPrices();
                     adultPriceBD = ticketPricesRepo.getTicketPrice(branchId, "ADULT", dayType, timeSlot,
                             showtime.getShowDate());
                     childPriceBD = ticketPricesRepo.getTicketPrice(branchId, "CHILD", dayType, timeSlot,
                             showtime.getShowDate());
-
-                    System.out.println("[CounterBookingSeatsService] adultPriceBD = " + adultPriceBD
-                            + ", childPriceBD = " + childPriceBD);
 
                     seatTypeSurchargesRepo = new SeatTypeSurcharges();
                     result.surchargeList = seatTypeSurchargesRepo.getSurchargesByBranch(branchId);
@@ -113,9 +100,6 @@ public class CounterBookingSeatsService {
 
                 result.adultPrice = adultPrice;
                 result.childPrice = childPrice;
-
-                System.out.println("[CounterBookingSeatsService] final adultPrice = " + adultPrice
-                        + ", childPrice = " + childPrice);
             }
             return result;
         } finally {
