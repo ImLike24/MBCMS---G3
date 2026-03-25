@@ -8,6 +8,10 @@ import java.util.List;
 
 public class Concessions extends DBContext {
 
+    public List<Concession> getActiveConcessions() {
+        return getConcessionsForSale();
+    }
+
     /** Danh sách đồ ăn/thức uống cho khách đặt (trang chọn ghế). */
     public List<Concession> getConcessionsForSale() {
         List<Concession> list = new ArrayList<>();

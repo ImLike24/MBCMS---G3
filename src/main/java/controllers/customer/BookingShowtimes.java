@@ -22,98 +22,42 @@ import repositories.Showtimes;
 @WebServlet(name = "ShowtimesListForChosenMovie", urlPatterns = {"/customer/booking-showtimes"})
 public class BookingShowtimes extends HttpServlet {
 
-    // force update
+    private final services.BookingService bookingService = new services.BookingService();
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // Đảm bảo user đã đăng nhập
+        // 1. Đảm bảo user đã đăng nhập
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        // Lấy movieId và ngày được chọn
         String movieIdParam = request.getParameter("movieId");
         String dateParam = request.getParameter("date");
 
         if (movieIdParam == null || movieIdParam.isEmpty()) {
-            // Không có movieId thì quay lại danh sách phim
             response.sendRedirect(request.getContextPath() + "/movies");
             return;
         }
 
         try {
-            int movieId = Integer.parseInt(movieIdParam);
-            LocalDate today = LocalDate.now();
-            LocalDate selectedDate = (dateParam != null && !dateParam.isEmpty())
-                    ? LocalDate.parse(dateParam)
-                    : today;
+            // 2. Giao toàn bộ việc nặng nhọc cho Service
+            Map<String, Object> pageData = bookingService.getShowtimesPageData(movieIdParam, dateParam);
 
-            // movieId không hợp lệ hoặc phim thử nghiệm -> quay lại danh sách phim
-            if (movieId <= 0 || movieId == 999) {
-                response.sendRedirect(request.getContextPath() + "/movies");
-                return;
-            }
+            // 3. Lấy kết quả từ Service set vào Request để View hiển thị
+            request.setAttribute("movie", pageData.get("movie"));
+            request.setAttribute("showtimes", pageData.get("showtimes"));
+            request.setAttribute("availableSeatsMap", pageData.get("availableSeatsMap"));
+            request.setAttribute("totalSeatsMap", pageData.get("totalSeatsMap"));
+            request.setAttribute("selectedDate", pageData.get("selectedDate"));
+            request.setAttribute("today", pageData.get("today"));
+            request.setAttribute("dateList", pageData.get("dateList"));
 
-            Movies moviesRepo = new Movies();
-            Showtimes showtimesRepo = new Showtimes();
+            request.getRequestDispatcher("/pages/customer/booking-showtimes.jsp").forward(request, response);
 
-            // Lấy thông tin phim
-            Movie movie = moviesRepo.getMovieById(movieId);
-            if (movie == null) {
-                response.sendRedirect(request.getContextPath() + "/movies");
-                return;
-            }
-
-            // Lấy danh sách suất chiếu theo ngày đã chọn
-            List<Showtime> showtimes = showtimesRepo.getShowtimesForMovieOnDate(movieId, selectedDate);
-
-            // Lọc bỏ suất chiếu đã qua thời gian (server-side, không dùng JavaScript)
-            LocalDateTime now = LocalDateTime.now();
-            showtimes = showtimes.stream()
-                    .filter(st -> {
-                        if (st.getShowDate() == null || st.getStartTime() == null) return true;
-                        LocalDateTime start = LocalDateTime.of(st.getShowDate(), st.getStartTime());
-                        return start.isAfter(now);
-                    })
-                    .toList();
-
-            // Giống CounterBooking: tính số ghế còn lại / tổng ghế cho từng suất chiếu
-            Map<Integer, Integer> availableSeatsMap = new HashMap<>();
-            Map<Integer, Integer> totalSeatsMap = new HashMap<>();
-            for (Showtime st : showtimes) {
-                int stId = st.getShowtimeId();
-                int available = showtimesRepo.countAvailableSeats(stId);
-                availableSeatsMap.put(stId, available);
-
-                Map<String, Object> details = showtimesRepo.getShowtimeDetails(stId);
-                if (details.containsKey("totalSeats")) {
-                    totalSeatsMap.put(stId, (Integer) details.get("totalSeats"));
-                }
-            }
-
-            // Tạo danh sách các ngày (ví dụ: hôm nay + 6 ngày tới) để user chọn nhanh
-            List<LocalDate> dateList = new ArrayList<>();
-            for (int i = 0; i < 7; i++) {
-                dateList.add(today.plusDays(i));
-            }
-
-            // Gửi dữ liệu sang JSP
-            request.setAttribute("movie", movie);
-            request.setAttribute("showtimes", showtimes);
-            request.setAttribute("availableSeatsMap", availableSeatsMap);
-            request.setAttribute("totalSeatsMap", totalSeatsMap);
-            request.setAttribute("selectedDate", selectedDate);
-            request.setAttribute("today", today);
-            request.setAttribute("dateList", dateList);
-
-            request.getRequestDispatcher("/pages/customer/booking-showtimes.jsp")
-                    .forward(request, response);
-
-        } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/movies");
         } catch (Exception e) {
             e.printStackTrace();
             response.sendRedirect(request.getContextPath() + "/movies?error=load");
