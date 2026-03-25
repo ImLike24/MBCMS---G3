@@ -2,6 +2,7 @@ package controllers.customer;
 
 import java.io.IOException;
 
+import config.VNPayConfig;
 import models.User;
 import models.Showtime;
 import repositories.Showtimes;
@@ -16,6 +17,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import utils.VNPay;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
@@ -26,241 +28,26 @@ import java.util.Map;
 @WebServlet(name = "BookingSummary", urlPatterns = { "/customer/booking-summary" })
 public class BookingSummary extends HttpServlet {
 
+    private final services.BookingService bookingService = new services.BookingService();
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         HttpSession session = request.getSession(false);
-
         if (session == null || session.getAttribute("user") == null) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        String role = (String) session.getAttribute("role");
-
-        if (!"CUSTOMER".equals(role)) {
-            response.sendRedirect(request.getContextPath() + "/access-denied");
-            return;
-        }
-
-        String showtimeIdParam = request.getParameter("showtimeId");
-
-        if (showtimeIdParam == null || showtimeIdParam.isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/customer/booking-tickets");
-            return;
-        }
-
-        String successParam = request.getParameter("success");
-        boolean isSuccessRedirect = "1".equals(successParam);
-        boolean pendingPayment = "1".equals(request.getParameter("pendingPayment"));
-        if (pendingPayment) {
-            request.setAttribute("pendingPaymentMessage", true);
-        }
-
-        // Hiển thị lỗi từ session (khi redirect từ doPost)
-        if (session.getAttribute("paymentError") != null) {
-            request.setAttribute("error", session.getAttribute("paymentError"));
-            session.removeAttribute("paymentError");
-        }
-
-        // Khi success=1: hiển thị hóa đơn (dữ liệu từ session receipt)
-        // Khi không success: cần customerBookingData từ booking-tickets
-        @SuppressWarnings("unchecked")
-        Map<String, Object> bookingData = (Map<String, Object>) session.getAttribute("customerBookingData");
-        List<Map<String, Object>> selectedSeats = new ArrayList<>();
-        java.math.BigDecimal totalAmount = java.math.BigDecimal.ZERO;
-
-        if (!isSuccessRedirect) {
-            if (bookingData == null || !Integer.valueOf(showtimeIdParam).equals(bookingData.get("showtimeId"))) {
-                response.sendRedirect(
-                        request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeIdParam);
-                return;
-            }
-            selectedSeats = (List<Map<String, Object>>) bookingData.get("seats");
-            totalAmount = (java.math.BigDecimal) bookingData.get("totalAmount");
-            if (selectedSeats == null)
-                selectedSeats = new ArrayList<>();
-            if (totalAmount == null)
-                totalAmount = java.math.BigDecimal.ZERO;
-        }
-
-        Showtimes showtimesRepo = null;
-
-        try {
-
-            int showtimeId = Integer.parseInt(showtimeIdParam);
-
-            showtimesRepo = new Showtimes();
-
-            Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
-
-            if (showtimeDetails == null || showtimeDetails.isEmpty()) {
-                response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeId);
-                return;
-            }
-
-            User user = (User) session.getAttribute("user");
-            request.setAttribute("customerName", user != null && user.getFullName() != null ? user.getFullName() : "");
-            request.setAttribute("customerEmail", user != null && user.getEmail() != null ? user.getEmail() : "");
-
-            request.setAttribute("showtimeDetails", showtimeDetails);
-            request.setAttribute("showtimeId", showtimeId);
-            request.setAttribute("movieTitle", showtimeDetails.get("movieTitle"));
-            request.setAttribute("branchName", showtimeDetails.get("branchName"));
-            request.setAttribute("selectedSeats", selectedSeats != null ? selectedSeats : new ArrayList<>());
-            request.setAttribute("totalAmount", totalAmount != null ? totalAmount : java.math.BigDecimal.ZERO);
-            List<Map<String, Object>> concessions = (List<Map<String, Object>>) (bookingData != null
-                    ? bookingData.get("concessions")
-                    : null);
-            request.setAttribute("selectedConcessions", concessions != null ? concessions : new ArrayList<>());
-            java.math.BigDecimal ticketTotalAttr = bookingData != null
-                    ? (java.math.BigDecimal) bookingData.get("ticketTotal")
-                    : null;
-            java.math.BigDecimal concessionTotalAttr = bookingData != null
-                    ? (java.math.BigDecimal) bookingData.get("concessionTotal")
-                    : null;
-            if (ticketTotalAttr == null)
-                ticketTotalAttr = totalAmount;
-            if (concessionTotalAttr == null)
-                concessionTotalAttr = java.math.BigDecimal.ZERO;
-            request.setAttribute("ticketTotal", ticketTotalAttr);
-            request.setAttribute("concessionTotal", concessionTotalAttr);
-
-            // --- RESTORED: Voucher Validation ---
-            // Ưu tiên mã từ URL (khi user bấm "Áp dụng mã"), nếu không có thì lấy từ session (từ booking-tickets)
-            String voucherCode = request.getParameter("voucherCode");
-            if ((voucherCode == null || voucherCode.trim().isEmpty()) && bookingData != null && bookingData.get("voucherCode") != null) {
-                voucherCode = (String) bookingData.get("voucherCode");
-            }
-            BigDecimal discountAmountAttr = BigDecimal.ZERO;
-            if (voucherCode != null && !voucherCode.trim().isEmpty()) {
-                Vouchers voucherRepo = new Vouchers();
-                UserVouchers uvRepo = new UserVouchers();
-                try {
-                    String code = voucherCode.trim();
-                    Voucher v = voucherRepo.getActiveVoucherByCode(code);
-                    if (v == null) {
-                        User currentUser = (User) session.getAttribute("user");
-                        if (currentUser != null) {
-                            UserVoucher uv = uvRepo.getVoucherByCode(code);
-                            if (uv != null && uv.getUserId() == currentUser.getUserId()) {
-                                if ("AVAILABLE".equals(uv.getStatus())) {
-                                    if (uv.getExpiresAt() != null
-                                            && uv.getExpiresAt().isAfter(java.time.LocalDateTime.now())) {
-                                        v = voucherRepo.getVoucherById(uv.getVoucherId());
-                                    } else {
-                                        request.setAttribute("voucherMessage", "Voucher đã hết hạn sử dụng.");
-                                    }
-                                } else {
-                                    request.setAttribute("voucherMessage",
-                                            "Voucher này đã được sử dụng hoặc không khả dụng.");
-                                }
-                            }
-                        }
-                    }
-
-                    if (v != null && request.getAttribute("voucherMessage") == null) {
-                        if (v.getIsActive()
-                                && (v.getMaxUsageLimit() == null || v.getCurrentUsage() < v.getMaxUsageLimit())) {
-                            discountAmountAttr = v.getDiscountAmount();
-                            request.setAttribute("discountAmount", discountAmountAttr);
-                            request.setAttribute("appliedVoucherCode", code);
-                            request.setAttribute("voucherMessage", "Áp dụng thành công: " + v.getVoucherName());
-                            request.setAttribute("isVoucherValid", true);
-                        } else {
-                            request.setAttribute("voucherMessage", "Voucher đã hết lượt sử dụng hoặc đã bị tạm ngưng.");
-                            request.setAttribute("isVoucherValid", false);
-                        }
-                    } else if (request.getAttribute("isVoucherValid") == null) {
-                        if (request.getAttribute("voucherMessage") == null) {
-                            request.setAttribute("voucherMessage", "Mã voucher không hợp lệ.");
-                        }
-                        request.setAttribute("isVoucherValid", false);
-                    }
-                } finally {
-                    voucherRepo.closeConnection();
-                    uvRepo.closeConnection();
-                }
-            }
-            request.setAttribute("discountAmount", discountAmountAttr);
-
-            request.setAttribute("userPoints", user != null ? user.getPoints() : 0);
-
-            Showtime st = (Showtime) showtimeDetails.get("showtime");
-
-            if (st != null) {
-
-                if (st.getShowDate() != null) {
-                    request.setAttribute("showDateFormatted",
-                            st.getShowDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                }
-
-                if (st.getStartTime() != null) {
-                    request.setAttribute("showTimeFormatted",
-                            st.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
-                }
-            }
-
-            // Hiển thị hóa đơn sau thanh toán thành công (redirect với success=1)
-            if (isSuccessRedirect) {
-                request.setAttribute("paymentSuccess", true);
-                request.setAttribute("receiptBookingCode", session.getAttribute("receiptBookingCode"));
-                request.setAttribute("receiptInvoiceCode", session.getAttribute("receiptInvoiceCode"));
-                request.setAttribute("receiptSeats", session.getAttribute("receiptSeats"));
-                request.setAttribute("receiptTotal", session.getAttribute("receiptTotal"));
-                session.removeAttribute("receiptBookingCode");
-                session.removeAttribute("receiptInvoiceCode");
-                session.removeAttribute("receiptSeats");
-                session.removeAttribute("receiptTotal");
-            }
-
-            request.getRequestDispatcher("/pages/customer/booking-summary.jsp").forward(request, response);
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-            request.setAttribute("error", e.getMessage());
-
-            request.getRequestDispatcher("/pages/customer/booking-summary.jsp")
-                    .forward(request, response);
-
-        } finally {
-
-            if (showtimesRepo != null) {
-                showtimesRepo.closeConnection();
-            }
-        }
-    }
-
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            response.sendRedirect(request.getContextPath() + "/login");
-            return;
-        }
-
+        // Kiểm tra quyền
         String role = (String) session.getAttribute("role");
         if (!"CUSTOMER".equals(role)) {
             response.sendRedirect(request.getContextPath() + "/access-denied");
             return;
         }
 
-        User currentUser = (User) session.getAttribute("user");
-        int customerId = currentUser.getUserId();
-
-        // Lấy dữ liệu từ form (không dùng JSON/JavaScript)
-        String customerName = request.getParameter("customerName");
-        String customerEmail = request.getParameter("customerEmail");
-        if (customerName == null || customerName.isBlank()) {
-            customerName = currentUser.getFullName() != null ? currentUser.getFullName() : "";
-        }
-        if (customerEmail == null || customerEmail.isBlank()) {
-            customerEmail = currentUser.getEmail() != null ? currentUser.getEmail() : "";
-        }
-
-        // Lấy dữ liệu đặt vé từ session (do booking-tickets lưu)
+        // Lấy dữ liệu đặt vé từ Session
         @SuppressWarnings("unchecked")
         Map<String, Object> bookingData = (Map<String, Object>) session.getAttribute("customerBookingData");
         if (bookingData == null) {
@@ -268,72 +55,172 @@ public class BookingSummary extends HttpServlet {
             return;
         }
 
-        int showtimeId = (Integer) bookingData.get("showtimeId");
-        BigDecimal totalAmount = (BigDecimal) bookingData.get("totalAmount");
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> seatsList = (List<Map<String, Object>>) bookingData.get("seats");
+        try {
+            int showtimeId = (Integer) bookingData.get("showtimeId");
 
-        if (seatsList == null || seatsList.isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeId);
+            // ==========================================================
+            // LẤY THÔNG TIN PHIM, RẠP, SUẤT CHIẾU
+            // ==========================================================
+            Map<String, Object> showtimeDetails = bookingService.getShowtimeDetails(showtimeId);
+            request.setAttribute("showtimeDetails", showtimeDetails);
+            request.setAttribute("movieTitle", showtimeDetails.get("movieTitle"));
+            request.setAttribute("branchName", showtimeDetails.get("branchName"));
+
+            // Format ngày giờ
+            request.setAttribute("showDateFormatted", showtimeDetails.get("showDateFormatted"));
+            request.setAttribute("showTimeFormatted", showtimeDetails.get("showTimeFormatted"));
+
+            // ==========================================================
+            // LOGIC ƯU TIÊN VOUCHER TỪ SESSION NẾU URL TRỐNG
+            // ==========================================================
+            String voucherCode = request.getParameter("voucherCode");
+
+            // Nếu URL không có, tự động lấy từ Session (khi vừa từ trang ghế chuyển sang)
+            if (voucherCode == null || voucherCode.trim().isEmpty()) {
+                voucherCode = (String) bookingData.get("voucherCode");
+            }
+
+            // Cập nhật lại vào bookingData để lưu trạng thái mới nhất
+            if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+                bookingData.put("voucherCode", voucherCode.trim());
+            } else {
+                bookingData.remove("voucherCode");
+            }
+
+            // Gửi ngược lại mã này ra JSP để giữ nguyên Text trên ô input
+            request.setAttribute("inputVoucherCode", voucherCode);
+
+            // ==========================================================
+            // CALL SERVICE
+            // ==========================================================
+            Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode);
+
+            // Bắn dữ liệu về cho giao diện (JSP)
+            request.setAttribute("bookingData", bookingData);
+            request.setAttribute("totalAmount", summaryResult.get("totalAmount"));
+            request.setAttribute("discountAmount", summaryResult.get("discountAmount"));
+            request.setAttribute("finalAmount", summaryResult.get("finalAmount"));
+
+            // Bắn kết quả Voucher ra giao diện để in thông báo Xanh / Đỏ
+            if (summaryResult.get("appliedVoucher") != null) {
+                request.setAttribute("appliedVoucher", summaryResult.get("appliedVoucher"));
+            }
+            if (summaryResult.get("voucherError") != null) {
+                request.setAttribute("voucherError", summaryResult.get("voucherError"));
+            }
+
+            request.getRequestDispatcher("/pages/customer/booking-summary.jsp").forward(request, response);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/movies");
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        User user = (User) session.getAttribute("user");
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> bookingData = (Map<String, Object>) session.getAttribute("customerBookingData");
+        if (bookingData == null) {
+            response.sendRedirect(request.getContextPath() + "/movies");
             return;
         }
 
         try {
-            // 1. Tính toán số tiền cuối cùng (Trừ đi Voucher nếu có)
-            java.math.BigDecimal discountAmount = java.math.BigDecimal.ZERO;
-            String appliedVoucherCode = request.getParameter("appliedVoucherCode");
+            String voucherCode = request.getParameter("voucherCode");
+            Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode);
 
-            if (appliedVoucherCode != null && !appliedVoucherCode.trim().isEmpty()) {
-                repositories.Vouchers voucherRepo = new repositories.Vouchers();
-                models.Voucher v = voucherRepo.getActiveVoucherByCode(appliedVoucherCode.trim());
-                if (v != null) discountAmount = v.getDiscountAmount();
-                voucherRepo.closeConnection();
+            BigDecimal finalAmount = (BigDecimal) summaryResult.get("finalAmount");
+            BigDecimal discountAmount = (BigDecimal) summaryResult.get("discountAmount");
+            BigDecimal totalAmount = (BigDecimal) summaryResult.get("totalAmount");
+            int showtimeId = (Integer) bookingData.get("showtimeId");
+
+            // =========================================================================
+            // FIX: KIỂM TRA ĐÃ TẠO BOOKING CHƯA ĐỂ CHỐNG LỖI KHI ẤN NÚT "BACK"
+            // =========================================================================
+            String bookingCode = (String) bookingData.get("savedBookingCode");
+
+            if (bookingCode == null) {
+                // CHƯA CÓ: Tạo mới hoàn toàn
+                bookingCode = "BK" + System.currentTimeMillis() + new java.util.Random().nextInt(1000);
+
+                try {
+                    // Insert Booking
+                    repositories.Bookings bookingDao = new repositories.Bookings();
+                    int bookingId = bookingDao.createOnlineBooking(
+                            user.getUserId(), showtimeId, "BANKING", bookingCode,
+                            totalAmount, discountAmount, finalAmount,
+                            summaryResult.get("appliedVoucher") != null ? voucherCode : null
+                    );
+
+                    // Insert Tickets
+                    repositories.OnlineTickets ticketDao = new repositories.OnlineTickets();
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> seats = (List<Map<String, Object>>) bookingData.get("seats");
+                    for (Map<String, Object> seat : seats) {
+                        ticketDao.insertOnlineTicket(
+                                bookingId, showtimeId, (Integer) seat.get("seatId"),
+                                (String) seat.get("ticketType"), (String) seat.get("seatType"),
+                                (BigDecimal) seat.get("price")
+                        );
+                    }
+
+                    // LƯU LẠI VÀO SESSION ĐỂ CHỐNG SPAM
+                    bookingData.put("savedBookingCode", bookingCode);
+                    session.setAttribute("customerBookingData", bookingData);
+
+                } catch (java.sql.SQLException ex) {
+                    // Nếu lỗi duplicate key bắn ra (có người vừa nhanh tay mua mất ghế)
+                    if (ex.getMessage() != null && ex.getMessage().contains("ux_online_ticket_showtime_seat")) {
+                        response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeId + "&error=" + java.net.URLEncoder.encode("Rất tiếc, ghế bạn chọn vừa có người thanh toán. Vui lòng chọn ghế khác.", "UTF-8"));
+                        return;
+                    }
+                    throw ex; // Nếu lỗi khác thì ném ra ngoài
+                }
             }
 
-            java.math.BigDecimal finalAmount = totalAmount.subtract(discountAmount);
-            if (finalAmount.compareTo(java.math.BigDecimal.ZERO) < 0) {
-                finalAmount = java.math.BigDecimal.ZERO;
-            }
-                long amountInVND = finalAmount.longValue() * 100; 
+            // =========================================================================
+            // Cấu hình & Chuyển hướng VNPay (Dùng chung cho cả tạo mới lẫn ấn Back)
+            // =========================================================================
+            String vnp_Version = "2.1.0";
+            String vnp_Command = "pay";
+            String vnp_TxnRef = bookingCode; // Dùng mã cũ hoặc mới
+            String vnp_IpAddr = VNPay.getIpAddress(request);
+            String vnp_TmnCode = VNPayConfig.vnp_TmnCode;
 
-            // 2. Tạo mã GD (TxnRef) & Insert vào Database (Trạng thái PENDING)
-            String vnp_TxnRef = payment.Config.getRandomNumber(8);
-            repositories.Bookings bookingRepo = new repositories.Bookings();
+            long amount = finalAmount.longValue() * 100;
 
-            int bookingId = bookingRepo.createOnlineBooking(customerId, showtimeId, "BANKING", vnp_TxnRef, totalAmount, discountAmount, finalAmount, appliedVoucherCode);
-
-            // Lưu từng chiếc vé khách đã chọn
-            for (Map<String, Object> seat : seatsList) {
-                int seatId = (Integer) seat.get("seatId");
-                String ticketType = (String) seat.get("ticketType");
-                String seatType = (String) seat.get("seatType");
-                java.math.BigDecimal price = (java.math.BigDecimal) seat.get("price");
-                bookingRepo.insertOnlineTicket(bookingId, showtimeId, seatId, ticketType, seatType, price);
-            }
-
-            // 3. Tạo URL thanh toán VNPay
             Map<String, String> vnp_Params = new java.util.HashMap<>();
-            vnp_Params.put("vnp_Version", "2.1.0");
-            vnp_Params.put("vnp_Command", "pay");
-            vnp_Params.put("vnp_TmnCode", payment.Config.vnp_TmnCode);
-            vnp_Params.put("vnp_Amount", String.valueOf(amountInVND));
+            vnp_Params.put("vnp_Version", vnp_Version);
+            vnp_Params.put("vnp_Command", vnp_Command);
+            vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
+            vnp_Params.put("vnp_Amount", String.valueOf(amount));
             vnp_Params.put("vnp_CurrCode", "VND");
             vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-            vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang:" + vnp_TxnRef);
+            vnp_Params.put("vnp_OrderInfo", "Thanh toan ve phim " + vnp_TxnRef);
             vnp_Params.put("vnp_OrderType", "other");
             vnp_Params.put("vnp_Locale", "vn");
-            vnp_Params.put("vnp_ReturnUrl", payment.Config.vnp_ReturnUrl);
-            vnp_Params.put("vnp_IpAddr", payment.Config.getIpAddress(request));
+            vnp_Params.put("vnp_ReturnUrl", VNPayConfig.vnp_ReturnUrl);
+            vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
-            // Xử lý thời gian giao dịch
             java.util.Calendar cld = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Etc/GMT+7"));
             java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
             vnp_Params.put("vnp_CreateDate", formatter.format(cld.getTime()));
-            cld.add(java.util.Calendar.MINUTE, 15); // Hết hạn sau 15 phút
+
+            cld.add(java.util.Calendar.MINUTE, 15);
             vnp_Params.put("vnp_ExpireDate", formatter.format(cld.getTime()));
 
-            // Build URL bảo mật với SecureHash
-            java.util.List<String> fieldNames = new java.util.ArrayList<>(vnp_Params.keySet());
+            List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
             java.util.Collections.sort(fieldNames);
             StringBuilder hashData = new StringBuilder();
             StringBuilder query = new StringBuilder();
@@ -341,26 +228,26 @@ public class BookingSummary extends HttpServlet {
             while (itr.hasNext()) {
                 String fieldName = itr.next();
                 String fieldValue = vnp_Params.get(fieldName);
-                if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                    hashData.append(fieldName).append('=').append(java.net.URLEncoder.encode(fieldValue, java.nio.charset.StandardCharsets.US_ASCII.toString()));
-                    query.append(java.net.URLEncoder.encode(fieldName, java.nio.charset.StandardCharsets.US_ASCII.toString())).append('=').append(java.net.URLEncoder.encode(fieldValue, java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                if (fieldValue != null && fieldValue.length() > 0) {
+                    hashData.append(fieldName).append('=').append(java.net.URLEncoder.encode(fieldValue, "US-ASCII"));
+                    query.append(java.net.URLEncoder.encode(fieldName, "US-ASCII")).append('=').append(java.net.URLEncoder.encode(fieldValue, "US-ASCII"));
                     if (itr.hasNext()) {
                         query.append('&');
                         hashData.append('&');
                     }
                 }
             }
-            String queryUrl = query.toString();
-            String vnp_SecureHash = payment.Config.hmacSHA512(payment.Config.secretKey, hashData.toString());
-            queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
-            String paymentUrl = payment.Config.vnp_PayUrl + "?" + queryUrl;
 
-            // 4. Redirect thẳng sang trang thanh toán của VNPay
+            String queryUrl = query.toString();
+            String vnp_SecureHash = VNPay.hmacSHA512(VNPayConfig.secretKey, hashData.toString());
+            queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
+            String paymentUrl = VNPayConfig.vnp_PayUrl + "?" + queryUrl;
+
             response.sendRedirect(paymentUrl);
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId + "&error=" + java.net.URLEncoder.encode("Lỗi khi tạo đơn hàng, vui lòng thử lại.", "UTF-8"));
+            response.sendRedirect(request.getContextPath() + "/movies");
         }
     }
 }

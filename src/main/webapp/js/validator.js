@@ -1,7 +1,7 @@
 const Validator = {
     patterns: {
-        email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-        phone: /^0\d{9,10}$/,
+        email: /^[a-zA-Z0-9._%+-]+@gmail\.com$/,
+        phone: /^0\d{9}$/,
         username: /^(?=.{3,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/,
         password: /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$/,
         fullName: /^[a-zA-ZÀ-ỹ\s]{2,100}$/
@@ -23,5 +23,15 @@ const Validator = {
             return false;
         }
         return this.patterns[type].test(value);
+    },
+
+    isValidBirthday: function(dateString) {
+        if (!dateString) return false;
+        const birthday = new Date(dateString);
+        const today = new Date();
+        const minDate = new Date('1900-01-01'); // Không cho phép chọn năm quá xa trong quá khứ
+
+        // Trả về true nếu là ngày hợp lệ, nhỏ hơn hoặc bằng hôm nay, và lớn hơn năm 1900
+        return birthday instanceof Date && !isNaN(birthday) && birthday <= today && birthday >= minDate;
     }
 };

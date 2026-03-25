@@ -566,6 +566,21 @@
                         </div>
                     </c:if>
 
+                    <!-- Branch Seat Statistics -->
+                    <div class="card" style="border-left: 4px solid var(--orange); padding: 20px 26px;">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <div style="width: 50px; height: 50px; border-radius: 12px; background: var(--orange-dim); display: flex; align-items: center; justify-content: center;">
+                                <i class="fa fa-ticket" style="color: var(--orange); font-size: 22px;"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Tổng ghế trống chưa có booking - ${branch.branchName}</div>
+                                <div style="font-size: 26px; font-weight: 700; color: var(--text); margin-top: 4px;">
+                                    ${totalAvailableSeatsOfBranch} <span style="font-size: 14px; font-weight: normal; color: var(--text-muted);">ghế</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Room Selection -->
                     <div class="card">
                         <div class="card-title"><i class="fa fa-building"></i> Chọn phòng chiếu</div>

@@ -23,27 +23,25 @@
                 <div class="alert alert-danger">${error}</div>
             </c:if>
 
-            <!-- force update -->
             <div class="content-layout">
                     <!-- Left: form GET – chọn ghế rồi bấm "Cập nhật ghế đã chọn" -->
                     <form method="get" action="${pageContext.request.contextPath}/customer/booking-tickets" id="formSeatMap">
-                        <input type="hidden" name="showtimeId" value="${showtimeId}">
+                        <input type="hidden" name="showtimeId" value="${param.showtimeId}">
                     <div>
                         <div class="movie-info-header">
                             <c:set var="defaultPoster" value="${pageContext.request.contextPath}/images/default_poster.jpg" />
-                            <c:set var="posterSrc" value="${not empty moviePosterUrl ? moviePosterUrl : defaultPoster}" />
-                            <img src="${posterSrc}" alt="${movieTitle}" class="movie-poster-small"
+                            <c:set var="posterSrc" value="${not empty movie.posterUrl ? movie.posterUrl : defaultPoster}" />
+                            <img src="${posterSrc}" alt="${movie.title}" class="movie-poster-small"
                                  onerror="this.onerror=null; this.src='${defaultPoster}';">
                             <div class="movie-info-text">
-                                <h2 class="mb-1">${movieTitle}</h2>
+                                <h2 class="mb-1">${movie.title}</h2>
                                 <div class="movie-info-meta">
-                                    <span><i class="fa fa-door-open-o"></i> ${roomName}</span>
-                                    <span><i class="fa fa-clock-o"></i> ${formattedStartTime}</span>
-                                    <span><i class="fa fa-calendar"></i> ${formattedShowDate}</span>
-                                    <span><i class="fa fa-map-marker"></i> ${branchName}</span>
+                                    <span><i class="fa fa-door-open-o"></i> ${room.roomName}</span>
+                                    <span><i class="fa fa-clock-o"></i> ${showtime.startTime}</span>
+                                    <span><i class="fa fa-calendar"></i> ${showtime.showDate}</span>
                                     <span class="text-muted">
                                         <i class="fa fa-info-circle"></i>
-                                        Còn trống: ${availableSeats} / ${totalSeats}
+                                        Còn trống: ${room.totalSeats - occupiedSeats.size()} / ${room.totalSeats}
                                     </span>
                                 </div>
                             </div>
@@ -157,7 +155,7 @@
                                 <c:choose>
                                     <c:when test="${not empty selectedSeatsInfo}">
                                         <form method="post" action="${pageContext.request.contextPath}/customer/booking-tickets" id="bookingSummaryForm">
-                                            <input type="hidden" name="showtimeId" value="${showtimeId}">
+                                            <input type="hidden" name="showtimeId" value="${param.showtimeId}">
                                             <div id="bookingPricesConfig" data-adult="${adultPrice != null ? adultPrice : 0}" data-child="${childPrice != null ? childPrice : 0}" data-surcharges='${surchargeRatesJson != null ? surchargeRatesJson : "{}"}' style="display:none;"></div>
                                             <div class="selected-seats-list mb-2">
                                                 <c:forEach var="seatInfo" items="${selectedSeatsInfo}">
