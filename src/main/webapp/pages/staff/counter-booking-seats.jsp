@@ -238,7 +238,7 @@
                 seatCode: '${seatInfo.seat.seatCode}',
                 seatType: '${seatInfo.seat.seatType}',
                 rowNumber: '${seatInfo.seat.rowNumber}',
-                seatNumber: ${seatInfo.seat.seatNumber},
+                seatNumber: ${not empty seatInfo.seat.seatNumber ? seatInfo.seat.seatNumber : 0},
                 bookingStatus: '${seatInfo.bookingStatus}'
             }<c:if test="${!status.last}">,</c:if>
             </c:forEach>
@@ -246,8 +246,8 @@
 
         const showtimeId = ${showtimeId};
         const ticketPrices = {
-            'ADULT': ${adultPrice},
-            'CHILD': ${childPrice}
+            'ADULT': ${not empty adultPrice ? adultPrice : 0},
+            'CHILD': ${not empty childPrice ? childPrice : 0}
         };
         const surchargeRates = {
             <c:forEach var="s" items="${surchargeList}" varStatus="vs">'${s.seatType}': ${s.surchargeRate}<c:if test="${!vs.last}">,</c:if></c:forEach>
