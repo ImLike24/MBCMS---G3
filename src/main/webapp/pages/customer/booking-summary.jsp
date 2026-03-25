@@ -131,10 +131,11 @@
                                     <input type="text" id="voucherInput" class="form-control bg-dark text-light border-secondary" placeholder="Nhập mã voucher" value="${appliedVoucherCode}">
                                     <button class="btn btn-outline-primary" type="button" onclick="updateSummary()">Áp dụng mã</button>
                                 </div>
-                                <c:if test="${not empty voucherMessage}">
-                                    <div class="small ${isVoucherValid ? 'text-success' : 'text-danger'} mt-1">
-                                        ${voucherMessage}
-                                    </div>
+                                <c:if test="${not empty voucherError}">
+                                    <div class="text-danger small mt-2"><i class="fa fa-exclamation-circle"></i> ${voucherError}</div>
+                                </c:if>
+                                <c:if test="${not empty appliedVoucher}">
+                                    <div class="text-success small mt-2"><i class="fa fa-check-circle"></i> Đã áp dụng mã: <strong>${appliedVoucher.voucherCode}</strong></div>
                                 </c:if>
                             </div>
                         </c:if>
@@ -170,12 +171,10 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label text-light">Họ tên</label>
-                                        <input type="text" name="customerName" class="form-control" value="<c:out value='${customerName}'/>" placeholder="Nguyễn Văn A">
-                                    </div>
+                                        <input type="text" class="form-control bg-dark text-white border-secondary" required placeholder="Nhập họ tên đầy đủ" value="${sessionScope.user.fullName}">                                    </div>
                                     <div class="col-md-6">
-                                        <label class="form-label text-light">Email (nhận e-ticket)</label>
-                                        <input type="email" name="customerEmail" class="form-control" value="<c:out value='${customerEmail}'/>" placeholder="email@example.com">
-                                    </div>
+                                        <label class="form-label text-light">Email</label>
+                                        <input type="email" class="form-control bg-dark text-white border-secondary" required placeholder="Nhập email" value="${sessionScope.user.email}">                                    </div>
                                 </div>
                             </div>
 

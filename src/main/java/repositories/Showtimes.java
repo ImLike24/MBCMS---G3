@@ -78,53 +78,49 @@ public class Showtimes extends DBContext {
         return null;
     }
 
-    /**
-     * Get showtime details with room and branch info
-     */
+    // Lấy thông tin tổng hợp của Suất chiếu (Phim, Rạp, Phòng, Ngày, Giờ)
     public Map<String, Object> getShowtimeDetails(int showtimeId) {
-        Map<String, Object> details = new HashMap<>();
-        String sql = "SELECT s.*, sr.room_name, sr.total_seats, " +
-                "cb.branch_id, cb.branch_name, cb.address, " +
-                "m.title, m.duration, m.age_rating, m.poster_url, m.movie_id " +
-                "FROM showtimes s " +
-                "INNER JOIN screening_rooms sr ON s.room_id = sr.room_id " +
-                "INNER JOIN cinema_branches cb ON sr.branch_id = cb.branch_id " +
-                "INNER JOIN movies m ON s.movie_id = m.movie_id " +
-                "WHERE s.showtime_id = ?";
+        Map<String, Object> details = new java.util.HashMap<>();
+        String sql = "SELECT m.title as movieTitle, m.poster_url as moviePosterUrl, " +
+                "cb.branch_name as branchName, cb.branch_id as branchId, " +
+                "sr.room_name as roomName, sr.total_seats as totalSeats, " +
+                "st.show_date, st.start_time, st.end_time, st.base_price, " +
+                "st.showtime_id, st.movie_id, st.room_id, st.status, st.created_at " +
+                "FROM showtimes st " +
+                "JOIN movies m ON st.movie_id = m.movie_id " +
+                "JOIN screening_rooms sr ON st.room_id = sr.room_id " +
+                "JOIN cinema_branches cb ON sr.branch_id = cb.branch_id " +
+                "WHERE st.showtime_id = ?";
 
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setInt(1, showtimeId);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    // Showtime details
+                    details.put("movieTitle", rs.getString("movieTitle"));
+                    details.put("moviePosterUrl", rs.getString("moviePosterUrl"));
+                    details.put("branchName", rs.getString("branchName"));
+                    details.put("branchId", rs.getInt("branchId"));
+                    details.put("roomName", rs.getString("roomName"));
+                    details.put("totalSeats", rs.getInt("totalSeats"));
+
+                    // Lấy thẳng chuỗi String từ DB để không bao giờ bị lỗi ép kiểu Date
+                    String dateStr = rs.getString("show_date");
+                    String timeStr = rs.getString("start_time");
+
+                    if (dateStr != null && dateStr.length() >= 10) {
+                        String[] parts = dateStr.substring(0, 10).split("-");
+                        if (parts.length == 3) details.put("showDateFormatted", parts[2] + "/" + parts[1] + "/" + parts[0]);
+                    }
+                    if (timeStr != null && timeStr.length() >= 5) {
+                        details.put("showTimeFormatted", timeStr.substring(0, 5));
+                    }
+
+                    // Build Showtime object for service layer
                     Showtime showtime = mapResultSetToShowtime(rs);
                     details.put("showtime", showtime);
-
-                    // Room details
-                    details.put("roomName", rs.getString("room_name"));
-                    details.put("totalSeats", rs.getInt("total_seats"));
-
-                    // Branch details
-                    details.put("branchId", rs.getInt("branch_id"));
-                    details.put("branchName", rs.getString("branch_name"));
-                    details.put("branchAddress", rs.getString("address"));
-
-                    // Movie details
-                    details.put("movieTitle", rs.getString("title"));
-                    details.put("movieDuration", rs.getInt("duration"));
-
-                    int movieId = rs.getInt("movie_id");
-                    List<String> genres = getGenresByMovieId(movieId);
-                    details.put("movieGenre", String.join(", ", genres));
-
-                    details.put("movieAgeRating", rs.getString("age_rating"));
-                    details.put("moviePosterUrl", rs.getString("poster_url"));
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return details;
     }
 
@@ -158,40 +154,6 @@ public class Showtimes extends DBContext {
             e.printStackTrace();
         }
         return 0;
-    }
-
-    /**
-     * Get available seats for a showtime
-     */
-    public List<Seat> getAvailableSeats(int showtimeId) {
-        List<Seat> seats = new ArrayList<>();
-        String sql = "SELECT s.* " +
-                "FROM seats s " +
-                "INNER JOIN screening_rooms sr ON s.room_id = sr.room_id " +
-                "INNER JOIN showtimes st ON sr.room_id = st.room_id " +
-                "WHERE st.showtime_id = ? " +
-                "AND s.status = 'AVAILABLE' " +
-                "AND s.seat_id NOT IN ( " +
-                "    SELECT seat_id FROM online_tickets WHERE showtime_id = ? " +
-                "    UNION " +
-                "    SELECT seat_id FROM counter_tickets WHERE showtime_id = ? " +
-                ") " +
-                "ORDER BY s.row_number, s.seat_number";
-
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setInt(1, showtimeId);
-            pstmt.setInt(2, showtimeId);
-            pstmt.setInt(3, showtimeId);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    seats.add(mapResultSetToSeat(rs));
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return seats;
     }
 
     /**
@@ -470,20 +432,6 @@ public class Showtimes extends DBContext {
     }
 
     /**
-     * Cancel a showtime (set status to CANCELLED)
-     */
-    public boolean cancelShowtime(int showtimeId) {
-        String sql = "UPDATE showtimes SET status = 'CANCELLED' WHERE showtime_id = ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, showtimeId);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    /**
      * Auto-update showtime statuses for a branch based on current server time.
      * SCHEDULED -> ONGOING : show_date = today AND start_time <= now AND end_time >
      * now
@@ -614,16 +562,6 @@ public class Showtimes extends DBContext {
             e.printStackTrace();
         }
         return list;
-    }
-
-    /** 3-param backward-compat overload (no movie keyword) */
-    public List<Map<String, Object>> getShowtimesByBranch(int branchId, java.time.LocalDate date, String statusFilter) {
-        return getShowtimesByBranch(branchId, date, statusFilter, null);
-    }
-
-    /** 2-param backward-compat overload (no status/keyword filter) */
-    public List<Map<String, Object>> getShowtimesByBranch(int branchId, java.time.LocalDate date) {
-        return getShowtimesByBranch(branchId, date, null, null);
     }
 
     /**
@@ -1309,5 +1247,91 @@ public class Showtimes extends DBContext {
                 e.printStackTrace();
             }
         }
+    }
+
+    // Lấy ID Chi nhánh từ ID Suất chiếu
+    public int getBranchIdByShowtimeId(int showtimeId) {
+        String sql = "SELECT sr.branch_id FROM showtimes st " +
+                "JOIN screening_rooms sr ON st.room_id = sr.room_id " +
+                "WHERE st.showtime_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("branch_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    // Lấy thông tin Phim từ ID Suất chiếu
+    public models.Movie getMovieByShowtimeId(int showtimeId) {
+        String sql = "SELECT m.movie_id, m.title, m.poster_url, m.duration, m.age_rating " +
+                "FROM movies m JOIN showtimes st ON m.movie_id = st.movie_id " +
+                "WHERE st.showtime_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    models.Movie movie = new models.Movie();
+                    movie.setMovieId(rs.getInt("movie_id"));
+                    movie.setTitle(rs.getString("title"));
+                    movie.setPosterUrl(rs.getString("poster_url"));
+                    movie.setDuration(rs.getInt("duration"));
+                    movie.setAgeRating(rs.getString("age_rating"));
+                    return movie;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Lấy thông tin Phòng chiếu từ ID Suất chiếu
+    public models.ScreeningRoom getRoomByShowtimeId(int showtimeId) {
+        String sql = "SELECT sr.room_id, sr.branch_id, sr.room_name, sr.total_seats " +
+                "FROM screening_rooms sr JOIN showtimes st ON sr.room_id = st.room_id " +
+                "WHERE st.showtime_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    models.ScreeningRoom room = new models.ScreeningRoom();
+                    room.setRoomId(rs.getInt("room_id"));
+                    room.setBranchId(rs.getInt("branch_id"));
+                    room.setRoomName(rs.getString("room_name"));
+                    room.setTotalSeats(rs.getInt("total_seats"));
+                    return room;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Lấy danh sách ID các ghế ĐÃ CÓ NGƯỜI ĐẶT
+    public java.util.List<Integer> getOccupiedSeats(int showtimeId) {
+        java.util.List<Integer> occupiedSeats = new java.util.ArrayList<>();
+        // Kết hợp cả vé bán online (đang giữ ghế PENDING hoặc đã CONFIRMED) và vé bán tại quầy
+        String sql = "SELECT ot.seat_id FROM online_tickets ot " +
+                "JOIN bookings b ON ot.booking_id = b.booking_id " +
+                "WHERE ot.showtime_id = ? AND b.status IN ('PENDING', 'CONFIRMED') " +
+                "UNION " +
+                "SELECT ct.seat_id FROM counter_tickets ct WHERE ct.showtime_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, showtimeId);
+            ps.setInt(2, showtimeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    occupiedSeats.add(rs.getInt("seat_id"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return occupiedSeats;
     }
 }

@@ -82,9 +82,7 @@ public class CounterBookingMovies extends HttpServlet {
             // Lấy chi nhánh của staff (nếu có)
             User currentUser = (User) session.getAttribute("user");
             Integer branchId = currentUser != null ? currentUser.getBranchId() : null;
-            System.out.println("[DEBUG CounterBookingMovies] userId=" + (currentUser != null ? currentUser.getUserId() : "null")
-                + " branchId=" + branchId + " selectedDate=" + selectedDate + " showAllMovies=" + showAllMovies);
-            CounterBookingMoviesService.MoviesPage moviesPage = service.getMoviesForCounter(
+CounterBookingMoviesService.MoviesPage moviesPage = service.getMoviesForCounter(
                     selectedDate, showAllMovies, search, genre, ageRating, page, branchId);
 
             List<Movie> movies = moviesPage.movies;

@@ -156,6 +156,40 @@ public class Movies extends DBContext {
         return null;
     }
 
+    // Get all active movies that have at least one showtime from today onwards
+    public List<Movie> getAllActiveMoviesWithFutureShowtimes() {
+        List<Movie> movies = new ArrayList<>();
+
+        String sql = """
+                SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+                FROM movies m
+                INNER JOIN showtimes s ON m.movie_id = s.movie_id
+                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.genre_id
+                WHERE m.is_active = 1
+                  AND s.show_date >= CAST(GETDATE() AS DATE)
+                  AND s.status IN ('SCHEDULED', 'ONGOING')
+                GROUP BY
+                    m.movie_id, m.title, m.description, m.duration,
+                    m.release_date, m.end_date, m.rating, m.age_rating,
+                    m.director, m.cast, m.poster_url, m.is_active,
+                    m.created_at, m.updated_at
+                ORDER BY m.release_date DESC
+                """;
+
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+
+            while (rs.next()) {
+                movies.add(mapResultSetToMovie(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return movies;
+    }
+
     // Get movies showing on date with search, filter and pagination
     public List<Movie> getMoviesShowingOnDateWithFilter(
             LocalDate date, String search, String genre,
@@ -215,7 +249,6 @@ public class Movies extends DBContext {
         params.add(offset);
         params.add(pageSize);
 
-        System.out.println("[DEBUG Movies.getMoviesShowingOnDateWithFilter] sql=" + sql + " params=" + params);
         try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 Object param = params.get(i);
@@ -236,7 +269,6 @@ public class Movies extends DBContext {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        System.out.println("[DEBUG Movies.getMoviesShowingOnDateWithFilter] result count=" + movies.size());
         return movies;
     }
 
@@ -553,8 +585,7 @@ public class Movies extends DBContext {
                 // KHÔNG cần set cho updated_at vì dùng GETDATE()
                 ps.setInt(idx++, m.getMovieId());               // index 11 - WHERE
 
-                // Debug: in ra số tham số đã set
-                System.out.println("Đã set " + (idx-1) + " tham số cho update movies");
+
 
                 int rows = ps.executeUpdate();
                 if (rows == 0) {

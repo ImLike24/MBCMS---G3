@@ -208,15 +208,15 @@
                         <span class="price-amount" id="childCount">0</span>
                     </div>
                     <div class="price-row total">
-                        <span>Tổng tiền:</span>
+                        <span>Tổng tiền vé:</span>
                         <span class="price-amount" id="totalAmount">0&nbsp;₫</span>
                     </div>
                 </div>
 
                 <div class="action-buttons">
-                    <button class="btn-proceed" id="btnProceed" disabled onclick="proceedToPayment()">
+                    <button class="btn-proceed" id="btnProceed" disabled onclick="proceedToConcessions()">
                         <i class="fas fa-arrow-right"></i>
-                        Tiếp tục thanh toán
+                        Tiếp tục
                     </button>
                     <button class="btn-clear" onclick="clearAllSeats()">
                         <i class="fas fa-times"></i>
@@ -238,7 +238,7 @@
                 seatCode: '${seatInfo.seat.seatCode}',
                 seatType: '${seatInfo.seat.seatType}',
                 rowNumber: '${seatInfo.seat.rowNumber}',
-                seatNumber: ${seatInfo.seat.seatNumber},
+                seatNumber: ${not empty seatInfo.seat.seatNumber ? seatInfo.seat.seatNumber : 0},
                 bookingStatus: '${seatInfo.bookingStatus}'
             }<c:if test="${!status.last}">,</c:if>
             </c:forEach>
@@ -246,8 +246,8 @@
 
         const showtimeId = ${showtimeId};
         const ticketPrices = {
-            'ADULT': ${adultPrice},
-            'CHILD': ${childPrice}
+            'ADULT': ${not empty adultPrice ? adultPrice : 0},
+            'CHILD': ${not empty childPrice ? childPrice : 0}
         };
         const surchargeRates = {
             <c:forEach var="s" items="${surchargeList}" varStatus="vs">'${s.seatType}': ${s.surchargeRate}<c:if test="${!vs.last}">,</c:if></c:forEach>
@@ -274,8 +274,6 @@
             // Clear previous references
             Object.keys(seatElementsById).forEach(key => delete seatElementsById[key]);
 
-            console.log('Rendering seat map with', seatsData.length, 'seats');
-
             // Group seats by row
             const seatsByRow = {};
             seatsData.forEach(seat => {
@@ -284,8 +282,6 @@
                 }
                 seatsByRow[seat.rowNumber].push(seat);
             });
-
-            console.log('Seats grouped by row:', seatsByRow);
 
             // Render each row
             Object.keys(seatsByRow).sort().forEach(rowNumber => {
@@ -304,8 +300,6 @@
 
                 // Sort seats by seat_number before rendering
                 seatsByRow[rowNumber].sort((a, b) => a.seatNumber - b.seatNumber).forEach(seat => {
-                    console.log('Rendering seat:', seat.seatCode, 'ID:', seat.seatId);
-                    
                     const seatElement = document.createElement('div');
                     seatElement.className = 'seat';
                     seatElement.setAttribute('data-seat-id', seat.seatId);
@@ -327,14 +321,10 @@
                     if (seat.bookingStatus === 'AVAILABLE') {
                         seatElement.classList.add('available');
                         // Use seatId instead of seat object to avoid closure issues
-                        const currentSeatId = seat.seatId; // Capture in closure
-                        seatElement.onclick = function() {
-                            console.log('Clicked seat element with ID:', currentSeatId, 'Code:', seat.seatCode);
-                            toggleSeatById(currentSeatId);
-                        };
+                        const currentSeatId = seat.seatId;
+                        seatElement.onclick = function() { toggleSeatById(currentSeatId); };
                     } else {
                         seatElement.classList.add('booked');
-                        seatElement.title = 'Already booked';
                     }
 
                     seatsContainer.appendChild(seatElement);
@@ -350,56 +340,28 @@
 
                 seatMap.appendChild(row);
             });
-            
-            console.log('Seat map rendering completed');
-            console.log('Stored seat elements:', Object.keys(seatElementsById).length);
         }
 
         // Toggle seat selection by ID
         function toggleSeatById(seatId) {
-            console.log('toggleSeatById called with:', seatId);
-            // Find seat data from seatsData array
             const seat = seatsData.find(s => s.seatId === seatId);
-            if (!seat) {
-                console.error('Seat not found:', seatId);
-                return;
-            }
-            console.log('Found seat:', seat);
+            if (!seat) return;
             toggleSeat(seat);
         }
 
         // Toggle seat selection
         function toggleSeat(seat) {
-            console.log('toggleSeat called for:', seat.seatCode, 'ID:', seat.seatId);
-            
-            // Use stored reference instead of querySelector
             const seatElement = seatElementsById[seat.seatId];
-            
-            if (!seatElement) {
-                console.error('Seat element not found in map for ID:', seat.seatId);
-                return;
-            }
-            
-            console.log('Found seat element:', seatElement, 'with code:', seatElement.textContent);
-            
-            const index = selectedSeats.findIndex(s => s.seatId === seat.seatId);
+            if (!seatElement) return;
 
+            const index = selectedSeats.findIndex(s => s.seatId === seat.seatId);
             if (index > -1) {
-                // Deselect
-                console.log('Deselecting seat:', seat.seatCode);
                 selectedSeats.splice(index, 1);
                 seatElement.classList.remove('selected');
             } else {
-                // Select
-                console.log('Selecting seat:', seat.seatCode);
-                selectedSeats.push({
-                    ...seat,
-                    ticketType: 'ADULT' // Default to adult
-                });
+                selectedSeats.push({ ...seat, ticketType: 'ADULT' });
                 seatElement.classList.add('selected');
             }
-
-            console.log('Current selected seats:', selectedSeats.map(s => s.seatCode));
             updateBookingSummary();
         }
 
@@ -524,14 +486,13 @@
             }
         }
 
-        // Proceed to payment
-        function proceedToPayment() {
+        // Proceed to concessions page
+        function proceedToConcessions() {
             if (selectedSeats.length === 0) {
                 alert('Vui lòng chọn ít nhất một ghế.');
                 return;
             }
 
-            // Prepare data for payment
             const bookingData = {
                 showtimeId: showtimeId,
                 seats: selectedSeats.map(seat => ({
@@ -539,14 +500,12 @@
                     seatCode: seat.seatCode,
                     seatType: seat.seatType,
                     ticketType: seat.ticketType
-                }))
+                })),
+                concessions: []
             };
 
-            // Store in session storage for next page
             sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
-
-            // Navigate to payment page
-            window.location.href = '${pageContext.request.contextPath}/staff/counter-booking-payment?showtimeId=' + showtimeId;
+            window.location.href = '${pageContext.request.contextPath}/staff/counter-booking-concessions?showtimeId=' + showtimeId;
         }
 
         // Format currency
