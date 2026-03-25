@@ -43,9 +43,7 @@ public class SeatService {
         return seatsRepo.getSeatById(seatId);
     }
     
-    public int getTotalAvailableSeatsByBranch(int branchId) {
-        return seatsRepo.getTotalAvailableSeatsByBranch(branchId);
-    }
+
     
     public List<SeatTypeSurcharge> getSurchargesByBranch(int branchId) {
         return surchargesRepo.getSurchargesByBranch(branchId);
