@@ -206,7 +206,7 @@
         <!-- Nút về trang chủ dưới cùng -->
         <div class="text-center mt-5">
             <button type="button" class="btn btn-lg btn-primary px-5"
-                    onclick="window.location.href='${pageContext.request.contextPath}/'">
+                    onclick="window.location.href='../..'">
                 <i class="bi bi-house-door-fill me-2"></i> Về Trang Chủ
             </button>
         </div>

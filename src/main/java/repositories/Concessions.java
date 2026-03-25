@@ -153,4 +153,17 @@ public class Concessions extends DBContext {
         } catch (SQLException ignored) { }
         return c;
     }
+
+    public boolean deductQuantity(int concessionId, int quantity) {
+        String sql = "UPDATE concessions SET quantity = quantity - ? WHERE concession_id = ? AND quantity >= ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, quantity);
+            ps.setInt(2, concessionId);
+            ps.setInt(3, quantity);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

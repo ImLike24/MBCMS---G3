@@ -4,12 +4,6 @@ import java.io.IOException;
 
 import config.VNPayConfig;
 import models.User;
-import models.Showtime;
-import repositories.Showtimes;
-import repositories.Vouchers;
-import repositories.UserVouchers;
-import models.Voucher;
-import models.UserVoucher;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -20,7 +14,6 @@ import jakarta.servlet.http.HttpSession;
 import utils.VNPay;
 
 import java.math.BigDecimal;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -74,8 +67,6 @@ public class BookingSummary extends HttpServlet {
             // LOGIC ƯU TIÊN VOUCHER TỪ SESSION NẾU URL TRỐNG
             // ==========================================================
             String voucherCode = request.getParameter("voucherCode");
-
-            // Nếu URL không có, tự động lấy từ Session (khi vừa từ trang ghế chuyển sang)
             if (voucherCode == null || voucherCode.trim().isEmpty()) {
                 voucherCode = (String) bookingData.get("voucherCode");
             }
@@ -138,6 +129,10 @@ public class BookingSummary extends HttpServlet {
 
         try {
             String voucherCode = request.getParameter("voucherCode");
+            if (voucherCode == null || voucherCode.trim().isEmpty()) {
+                voucherCode = (String) bookingData.get("voucherCode");
+            }
+
             Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode);
 
             BigDecimal finalAmount = (BigDecimal) summaryResult.get("finalAmount");
@@ -146,7 +141,7 @@ public class BookingSummary extends HttpServlet {
             int showtimeId = (Integer) bookingData.get("showtimeId");
 
             // =========================================================================
-            // FIX: KIỂM TRA ĐÃ TẠO BOOKING CHƯA ĐỂ CHỐNG LỖI KHI ẤN NÚT "BACK"
+            // KIỂM TRA ĐÃ TẠO BOOKING CHƯA
             // =========================================================================
             String bookingCode = (String) bookingData.get("savedBookingCode");
 

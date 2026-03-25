@@ -44,13 +44,13 @@
         </div> 
         <script>
              function pay() {
-              window.location.href = "/MBCMS/vnpay-jsp/vnpay_pay.jsp";
+              window.location.href = "vnpay_pay.jsp";
             }
             function querydr() {
-              window.location.href = "/MBCMS/vnpay-jsp/vnpay_querydr.jsp";
+              window.location.href = "vnpay_querydr.jsp";
             }
              function refund() {
-              window.location.href = "/MBCMS/vnpay-jsp/vnpay_refund.jsp";
+              window.location.href = "vnpay_refund.jsp";
             }
         </script>
     </body>

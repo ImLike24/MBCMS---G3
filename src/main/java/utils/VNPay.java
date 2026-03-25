@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class VNPay {
-
     public static String hmacSHA512(final String key, final String data) {
         try {
             if (key == null || data == null) {

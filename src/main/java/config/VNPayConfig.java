@@ -27,8 +27,6 @@ public class VNPayConfig {
                 vnp_TmnCode = prop.getProperty("vnp_TmnCode");
                 secretKey = prop.getProperty("vnp_HashSecret");
                 vnp_ApiUrl = prop.getProperty("vnp_ApiUrl");
-
-                System.out.println("Đã nạp thành công cấu hình VNPay từ config.properties");
             }
         } catch (Exception ex) {
             ex.printStackTrace();
