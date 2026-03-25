@@ -273,23 +273,5 @@ public class Seats extends DBContext {
         return false;
     }
 
-    // Get total available seats by branch (not booked yet)
-    public int getTotalAvailableSeatsByBranch(int branchId) {
-        String sql = "SELECT COUNT(*) FROM seats s " +
-                     "JOIN screening_rooms r ON s.room_id = r.room_id " +
-                     "WHERE r.branch_id = ? AND s.status = 'AVAILABLE' " +
-                     "AND NOT EXISTS (SELECT 1 FROM online_tickets ot JOIN showtimes st ON ot.showtime_id = st.showtime_id WHERE ot.seat_id = s.seat_id AND st.status IN ('SCHEDULED', 'ONGOING')) " +
-                     "AND NOT EXISTS (SELECT 1 FROM counter_tickets ct JOIN showtimes st ON ct.showtime_id = st.showtime_id WHERE ct.seat_id = s.seat_id AND st.status IN ('SCHEDULED', 'ONGOING'))";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, branchId);
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
+
 }

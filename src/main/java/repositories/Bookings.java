@@ -199,4 +199,16 @@ public class Bookings {
             e.printStackTrace();
         }
     }
+
+    // Hàm này để ốp mã giảm giá SAU KHI đã insert xong toàn bộ vé và bắp nước
+    public void applyVoucher(int bookingId, BigDecimal discountAmount, BigDecimal finalAmount, String voucherCode) throws SQLException {
+        String sql = "UPDATE bookings SET discount_amount = ?, final_amount = ?, applied_voucher_code = ? WHERE booking_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBigDecimal(1, discountAmount);
+            ps.setBigDecimal(2, finalAmount);
+            ps.setString(3, voucherCode);
+            ps.setInt(4, bookingId);
+            ps.executeUpdate();
+        }
+    }
 }

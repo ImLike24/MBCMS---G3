@@ -193,6 +193,7 @@ public class ManageShowtimesServlet extends HttpServlet {
         request.setAttribute("filterDate", dateStr);
         request.setAttribute("filterStatus", statusFilter);
         request.setAttribute("filterMovie", movieKw);
+
         request.setAttribute("currentPage", currentPage);
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("totalShowtimes", totalShowtimes);

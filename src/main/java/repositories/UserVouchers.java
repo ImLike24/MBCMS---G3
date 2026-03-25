@@ -30,22 +30,6 @@ public class UserVouchers extends DBContext {
         return uv;
     }
 
-    public List<UserVoucher> getVouchersByUserId(int userId) {
-        List<UserVoucher> lists = new ArrayList<>();
-        String sql = "SELECT * FROM user_vouchers WHERE user_id = ? ORDER BY redeemed_at DESC";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, userId);
-            try (ResultSet rs = st.executeQuery()) {
-                while (rs.next()) {
-                    lists.add(mapResultSetToUserVoucher(rs));
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return lists;
-    }
-
     /**
      * Lấy các voucher còn hiệu lực cho 1 user:
      * - status = 'AVAILABLE'
@@ -202,19 +186,6 @@ public class UserVouchers extends DBContext {
             }
 
             return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    public boolean markVoucherAsUsed(String code) {
-        if (code == null || code.trim().isEmpty())
-            return false;
-        String sql = "UPDATE user_vouchers SET status = 'USED', used_at = SYSDATETIME() WHERE voucher_code = ? AND status = 'AVAILABLE'";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setString(1, code.trim());
-            return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }

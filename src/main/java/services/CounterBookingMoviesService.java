@@ -41,7 +41,7 @@ public class CounterBookingMoviesService {
             List<String> ageRatings;
 
             if (showAllMovies) {
-                List<Movie> allActive = moviesRepo.getAllActiveMovies();
+                List<Movie> allActive = moviesRepo.getAllActiveMoviesWithFutureShowtimes();
                 LocalDate today = LocalDate.now();
                 for (Movie movie : allActive) {
                     int showtimeCount = moviesRepo.countShowtimesForMovieOnDate(movie.getMovieId(), today);

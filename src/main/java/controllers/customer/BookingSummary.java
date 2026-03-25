@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(name = "BookingSummary", urlPatterns = { "/customer/booking-summary" })
+@WebServlet(name = "BookingSummary", urlPatterns = { "/booking-summary" })
 public class BookingSummary extends HttpServlet {
 
     private final services.BookingService bookingService = new services.BookingService();
@@ -44,7 +44,7 @@ public class BookingSummary extends HttpServlet {
         @SuppressWarnings("unchecked")
         Map<String, Object> bookingData = (Map<String, Object>) session.getAttribute("customerBookingData");
         if (bookingData == null) {
-            response.sendRedirect(request.getContextPath() + "/movies");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
             return;
         }
 
@@ -67,6 +67,8 @@ public class BookingSummary extends HttpServlet {
             // LOGIC ƯU TIÊN VOUCHER TỪ SESSION NẾU URL TRỐNG
             // ==========================================================
             String voucherCode = request.getParameter("voucherCode");
+
+            // Nếu URL không có, tự động lấy từ Session (khi vừa từ trang ghế chuyển sang)
             if (voucherCode == null || voucherCode.trim().isEmpty()) {
                 voucherCode = (String) bookingData.get("voucherCode");
             }
@@ -84,7 +86,8 @@ public class BookingSummary extends HttpServlet {
             // ==========================================================
             // CALL SERVICE
             // ==========================================================
-            Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode);
+            User currentUser = (User) session.getAttribute("user");
+            Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode, currentUser.getUserId());
 
             // Bắn dữ liệu về cho giao diện (JSP)
             request.setAttribute("bookingData", bookingData);
@@ -104,7 +107,7 @@ public class BookingSummary extends HttpServlet {
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/movies");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
         }
     }
 
@@ -123,7 +126,7 @@ public class BookingSummary extends HttpServlet {
         @SuppressWarnings("unchecked")
         Map<String, Object> bookingData = (Map<String, Object>) session.getAttribute("customerBookingData");
         if (bookingData == null) {
-            response.sendRedirect(request.getContextPath() + "/movies");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
             return;
         }
 
@@ -132,8 +135,7 @@ public class BookingSummary extends HttpServlet {
             if (voucherCode == null || voucherCode.trim().isEmpty()) {
                 voucherCode = (String) bookingData.get("voucherCode");
             }
-
-            Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode);
+            Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode, user.getUserId());
 
             BigDecimal finalAmount = (BigDecimal) summaryResult.get("finalAmount");
             BigDecimal discountAmount = (BigDecimal) summaryResult.get("discountAmount");
@@ -154,13 +156,12 @@ public class BookingSummary extends HttpServlet {
                     repositories.Bookings bookingDao = new repositories.Bookings();
                     int bookingId = bookingDao.createOnlineBooking(
                             user.getUserId(), showtimeId, "BANKING", bookingCode,
-                            totalAmount, discountAmount, finalAmount,
-                            summaryResult.get("appliedVoucher") != null ? voucherCode : null
+                            totalAmount, BigDecimal.ZERO, totalAmount, // Để discount = 0, final = total
+                            null // Giấu voucherCode
                     );
 
                     // Insert Tickets
                     repositories.OnlineTickets ticketDao = new repositories.OnlineTickets();
-                    @SuppressWarnings("unchecked")
                     List<Map<String, Object>> seats = (List<Map<String, Object>>) bookingData.get("seats");
                     for (Map<String, Object> seat : seats) {
                         ticketDao.insertOnlineTicket(
@@ -170,6 +171,13 @@ public class BookingSummary extends HttpServlet {
                         );
                     }
 
+                    if (summaryResult.get("appliedVoucher") != null) {
+                        bookingDao.applyVoucher(bookingId, discountAmount, finalAmount, voucherCode);
+                    } else {
+                        // Nếu không có voucher, vẫn update 1 lần cho chắc chắn finalAmount chuẩn xác
+                        bookingDao.applyVoucher(bookingId, BigDecimal.ZERO, totalAmount, null);
+                    }
+
                     // LƯU LẠI VÀO SESSION ĐỂ CHỐNG SPAM
                     bookingData.put("savedBookingCode", bookingCode);
                     session.setAttribute("customerBookingData", bookingData);
@@ -177,7 +185,7 @@ public class BookingSummary extends HttpServlet {
                 } catch (java.sql.SQLException ex) {
                     // Nếu lỗi duplicate key bắn ra (có người vừa nhanh tay mua mất ghế)
                     if (ex.getMessage() != null && ex.getMessage().contains("ux_online_ticket_showtime_seat")) {
-                        response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeId + "&error=" + java.net.URLEncoder.encode("Rất tiếc, ghế bạn chọn vừa có người thanh toán. Vui lòng chọn ghế khác.", "UTF-8"));
+                        response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeId + "&error=" + java.net.URLEncoder.encode("Rất tiếc, ghế bạn chọn vừa có người thanh toán. Vui lòng chọn ghế khác.", "UTF-8"));
                         return;
                     }
                     throw ex; // Nếu lỗi khác thì ném ra ngoài
@@ -242,7 +250,7 @@ public class BookingSummary extends HttpServlet {
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/movies");
+            response.sendRedirect(request.getContextPath() + "/home");
         }
     }
 }

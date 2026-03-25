@@ -22,7 +22,7 @@ import models.SeatTypeSurcharge;
 import models.Showtime;
 import repositories.*;
 
-@WebServlet(name = "TicketsOfChosenMovie", urlPatterns = { "/customer/booking-tickets" })
+@WebServlet(name = "TicketsOfChosenMovie", urlPatterns = { "/booking-tickets" })
 public class BookingTickets extends HttpServlet {
 
     private final services.BookingService bookingService = new services.BookingService();
@@ -39,7 +39,7 @@ public class BookingTickets extends HttpServlet {
 
         String showtimeIdParam = request.getParameter("showtimeId");
         if (showtimeIdParam == null || showtimeIdParam.isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/movies");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
             return;
         }
 
@@ -178,7 +178,13 @@ public class BookingTickets extends HttpServlet {
 
         // Kiểm tra đầu vào
         if (showtimeIdParam == null || showtimeIdParam.isEmpty() || seatIdsParam == null || seatIdsParam.length == 0) {
-            response.sendRedirect(request.getContextPath() + "/movies");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
+            return;
+        }
+
+        if (seatIdsParam == null || seatIdsParam.length == 0) {
+            session.setAttribute("bookingError", "Vui lòng chọn ít nhất 1 ghế để tiếp tục.");
+            response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeIdParam);
             return;
         }
 
@@ -212,7 +218,7 @@ public class BookingTickets extends HttpServlet {
                 // Kiểm tra: Ghế có bị nẫng tay trên trong lúc đang thao tác không?
                 if (occupiedSeats.contains(seatId)) {
                     session.setAttribute("bookingError", "Ghế bạn chọn vừa có người đặt. Vui lòng chọn ghế khác.");
-                    response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeId);
+                    response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeId);
                     return;
                 }
 
@@ -314,7 +320,7 @@ public class BookingTickets extends HttpServlet {
             // =====================================================================
             // THÀNH CÔNG: Chuyển hướng sang trang Summary
             // =====================================================================
-            response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
+            response.sendRedirect(request.getContextPath() + "/booking-summary?showtimeId=" + showtimeId);
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -1,11 +1,15 @@
 package services;
 
+import models.User;
+import models.MembershipTier;
+import models.LoyaltyConfig;
 import models.Movie;
 import models.Showtime;
 import models.Voucher;
 import repositories.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -50,8 +54,33 @@ public class BookingService {
             String appliedVoucherCode = (String) bookingInfo.get("voucherCode");
 
             Users userRepo = new Users();
+            User currentUser = userRepo.getUserById(userId);
+
+            BigDecimal pointMultiplier = BigDecimal.ONE;
+            if (currentUser != null && currentUser.getTierId() != null) {
+                MembershipTiers tierRepo = new MembershipTiers();
+                MembershipTier tier = tierRepo.getTierById(currentUser.getTierId());
+                if (tier != null && tier.getPointMultiplier() != null) {
+                    pointMultiplier = tier.getPointMultiplier();
+                }
+            }
+
             // Tính toán và cộng điểm
-            int earnedPoints = finalAmount.divide(new BigDecimal(1000)).intValue();
+            LoyaltyConfigs configRepo = new LoyaltyConfigs();
+            LoyaltyConfig loyaltyConfig = configRepo.getConfig();
+
+            BigDecimal earnRateAmount = new BigDecimal(1000);
+            BigDecimal earnPointsBase = BigDecimal.ONE;
+
+            if (loyaltyConfig != null && loyaltyConfig.getEarnRateAmount() != null
+                    && loyaltyConfig.getEarnRateAmount().compareTo(BigDecimal.ZERO) > 0) {
+                earnRateAmount = loyaltyConfig.getEarnRateAmount();
+                earnPointsBase = new BigDecimal(loyaltyConfig.getEarnPoints());
+            }
+
+            BigDecimal basePoints = finalAmount.divide(earnRateAmount, 0, RoundingMode.DOWN).multiply(earnPointsBase);
+            int earnedPoints = basePoints.multiply(pointMultiplier).intValue();
+
             if (earnedPoints > 0) {
                 userRepo.addPoints(userId, earnedPoints);
                 userRepo.updateTier(userId); // Cập nhật hạng
@@ -92,7 +121,8 @@ public class BookingService {
         if (dateParam != null && !dateParam.isEmpty()) {
             try {
                 selectedDate = LocalDate.parse(dateParam);
-                if (selectedDate.isBefore(today)) selectedDate = today;
+                if (selectedDate.isBefore(today))
+                    selectedDate = today;
             } catch (DateTimeParseException ignored) {
             }
         }
@@ -158,7 +188,8 @@ public class BookingService {
 
             if (allSeats != null) {
                 for (models.Seat s : allSeats) {
-                    // Bọc thông tin ghế và trạng thái vào 1 Map con (tương đương với seatInfo trong JSP)
+                    // Bọc thông tin ghế và trạng thái vào 1 Map con (tương đương với seatInfo trong
+                    // JSP)
                     java.util.Map<String, Object> seatInfo = new java.util.HashMap<>();
                     seatInfo.put("seat", s);
 
@@ -191,7 +222,8 @@ public class BookingService {
             for (int i = 0; i < surcharges.size(); i++) {
                 models.SeatTypeSurcharge s = surcharges.get(i);
                 surchargeJson.append("\"").append(s.getSeatType()).append("\":").append(s.getSurchargeRate());
-                if (i < surcharges.size() - 1) surchargeJson.append(",");
+                if (i < surcharges.size() - 1)
+                    surchargeJson.append(",");
             }
         }
         surchargeJson.append("}");
@@ -209,8 +241,10 @@ public class BookingService {
             BigDecimal aPrice = priceDao.getTicketPrice(branchId, "ADULT", dayType, timeSlot, showtime.getShowDate());
             BigDecimal cPrice = priceDao.getTicketPrice(branchId, "CHILD", dayType, timeSlot, showtime.getShowDate());
 
-            if (aPrice != null) adultPrice = aPrice;
-            if (cPrice != null) childPrice = cPrice;
+            if (aPrice != null)
+                adultPrice = aPrice;
+            if (cPrice != null)
+                childPrice = cPrice;
         }
 
         data.put("adultPrice", adultPrice.doubleValue());
@@ -223,7 +257,8 @@ public class BookingService {
     // -------------------------------------------------------------
     // MÀN HÌNH TỔNG KẾT (BookingSummary)
     // -------------------------------------------------------------
-    public Map<String, Object> calculateSummaryAndVoucher(Map<String, Object> bookingData, String voucherCode) throws Exception {
+    public Map<String, Object> calculateSummaryAndVoucher(Map<String, Object> bookingData, String voucherCode,
+            int userId) throws Exception {
         Map<String, Object> summaryResult = new HashMap<>();
 
         BigDecimal totalAmount = (BigDecimal) bookingData.get("totalAmount");
@@ -233,15 +268,30 @@ public class BookingService {
 
         // Xử lý logic Voucher nếu khách có nhập
         if (voucherCode != null && !voucherCode.trim().isEmpty()) {
-            Voucher voucher = voucherDao.getActiveVoucherByCode(voucherCode.trim());
+            String code = voucherCode.trim();
+            Voucher voucher = null;
+
+            UserVouchers uvRepo = new UserVouchers();
+            models.UserVoucher uv = uvRepo.getVoucherByCode(code);
+            if (uv != null && uv.getUserId() == userId && "AVAILABLE".equals(uv.getStatus())
+                    && uv.getExpiresAt() != null && uv.getExpiresAt().isAfter(java.time.LocalDateTime.now())) {
+                voucher = voucherDao.getVoucherById(uv.getVoucherId());
+            }
 
             if (voucher == null) {
-                voucherError = "Mã giảm giá không tồn tại hoặc chưa có hiệu lực!";
+                voucherError = "Mã giảm giá không tồn tại hoặc chưa được lưu!";
             } else if (voucher.getMaxUsageLimit() > 0 && voucher.getCurrentUsage() >= voucher.getMaxUsageLimit()) {
                 voucherError = "Rất tiếc, mã giảm giá này đã hết lượt sử dụng.";
             } else {
                 // Hợp lệ -> Tính tiền giảm
                 discountAmount = voucher.getDiscountAmount();
+
+                if (discountAmount.compareTo(totalAmount) > 0) {
+                    // Nếu voucher giảm nhiều hơn cả số tiền khách phải trả,
+                    // thì lượng tiền được giảm tối đa chỉ bằng đúng số tiền khách nợ.
+                    discountAmount = totalAmount;
+                }
+
                 finalAmount = totalAmount.subtract(discountAmount);
                 if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
                     finalAmount = BigDecimal.ZERO; // Không để âm tiền

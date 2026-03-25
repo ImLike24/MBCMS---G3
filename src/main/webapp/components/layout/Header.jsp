@@ -106,17 +106,6 @@
                 <div class="modal-header border-0">
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body pb-4">
-                    <div class="input-group input-group-lg">
-                        <input type="text" id="searchBox" class="form-control"
-                               placeholder="Tìm kiếm phim..."
-                               style="border: 2px solid #d96c2c; border-right: none; background: #212529; color: white;">
-                        <button class="btn btn-warning" type="button" id="searchBtn">
-                            <i class="fa fa-search"></i>
-                        </button>
-                    </div>
-                    <div id="searchSuggest" class="list-group position-absolute w-100 shadow" style="z-index: 1050; max-height: 300px; overflow-y: auto;"></div>
-                </div>
             </div>
         </div>
     </div>
@@ -145,15 +134,6 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarMain">
-
-                <!-- Menu trái -->
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center" href="#" data-bs-toggle="modal" data-bs-target="#exampleModal2">
-                            <i class="fa fa-search me-2"></i> Tìm kiếm
-                        </a>
-                    </li>
-                </ul>
 
                 <!-- Phần User / Login - góc phải -->
                 <ul class="navbar-nav ms-auto align-items-center">

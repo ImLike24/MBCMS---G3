@@ -191,7 +191,7 @@
 
         .payment-methods {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 15px;
         }
 
@@ -787,7 +787,27 @@
                 seatsDisplay.appendChild(seatTag);
             });
 
+            // Display concessions if any
+            if (bookingData.concessions && bookingData.concessions.length > 0) {
+                const concDiv = document.createElement('div');
+                concDiv.style.marginTop = '12px';
+                concDiv.innerHTML = '<div style="color:#d96c2c; font-size:13px; font-weight:600; margin-bottom:6px;"><i class="fas fa-coffee"></i> Đồ ăn / Thức uống</div>';
+                const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+                bookingData.concessions.forEach(c => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; justify-content:space-between; font-size:13px; color:#ccc; padding:3px 0;';
+                    row.innerHTML = '<span>' + c.concessionName + ' x' + c.quantity + '</span><span>' + formatter.format(c.priceBase * c.quantity) + '</span>';
+                    concDiv.appendChild(row);
+                });
+                seatsDisplay.appendChild(concDiv);
+            }
+
             displayTotalAmount();
+        }
+
+        function getConcessionTotal() {
+            if (!bookingData.concessions) return 0;
+            return bookingData.concessions.reduce((sum, c) => sum + c.priceBase * c.quantity, 0);
         }
 
         function displayTotalAmount() {
@@ -804,6 +824,7 @@
                 totalAmount += price;
             });
 
+            totalAmount += getConcessionTotal();
             lastTotalAmount = totalAmount;
             document.getElementById('totalAmountDisplay').textContent =
                 new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalAmount);
@@ -1183,7 +1204,8 @@
                 customerEmail: customerEmail || null,
                 voucherCode:   voucherCode   || null,
                 redeemPoints:  redeemPoints,
-                seats:         bookingData.seats
+                seats:         bookingData.seats,
+                concessions:   bookingData.concessions || []
             };
 
             try {

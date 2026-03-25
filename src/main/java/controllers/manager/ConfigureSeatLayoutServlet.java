@@ -104,7 +104,6 @@ public class ConfigureSeatLayoutServlet extends HttpServlet {
             request.setAttribute("rooms", rooms);
             request.setAttribute("selectedRoom", selectedRoom);
             request.setAttribute("existingSeats", existingSeats);
-            request.setAttribute("totalAvailableSeatsOfBranch", seatService.getTotalAvailableSeatsByBranch(branch.getBranchId()));
 
             request.getRequestDispatcher("/pages/manager/configure-seat-layout.jsp").forward(request, response);
 

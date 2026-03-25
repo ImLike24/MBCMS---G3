@@ -81,8 +81,11 @@ public class Showtimes extends DBContext {
     // Lấy thông tin tổng hợp của Suất chiếu (Phim, Rạp, Phòng, Ngày, Giờ)
     public Map<String, Object> getShowtimeDetails(int showtimeId) {
         Map<String, Object> details = new java.util.HashMap<>();
-        String sql = "SELECT m.title as movieTitle, cb.branch_name as branchName, sr.room_name as roomName, " +
-                "st.show_date, st.start_time " +
+        String sql = "SELECT m.title as movieTitle, m.poster_url as moviePosterUrl, " +
+                "cb.branch_name as branchName, cb.branch_id as branchId, " +
+                "sr.room_name as roomName, sr.total_seats as totalSeats, " +
+                "st.show_date, st.start_time, st.end_time, st.base_price, " +
+                "st.showtime_id, st.movie_id, st.room_id, st.status, st.created_at " +
                 "FROM showtimes st " +
                 "JOIN movies m ON st.movie_id = m.movie_id " +
                 "JOIN screening_rooms sr ON st.room_id = sr.room_id " +
@@ -94,8 +97,11 @@ public class Showtimes extends DBContext {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     details.put("movieTitle", rs.getString("movieTitle"));
+                    details.put("moviePosterUrl", rs.getString("moviePosterUrl"));
                     details.put("branchName", rs.getString("branchName"));
+                    details.put("branchId", rs.getInt("branchId"));
                     details.put("roomName", rs.getString("roomName"));
+                    details.put("totalSeats", rs.getInt("totalSeats"));
 
                     // Lấy thẳng chuỗi String từ DB để không bao giờ bị lỗi ép kiểu Date
                     String dateStr = rs.getString("show_date");
@@ -108,6 +114,10 @@ public class Showtimes extends DBContext {
                     if (timeStr != null && timeStr.length() >= 5) {
                         details.put("showTimeFormatted", timeStr.substring(0, 5));
                     }
+
+                    // Build Showtime object for service layer
+                    Showtime showtime = mapResultSetToShowtime(rs);
+                    details.put("showtime", showtime);
                 }
             }
         } catch (SQLException e) { e.printStackTrace(); }
