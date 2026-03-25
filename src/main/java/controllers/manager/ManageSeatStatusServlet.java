@@ -8,7 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import models.*;
-import repositories.*;
+import services.SeatService;
+import services.UserService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,6 +17,9 @@ import java.util.List;
 
 @WebServlet("/branch-manager/manage-seat-status")
 public class ManageSeatStatusServlet extends HttpServlet {
+
+    private final SeatService seatService = new SeatService();
+    private final UserService userService = new UserService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -34,8 +38,7 @@ public class ManageSeatStatusServlet extends HttpServlet {
         DBContext dbContext = null;
         try {
             dbContext = new DBContext();
-            Roles rolesRepo = new Roles();
-            Role userRole = rolesRepo.getRoleById(currentUser.getRoleId());
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
 
             if (userRole == null || !"BRANCH_MANAGER".equals(userRole.getRoleName())) {
                 response.sendRedirect(request.getContextPath() + "/home");
@@ -51,13 +54,8 @@ public class ManageSeatStatusServlet extends HttpServlet {
             }
         }
 
-        // Get all branches managed by this manager
         try {
-            CinemaBranches branchesRepo = new CinemaBranches();
-            ScreeningRooms roomsRepo = new ScreeningRooms();
-            Seats seatsRepo = new Seats();
-
-            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
+            List<CinemaBranch> managedBranches = seatService.getManagedBranches(currentUser.getUserId());
 
             if (managedBranches == null || managedBranches.isEmpty()) {
                 request.setAttribute("error", "You are not assigned to any branch");
@@ -78,7 +76,7 @@ public class ManageSeatStatusServlet extends HttpServlet {
             }
 
             // Get all screening rooms for selected branch
-            List<ScreeningRoom> rooms = roomsRepo.getAllRoomsByBranch(branch.getBranchId());
+            List<ScreeningRoom> rooms = seatService.getRoomsByBranch(branch.getBranchId());
 
             // Get selected room if any
             String roomIdParam = request.getParameter("roomId");
@@ -89,14 +87,14 @@ public class ManageSeatStatusServlet extends HttpServlet {
             if (roomIdParam != null && !roomIdParam.isEmpty()) {
                 try {
                     int roomId = Integer.parseInt(roomIdParam);
-                    selectedRoom = roomsRepo.getRoomById(roomId);
+                    selectedRoom = seatService.getRoomById(roomId);
 
                     // Verify room belongs to this branch
                     if (selectedRoom != null && selectedRoom.getBranchId() == branch.getBranchId()) {
                         if (statusFilter != null && !statusFilter.isEmpty()) {
-                            seats = seatsRepo.getSeatsByRoomAndStatus(roomId, statusFilter);
+                            seats = seatService.getSeatsByRoomAndStatus(roomId, statusFilter);
                         } else {
-                            seats = seatsRepo.getSeatsByRoom(roomId);
+                            seats = seatService.getSeatsByRoom(roomId);
                         }
                     } else {
                         selectedRoom = null;
@@ -140,8 +138,7 @@ public class ManageSeatStatusServlet extends HttpServlet {
         DBContext dbContext = null;
         try {
             dbContext = new DBContext();
-            Roles rolesRepo = new Roles();
-            Role userRole = rolesRepo.getRoleById(currentUser.getRoleId());
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
 
             if (userRole == null || !"BRANCH_MANAGER".equals(userRole.getRoleName())) {
                 response.sendRedirect(request.getContextPath() + "/home");
@@ -168,13 +165,9 @@ public class ManageSeatStatusServlet extends HttpServlet {
         }
 
         try {
-            CinemaBranches branchesRepo = new CinemaBranches();
-            ScreeningRooms roomsRepo = new ScreeningRooms();
-            Seats seatsRepo = new Seats();
-
             // Resolve target branch from POST param, verified against managed list
             String branchIdStr = request.getParameter("branchId");
-            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
+            List<CinemaBranch> managedBranches = seatService.getManagedBranches(currentUser.getUserId());
             if (managedBranches == null || managedBranches.isEmpty()) {
                 response.sendRedirect(request.getContextPath()
                         + "/branch-manager/manage-seat-status?error=You are not assigned to any branch");
@@ -190,80 +183,57 @@ public class ManageSeatStatusServlet extends HttpServlet {
                 } catch (NumberFormatException ignored) {}
             }
             final int selectedBranchId = branch.getBranchId();
-
             int roomId = Integer.parseInt(roomIdStr);
-            ScreeningRoom room = roomsRepo.getRoomById(roomId);
 
-            if (room == null || room.getBranchId() != branch.getBranchId()) {
-                response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-seat-status?error=Room not found or access denied");
-                return;
-            }
-
-            boolean success = false;
             String message = "";
+            boolean success = true;
 
             if ("updateBulk".equals(action)) {
                 String[] seatIds = request.getParameterValues("seatIds[]");
                 String status = request.getParameter("status");
 
-                if (seatIds == null || seatIds.length == 0 || status == null) {
-                    message = "No seats selected or invalid status";
-                } else {
-                    // Validate status
-                    if (!status.equals("AVAILABLE") && !status.equals("BROKEN") && !status.equals("MAINTENANCE")) {
-                        message = "Invalid seat status";
-                    } else {
-                        List<Integer> seatIdList = new ArrayList<>();
-                        for (String seatIdStr : seatIds) {
-                            try {
-                                seatIdList.add(Integer.parseInt(seatIdStr));
-                            } catch (NumberFormatException e) {
-                                // Skip invalid IDs
-                            }
-                        }
-
-                        if (seatIdList.isEmpty()) {
-                            message = "No valid seats selected";
-                        } else {
-                            success = seatsRepo.updateSeatStatusesInBatch(seatIdList, status);
-                            message = success ? "Updated " + seatIdList.size() + " seat(s) to " + status
-                                    : "Failed to update seat statuses";
-                        }
+                List<Integer> seatIdList = new ArrayList<>();
+                if (seatIds != null) {
+                    for (String seatIdStr : seatIds) {
+                        try {
+                            seatIdList.add(Integer.parseInt(seatIdStr));
+                        } catch (NumberFormatException e) {}
                     }
+                }
+
+                try {
+                    message = seatService.updateSeatStatusesBulk(selectedBranchId, roomId, seatIdList, status);
+                } catch (Exception e) {
+                    success = false;
+                    message = e.getMessage();
                 }
             } else if ("updateSingle".equals(action)) {
                 String seatIdStr = request.getParameter("seatId");
                 String status = request.getParameter("status");
 
                 if (seatIdStr == null || status == null) {
+                    success = false;
                     message = "Invalid parameters";
                 } else {
-                    // Validate status
-                    if (!status.equals("AVAILABLE") && !status.equals("BROKEN") && !status.equals("MAINTENANCE")) {
-                        message = "Invalid seat status";
-                    } else {
+                    try {
                         int seatId = Integer.parseInt(seatIdStr);
-                        Seat seat = seatsRepo.getSeatById(seatId);
-
-                        if (seat == null || seat.getRoomId() != roomId) {
-                            message = "Seat not found or access denied";
-                        } else {
-                            success = seatsRepo.updateSeatStatus(seatId, status);
-                            message = success ? "Seat status updated to " + status : "Failed to update seat status";
-                        }
+                        message = seatService.updateSeatStatusSingle(selectedBranchId, roomId, seatId, status);
+                    } catch (Exception e) {
+                        success = false;
+                        message = e.getMessage();
                     }
                 }
             } else {
+                success = false;
                 message = "Invalid action";
             }
 
             if (success) {
                 response.sendRedirect(request.getContextPath() + "/branch-manager/manage-seat-status?branchId=" + selectedBranchId
-                        + "&roomId=" + roomId + "&success=" + message);
+                        + "&roomId=" + roomId + "&success=" + java.net.URLEncoder.encode(message, "UTF-8"));
             } else {
                 response.sendRedirect(request.getContextPath() + "/branch-manager/manage-seat-status?branchId=" + selectedBranchId
-                        + "&roomId=" + roomId + "&error=" + message);
+                        + "&roomId=" + roomId + "&error=" + java.net.URLEncoder.encode(message, "UTF-8"));
             }
 
         } catch (NumberFormatException e) {
@@ -272,7 +242,7 @@ public class ManageSeatStatusServlet extends HttpServlet {
         } catch (Exception e) {
             e.printStackTrace();
             response.sendRedirect(
-                    request.getContextPath() + "/branch-manager/manage-seat-status?error=" + e.getMessage());
+                    request.getContextPath() + "/branch-manager/manage-seat-status?error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
         }
     }
 }
