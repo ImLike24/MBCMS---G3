@@ -256,13 +256,12 @@
                                     <input type="text" name="filterMovie" class="form-control form-control-sm"
                                         placeholder="Tìm kiếm theo tên phim..." value="${filterMovie}">
                                 </div>
-                                <div class="col-md-3 d-flex gap-2">
+                                <div class="col-md-2 d-flex gap-2">
                                     <button type="submit" class="btn btn-orange btn-sm flex-fill">
                                         <i class="fa-solid fa-magnifying-glass me-1"></i>Lọc
                                     </button>
-
-                                    <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes?branchId=${selectedBranchId}"
-                                        class="btn btn-outline-secondary btn-sm flex-fill" title="Xóa bộ lọc">
+                                    <a href="${pageContext.request.contextPath}/branch-manager/manage-showtimes"
+                                        class="btn btn-outline-secondary btn-sm flex-fill">
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </a>
                                 </div>
