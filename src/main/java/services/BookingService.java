@@ -109,9 +109,13 @@ public class BookingService {
 
     // Xử lý khi thanh toán THẤT BẠI / HỦY
     public void processFailedPayment(String bookingCode) throws Exception {
-        // Hủy booking, giải phóng ghế cho người khác mua
-        bookingDao.deleteBooking(bookingCode);
-    }
+        try {
+            // Gọi hàm Hủy đơn + Nhả ghế cho another customer
+            bookingDao.cancelFailedBooking(bookingCode);
+            System.out.println("Đã hủy đơn hàng và giải phóng ghế cho mã: " + bookingCode);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }    }
 
     // -------------------------------------------------------------
     // MÀN HÌNH CHỌN SUẤT CHIẾU (BookingShowtimes)

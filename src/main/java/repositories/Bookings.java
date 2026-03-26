@@ -77,25 +77,6 @@ public class Bookings {
         }
     }
 
-    public void insertOnlineTicket(int bookingId, int showtimeId, int seatId, String ticketType, String seatType,
-            BigDecimal price) throws Exception {
-        String sql = """
-                INSERT INTO online_tickets
-                (booking_id, showtime_id, seat_id, ticket_type, seat_type, price)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """;
-
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setInt(1, bookingId);
-        ps.setInt(2, showtimeId);
-        ps.setInt(3, seatId);
-        ps.setString(4, ticketType);
-        ps.setString(5, seatType);
-        ps.setBigDecimal(6, price);
-
-        ps.executeUpdate();
-    }
-
     // Delete booking
     public void deleteBooking(String bookingCode) throws Exception {
 
@@ -202,14 +183,33 @@ public class Bookings {
     }
 
     // Hàm này để ốp mã giảm giá SAU KHI đã insert xong toàn bộ vé và bắp nước
-    public void applyVoucher(int bookingId, BigDecimal discountAmount, BigDecimal finalAmount, String voucherCode) throws SQLException {
-        String sql = "UPDATE bookings SET discount_amount = ?, final_amount = ?, applied_voucher_code = ? WHERE booking_id = ?";
+    public void applyVoucher(int bookingId, BigDecimal totalAmount, BigDecimal discountAmount, BigDecimal finalAmount, String voucherCode) throws SQLException {
+        String sql = "UPDATE bookings SET total_amount = ?, discount_amount = ?, final_amount = ?, applied_voucher_code = ? WHERE booking_id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setBigDecimal(1, discountAmount);
-            ps.setBigDecimal(2, finalAmount);
-            ps.setString(3, voucherCode);
-            ps.setInt(4, bookingId);
+            ps.setBigDecimal(1, totalAmount);
+            ps.setBigDecimal(2, discountAmount);
+            ps.setBigDecimal(3, finalAmount);
+            ps.setString(4, voucherCode);
+            ps.setInt(5, bookingId);
             ps.executeUpdate();
         }
     }
+
+    // HÀM XỬ LÝ KHI KHÁCH HÀNG HỦY THANH TOÁN (HOẶC VNPAY LỖI)
+    public void cancelFailedBooking(String bookingCode) throws SQLException {
+        // Đổi trạng thái đơn thành CANCELLED và FAILED
+        String updateSql = "UPDATE bookings SET status = 'CANCELLED', payment_status = 'FAILED' WHERE booking_code = ?";
+        try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
+            ps.setString(1, bookingCode);
+            ps.executeUpdate();
+        }
+
+        // Xóa sạch vé (online_tickets) để giải phóng ghế ngay lập tức cho người khác mua
+        String deleteTicketsSql = "DELETE FROM online_tickets WHERE booking_id = (SELECT booking_id FROM bookings WHERE booking_code = ?)";
+        try (PreparedStatement ps2 = conn.prepareStatement(deleteTicketsSql)) {
+            ps2.setString(1, bookingCode);
+            ps2.executeUpdate();
+        }
+    }
+
 }

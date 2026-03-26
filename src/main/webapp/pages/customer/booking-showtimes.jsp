@@ -77,7 +77,7 @@
             <div class="d-flex flex-wrap gap-2 mt-2">
                 <c:forEach var="d" items="${dateList}">
                     <c:set var="isSelected" value="${d eq selectedDate}" />
-                    <a href="${pageContext.request.contextPath}/customer/booking-showtimes?movieId=${movie.movieId}&date=${d}"
+                    <a href="${pageContext.request.contextPath}/booking-showtimes?movieId=${movie.movieId}&date=${d}"
                        class="btn ${isSelected ? 'btn-primary' : 'btn-outline-primary'} btn-sm"
                        title="Ngày chiếu: <fmt:formatDate value='${java.sql.Date.valueOf(d)}' pattern='dd/MM/yyyy'/>">
                         <fmt:formatDate value="${java.sql.Date.valueOf(d)}" pattern="dd/MM/yyyy"/>
@@ -129,7 +129,7 @@
 
                             <c:choose>
                                 <c:when test="${hasSeats}">
-                                    <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=${showtime.showtimeId}"
+                                    <a href="${pageContext.request.contextPath}/booking-tickets?showtimeId=${showtime.showtimeId}"
                                        class="btn-select-showtime"
                                        data-start-datetime="${selectedDate}T${showtime.startTime}">
                                         Chọn suất này

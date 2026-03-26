@@ -18,14 +18,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(name = "BookingSummary", urlPatterns = { "/booking-summary" })
+@WebServlet(name = "BookingSummary", urlPatterns = {"/booking-summary"})
 public class BookingSummary extends HttpServlet {
-
-    private final services.BookingService bookingService = new services.BookingService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        services.BookingService bookingService = new services.BookingService();
 
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
@@ -115,6 +115,8 @@ public class BookingSummary extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        services.BookingService bookingService = new services.BookingService();
+
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             response.sendRedirect(request.getContextPath() + "/login");
@@ -126,7 +128,7 @@ public class BookingSummary extends HttpServlet {
         @SuppressWarnings("unchecked")
         Map<String, Object> bookingData = (Map<String, Object>) session.getAttribute("customerBookingData");
         if (bookingData == null) {
-            response.sendRedirect(request.getContextPath() + "/showtimes");
+            response.sendRedirect(request.getContextPath() + "/home");
             return;
         }
 
@@ -135,6 +137,7 @@ public class BookingSummary extends HttpServlet {
             if (voucherCode == null || voucherCode.trim().isEmpty()) {
                 voucherCode = (String) bookingData.get("voucherCode");
             }
+
             Map<String, Object> summaryResult = bookingService.calculateSummaryAndVoucher(bookingData, voucherCode, user.getUserId());
 
             BigDecimal finalAmount = (BigDecimal) summaryResult.get("finalAmount");
@@ -142,26 +145,37 @@ public class BookingSummary extends HttpServlet {
             BigDecimal totalAmount = (BigDecimal) summaryResult.get("totalAmount");
             int showtimeId = (Integer) bookingData.get("showtimeId");
 
-            // =========================================================================
-            // KIỂM TRA ĐÃ TẠO BOOKING CHƯA
-            // =========================================================================
-            String bookingCode = (String) bookingData.get("savedBookingCode");
+            // CHỐT CHẶN 1: KIỂM TRA ĐIỀU KIỆN 10.000Đ TRƯỚC KHI VÀO DATABASE
+            // Chỉ bắt những đơn hàng nằm trong khoảng: 0đ < finalAmount < 10.000đ
+            if (finalAmount.compareTo(BigDecimal.ZERO) > 0 && finalAmount.compareTo(new BigDecimal("10000")) < 0) {
 
+                // Gỡ bỏ mã booking cũ (nếu có) để làm sạch giỏ hàng
+                bookingData.remove("savedBookingCode");
+                session.setAttribute("customerBookingData", bookingData);
+
+                // Gắn thông báo lỗi vào Session và hất về trang Summary
+                session.setAttribute("errorMsg", "Giao dịch VNPay yêu cầu tối thiểu 10.000đ. Vui lòng mua thêm bắp nước hoặc gỡ mã giảm giá!");
+                response.sendRedirect(request.getContextPath() + "/booking-summary");
+                return; // DỪNG LẠI NGAY LẬP TỨC. KHÔNG LƯU VÀO DB!
+            }
+            // =========================================================================
+
+            String bookingCode = (String) bookingData.get("savedBookingCode");
+            repositories.Bookings bookingDao = new repositories.Bookings();
+
+            // CHỐT CHẶN 2: CHỈ TẠO BOOKING KHI ĐƠN HỢP LỆ (0đ HOẶC >= 10.000đ)
             if (bookingCode == null) {
-                // CHƯA CÓ: Tạo mới hoàn toàn
                 bookingCode = "BK" + System.currentTimeMillis() + new java.util.Random().nextInt(1000);
 
                 try {
-                    // Insert Booking
-                    repositories.Bookings bookingDao = new repositories.Bookings();
                     int bookingId = bookingDao.createOnlineBooking(
                             user.getUserId(), showtimeId, "BANKING", bookingCode,
-                            totalAmount, BigDecimal.ZERO, totalAmount, // Để discount = 0, final = total
-                            null // Giấu voucherCode
+                            totalAmount, BigDecimal.ZERO, totalAmount,
+                            null
                     );
 
-                    // Insert Tickets
                     repositories.OnlineTickets ticketDao = new repositories.OnlineTickets();
+                    @SuppressWarnings("unchecked")
                     List<Map<String, Object>> seats = (List<Map<String, Object>>) bookingData.get("seats");
                     for (Map<String, Object> seat : seats) {
                         ticketDao.insertOnlineTicket(
@@ -171,35 +185,95 @@ public class BookingSummary extends HttpServlet {
                         );
                     }
 
-                    if (summaryResult.get("appliedVoucher") != null) {
-                        bookingDao.applyVoucher(bookingId, discountAmount, finalAmount, voucherCode);
-                    } else {
-                        // Nếu không có voucher, vẫn update 1 lần cho chắc chắn finalAmount chuẩn xác
-                        bookingDao.applyVoucher(bookingId, BigDecimal.ZERO, totalAmount, null);
-                    }
-
-                    // LƯU LẠI VÀO SESSION ĐỂ CHỐNG SPAM
                     bookingData.put("savedBookingCode", bookingCode);
                     session.setAttribute("customerBookingData", bookingData);
 
+                    // Áp dụng Voucher (Gọi hàm đã được cập nhật hôm trước)
+                    if (summaryResult.get("appliedVoucher") != null) {
+                        bookingDao.applyVoucher(bookingId, totalAmount, discountAmount, finalAmount, voucherCode);
+                    } else {
+                        bookingDao.applyVoucher(bookingId, totalAmount, BigDecimal.ZERO, totalAmount, null);
+                    }
+
                 } catch (java.sql.SQLException ex) {
-                    // Nếu lỗi duplicate key bắn ra (có người vừa nhanh tay mua mất ghế)
                     if (ex.getMessage() != null && ex.getMessage().contains("ux_online_ticket_showtime_seat")) {
-                        response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeId + "&error=" + java.net.URLEncoder.encode("Rất tiếc, ghế bạn chọn vừa có người thanh toán. Vui lòng chọn ghế khác.", "UTF-8"));
+                        session.setAttribute("errorMsg", "Rất tiếc, ghế bạn chọn vừa có người thanh toán. Vui lòng chọn ghế khác.");
+                        response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeId);
                         return;
                     }
-                    throw ex; // Nếu lỗi khác thì ném ra ngoài
+                    throw ex; // Ném ra ngoài cho Catch tổng xử lý
                 }
             }
 
             // =========================================================================
-            // Cấu hình & Chuyển hướng VNPay (Dùng chung cho cả tạo mới lẫn ấn Back)
+            // CHỐT CHẶN 3: XỬ LÝ ĐƠN HÀNG 0Đ
+            // =========================================================================
+            // =========================================================================
+            // CHỐT CHẶN 3: XỬ LÝ ĐƠN HÀNG 0Đ (ĐỒNG BỘ UI VỚI VNPAY RETURN)
+            // =========================================================================
+            if (finalAmount.compareTo(BigDecimal.ZERO) == 0) {
+                // 1. Vẫn xử lý chốt đơn và trừ kho bình thường
+                bookingService.processSuccessfulPayment(bookingCode);
+
+                @SuppressWarnings("unchecked")
+                java.util.List<Map<String, Object>> concessions = (java.util.List<Map<String, Object>>) bookingData.get("concessions");
+                if (concessions != null && !concessions.isEmpty()) {
+                    repositories.Concessions concessionRepo = new repositories.Concessions();
+                    for (Map<String, Object> c : concessions) {
+                        concessionRepo.deductQuantity((Integer) c.get("concessionId"), (Integer) c.get("quantity"));
+                    }
+                }
+                session.removeAttribute("customerBookingData");
+
+                // 2. TẠO URL GIẢ LẬP VNPAY ĐỂ ĐẨY VỀ vnpay_return.jsp
+                Map<String, String> returnParams = new java.util.HashMap<>();
+                returnParams.put("vnp_Amount", "0");
+                returnParams.put("vnp_BankCode", "VOUCHER"); // Hiển thị mã ngân hàng là VOUCHER
+                returnParams.put("vnp_OrderInfo", "Thanh toan 0d cho don hang " + bookingCode);
+                java.util.Calendar cld = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Etc/GMT+7"));
+                java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
+                returnParams.put("vnp_PayDate", formatter.format(cld.getTime()));
+                returnParams.put("vnp_ResponseCode", "00");
+                returnParams.put("vnp_TmnCode", config.VNPayConfig.vnp_TmnCode);
+                returnParams.put("vnp_TransactionNo", "000000"); // Mã GD giả
+                returnParams.put("vnp_TransactionStatus", "00"); // Trạng thái thành công
+                returnParams.put("vnp_TxnRef", bookingCode);
+
+                // Băm chuỗi y hệt như cách VNPay làm để qua mặt lớp bảo mật của trang Return
+                List<String> fieldNames = new ArrayList<>(returnParams.keySet());
+                java.util.Collections.sort(fieldNames);
+                StringBuilder hashData = new StringBuilder();
+                StringBuilder query = new StringBuilder();
+                java.util.Iterator<String> itr = fieldNames.iterator();
+                while (itr.hasNext()) {
+                    String fieldName = itr.next();
+                    String fieldValue = returnParams.get(fieldName);
+                    if (fieldValue != null && fieldValue.length() > 0) {
+                        hashData.append(fieldName).append('=').append(java.net.URLEncoder.encode(fieldValue, "US-ASCII"));
+                        query.append(java.net.URLEncoder.encode(fieldName, "US-ASCII")).append('=').append(java.net.URLEncoder.encode(fieldValue, "US-ASCII"));
+                        if (itr.hasNext()) {
+                            query.append('&');
+                            hashData.append('&');
+                        }
+                    }
+                }
+
+                String secureHash = utils.VNPay.hmacSHA512(config.VNPayConfig.secretKey, hashData.toString());
+                // Đường dẫn về trang Return của bạn
+                String returnUrl = request.getContextPath() + "/vnpay-jsp/vnpay_return.jsp?" + query.toString() + "&vnp_SecureHash=" + secureHash;
+
+                response.sendRedirect(returnUrl);
+                return;
+            }
+
+            // =========================================================================
+            // CHỐT CHẶN 4: ĐƠN HÀNG >= 10.000Đ -> ĐI QUA VNPAY
             // =========================================================================
             String vnp_Version = "2.1.0";
             String vnp_Command = "pay";
-            String vnp_TxnRef = bookingCode; // Dùng mã cũ hoặc mới
-            String vnp_IpAddr = VNPay.getIpAddress(request);
-            String vnp_TmnCode = VNPayConfig.vnp_TmnCode;
+            String vnp_TxnRef = bookingCode;
+            String vnp_IpAddr = utils.VNPay.getIpAddress(request);
+            String vnp_TmnCode = config.VNPayConfig.vnp_TmnCode;
 
             long amount = finalAmount.longValue() * 100;
 
@@ -213,7 +287,7 @@ public class BookingSummary extends HttpServlet {
             vnp_Params.put("vnp_OrderInfo", "Thanh toan ve phim " + vnp_TxnRef);
             vnp_Params.put("vnp_OrderType", "other");
             vnp_Params.put("vnp_Locale", "vn");
-            vnp_Params.put("vnp_ReturnUrl", VNPayConfig.vnp_ReturnUrl);
+            vnp_Params.put("vnp_ReturnUrl", config.VNPayConfig.vnp_ReturnUrl);
             vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
             java.util.Calendar cld = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Etc/GMT+7"));
@@ -242,14 +316,15 @@ public class BookingSummary extends HttpServlet {
             }
 
             String queryUrl = query.toString();
-            String vnp_SecureHash = VNPay.hmacSHA512(VNPayConfig.secretKey, hashData.toString());
+            String vnp_SecureHash = utils.VNPay.hmacSHA512(config.VNPayConfig.secretKey, hashData.toString());
             queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
-            String paymentUrl = VNPayConfig.vnp_PayUrl + "?" + queryUrl;
+            String paymentUrl = config.VNPayConfig.vnp_PayUrl + "?" + queryUrl;
 
             response.sendRedirect(paymentUrl);
 
         } catch (Exception e) {
             e.printStackTrace();
+            session.setAttribute("errorMsg", "Hệ thống bận hoặc có lỗi xử lý dữ liệu. Vui lòng thử lại!");
             response.sendRedirect(request.getContextPath() + "/home");
         }
     }

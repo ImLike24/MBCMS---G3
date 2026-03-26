@@ -48,118 +48,35 @@ public class BookingTickets extends HttpServlet {
 
             Map<String, Object> pageData = bookingService.getBookingTicketsData(showtimeId);
 
-            // Set toàn bộ data ra View
-            request.setAttribute("showtime", pageData.get("showtime"));
+            request.setAttribute("showtimeId", showtimeId);
+
+            // Truyền các biến cần thiết ra JSP để vẽ Sơ đồ ghế và Bắp nước
             request.setAttribute("movie", pageData.get("movie"));
+            request.setAttribute("showtime", pageData.get("showtime"));
             request.setAttribute("room", pageData.get("room"));
             request.setAttribute("occupiedSeats", pageData.get("occupiedSeats"));
             request.setAttribute("seatsByRow", pageData.get("seatsByRow"));
-            request.setAttribute("surchargeList", pageData.get("surchargeList"));
-            request.setAttribute("concessionsList", pageData.get("concessions"));
-            request.setAttribute("basePrice", pageData.get("basePrice"));
 
-            // Gửi dữ liệu giá cơ bản cho Javascript
+            // Trong hàm Service put là "concessions", nhưng file JSP dùng "concessionsList"
+            request.setAttribute("concessionsList", pageData.get("concessions"));
+
+            // Truyền giá vé để Javascript đọc và tính toán (Thẻ div ẩn id="bookingPricesConfig")
+            request.setAttribute("surchargeRatesJson", pageData.get("surchargeRatesJson"));
             request.setAttribute("adultPrice", pageData.get("adultPrice"));
             request.setAttribute("childPrice", pageData.get("childPrice"));
-            request.setAttribute("surchargeRatesJson", pageData.get("surchargeRatesJson"));
+            request.setAttribute("basePrice", pageData.get("basePrice"));
 
-            // XỬ LÝ DANH SÁCH GHẾ ĐƯỢC CHỌN & TÍNH TIỀN
-            String[] selectedSeatIdsStr = request.getParameterValues("seatIds");
-            java.util.List<Integer> selectedSeatIds = new java.util.ArrayList<>();
-            java.util.List<java.util.Map<String, Object>> selectedSeatsInfo = new java.util.ArrayList<>();
-
-            double adultPrice = (Double) pageData.get("adultPrice");
-            double childPrice = (Double) pageData.get("childPrice");
-            @SuppressWarnings("unchecked")
-            java.util.List<models.SeatTypeSurcharge> surcharges = (java.util.List<models.SeatTypeSurcharge>) pageData.get("surchargeList");
-
-            double ticketTotal = 0;
-
-            if (selectedSeatIdsStr != null) {
-                @SuppressWarnings("unchecked")
-                java.util.Map<String, java.util.List<java.util.Map<String, Object>>> seatsByRow =
-                        (java.util.Map<String, java.util.List<java.util.Map<String, Object>>>) pageData.get("seatsByRow");
-
-                for (String idStr : selectedSeatIdsStr) {
-                    try {
-                        int sId = Integer.parseInt(idStr);
-                        selectedSeatIds.add(sId);
-
-                        // Tìm thông tin chiếc ghế đó trong sơ đồ
-                        if (seatsByRow != null) {
-                            for (java.util.List<java.util.Map<String, Object>> row : seatsByRow.values()) {
-                                for (java.util.Map<String, Object> seatInfo : row) {
-                                    models.Seat s = (models.Seat) seatInfo.get("seat");
-                                    if (s != null && s.getSeatId() == sId) {
-                                        java.util.Map<String, Object> selectedSeat = new java.util.HashMap<>();
-                                        selectedSeat.put("seatId", s.getSeatId());
-                                        selectedSeat.put("seatCode", s.getSeatCode());
-                                        selectedSeat.put("seatType", s.getSeatType());
-
-                                        // Hứng loại vé (ADULT/CHILD) nếu khách đổi ở UI
-                                        String ticketType = request.getParameter("ticketType_" + sId);
-                                        ticketType = (ticketType != null) ? ticketType : "ADULT";
-                                        selectedSeat.put("ticketType", ticketType);
-
-                                        // TÍNH TOÁN GIÁ 1 CHIẾC GHẾ = Giá Base * (1 + % Phụ phí)
-                                        double baseP = "CHILD".equals(ticketType) ? childPrice : adultPrice;
-                                        double rate = 0;
-                                        if (surcharges != null) {
-                                            for (models.SeatTypeSurcharge sur : surcharges) {
-                                                if (sur.getSeatType().equals(s.getSeatType())) {
-                                                    rate = sur.getSurchargeRate();
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        double seatPrice = Math.round(baseP * (1 + rate / 100.0));
-                                        selectedSeat.put("price", seatPrice);
-                                        ticketTotal += seatPrice;
-
-                                        selectedSeatsInfo.add(selectedSeat);
-                                    }
-                                }
-                            }
-                        }
-                    } catch (Exception ignored) {}
-                }
+            // Hỗ trợ hiển thị thẻ <title> của web
+            models.Movie m = (models.Movie) pageData.get("movie");
+            if (m != null) {
+                request.setAttribute("movieTitle", m.getTitle());
             }
-
-            // Xử lý giữ lại trạng thái số lượng bắp nước và tính tổng tiền bắp nước
-            double concessionTotal = 0;
-            java.util.Map<Integer, Integer> concessionQty = new java.util.HashMap<>();
-            @SuppressWarnings("unchecked")
-            java.util.List<models.Concession> concessions = (java.util.List<models.Concession>) pageData.get("concessions");
-            if (concessions != null) {
-                for (models.Concession c : concessions) {
-                    String qtyStr = request.getParameter("concession_" + c.getConcessionId());
-                    if (qtyStr != null && !qtyStr.isEmpty()) {
-                        try {
-                            int q = Integer.parseInt(qtyStr);
-                            if (q > 0) {
-                                concessionQty.put(c.getConcessionId(), q);
-                                concessionTotal += (q * c.getPriceBase());
-                            }
-                        } catch (Exception ignored) {}
-                    }
-                }
-            }
-
-            // Đẩy ra lại cho JSP vẽ cột bên phải và giữ trạng thái Checked
-            request.setAttribute("selectedSeatIds", selectedSeatIds);
-            request.setAttribute("selectedSeatsInfo", selectedSeatsInfo);
-
-            // Truyền các biến tính tiền khởi tạo ra View
-            request.setAttribute("concessionQty", concessionQty);
-            request.setAttribute("ticketTotal", ticketTotal);
-            request.setAttribute("concessionTotal", concessionTotal);
-            request.setAttribute("totalAmount", ticketTotal + concessionTotal);
 
             request.getRequestDispatcher("/pages/customer/booking-tickets.jsp").forward(request, response);
+
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "Có lỗi xảy ra khi tải sơ đồ ghế.");
-            request.getRequestDispatcher("/pages/customer/booking-tickets.jsp").forward(request, response);
+            response.sendRedirect(request.getContextPath() + "/showtimes");
         }
     }
 
@@ -176,14 +93,16 @@ public class BookingTickets extends HttpServlet {
         String[] seatIdsParam = request.getParameterValues("seatIds");
         String showtimeIdParam = request.getParameter("showtimeId");
 
-        // Kiểm tra đầu vào
-        if (showtimeIdParam == null || showtimeIdParam.isEmpty() || seatIdsParam == null || seatIdsParam.length == 0) {
-            response.sendRedirect(request.getContextPath() + "/showtimes");
+        // Chốt chặn 1: Đề phòng truy cập trái phép không có showtimeId
+        if (showtimeIdParam == null || showtimeIdParam.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/movies");
             return;
         }
 
+        // Chốt chặn 2: Khách cố tình submit khi chưa chọn ghế
         if (seatIdsParam == null || seatIdsParam.length == 0) {
-            session.setAttribute("bookingError", "Vui lòng chọn ít nhất 1 ghế để tiếp tục.");
+            // Lưu lỗi vào session để JSP hiển thị (nhớ dùng tên biến "error" cho khớp thẻ c:if của bạn)
+            session.setAttribute("error", "Vui lòng chọn ít nhất 1 ghế để tiếp tục.");
             response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeIdParam);
             return;
         }
@@ -191,12 +110,15 @@ public class BookingTickets extends HttpServlet {
         try {
             int showtimeId = Integer.parseInt(showtimeIdParam);
 
+            // Tận dụng lại hàm Service để lấy dữ liệu Bảng giá và Phụ phí cực kỳ tối ưu
             Map<String, Object> pageData = bookingService.getBookingTicketsData(showtimeId);
 
             @SuppressWarnings("unchecked")
             java.util.List<Integer> occupiedSeats = (java.util.List<Integer>) pageData.get("occupiedSeats");
-            double adultPrice = (Double) pageData.get("adultPrice");
-            double childPrice = (Double) pageData.get("childPrice");
+
+            // Ép kiểu an toàn cho giá tiền (Đề phòng trường hợp Service trả về BigDecimal hoặc Integer)
+            double adultPrice = ((Number) pageData.get("adultPrice")).doubleValue();
+            double childPrice = ((Number) pageData.get("childPrice")).doubleValue();
 
             @SuppressWarnings("unchecked")
             java.util.List<models.SeatTypeSurcharge> surcharges = (java.util.List<models.SeatTypeSurcharge>) pageData.get("surchargeList");
@@ -208,16 +130,18 @@ public class BookingTickets extends HttpServlet {
             java.util.Map<String, java.util.List<java.util.Map<String, Object>>> seatsByRow =
                     (java.util.Map<String, java.util.List<java.util.Map<String, Object>>>) pageData.get("seatsByRow");
 
-            // Xử lý từng chiếc ghế khách hàng chọn
+            // ====================================================================
+            // VÒNG LẶP TÍNH TIỀN TỪNG GHẾ (ĐÃ FIX CÔNG THỨC)
+            // ====================================================================
             for (String sidStr : seatIdsParam) {
                 int seatId;
                 try {
                     seatId = Integer.parseInt(sidStr.trim());
                 } catch (Exception e) { continue; }
 
-                // Kiểm tra: Ghế có bị nẫng tay trên trong lúc đang thao tác không?
+                // Kiểm tra: Ghế có bị người khác nhanh tay mua mất không?
                 if (occupiedSeats.contains(seatId)) {
-                    session.setAttribute("bookingError", "Ghế bạn chọn vừa có người đặt. Vui lòng chọn ghế khác.");
+                    session.setAttribute("error", "Ghế bạn chọn vừa có người đặt. Vui lòng chọn ghế khác.");
                     response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeId);
                     return;
                 }
@@ -229,7 +153,8 @@ public class BookingTickets extends HttpServlet {
                         for (java.util.Map<String, Object> seatInfo : row) {
                             models.Seat temp = (models.Seat) seatInfo.get("seat");
                             if (temp != null && temp.getSeatId() == seatId) {
-                                s = temp; break;
+                                s = temp;
+                                break;
                             }
                         }
                         if (s != null) break;
@@ -238,39 +163,47 @@ public class BookingTickets extends HttpServlet {
 
                 if (s == null) continue;
 
-                // Tính tiền ghế = Giá gốc theo loại khách * (1 + % Phụ phí ghế)
+                // Xác định loại vé khách chọn
                 String ticketType = request.getParameter("ticketType_" + seatId);
                 ticketType = (ticketType != null && ticketType.equals("CHILD")) ? "CHILD" : "ADULT";
 
-                double baseP = "CHILD".equals(ticketType) ? childPrice : adultPrice;
-                double rate = 0;
+                // ---------------------------------------------------
+                // CÔNG THỨC CHUẨN: Giá Cuối = Giá Cơ Bản + Phụ Phí Ghế
+                // ---------------------------------------------------
+                double basePrice = "CHILD".equals(ticketType) ? childPrice : adultPrice;
+                double surchargeRate = 0;
+
                 if (surcharges != null) {
                     for (models.SeatTypeSurcharge sur : surcharges) {
                         if (sur.getSeatType().equals(s.getSeatType())) {
-                            rate = sur.getSurchargeRate();
+                            surchargeRate = sur.getSurchargeRate().doubleValue();
                             break;
                         }
                     }
                 }
-                double seatPrice = Math.round(baseP * (1 + rate / 100.0));
+
+                // ĐÃ FIX: Dùng phép CỘNG (+) thay vì nhân (*)
+                double finalSeatPrice = Math.round(basePrice * (1 + surchargeRate / 100.0));
 
                 Map<String, Object> seatData = new java.util.HashMap<>();
                 seatData.put("seatId", seatId);
                 seatData.put("seatCode", s.getSeatCode());
                 seatData.put("seatType", s.getSeatType());
                 seatData.put("ticketType", ticketType);
-                seatData.put("price", BigDecimal.valueOf(seatPrice));
+                seatData.put("price", BigDecimal.valueOf(finalSeatPrice));
 
                 selectedSeats.add(seatData);
-                ticketTotal = ticketTotal.add(BigDecimal.valueOf(seatPrice));
+                ticketTotal = ticketTotal.add(BigDecimal.valueOf(finalSeatPrice));
             }
 
             if (selectedSeats.isEmpty()) {
-                response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeId);
+                response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeId);
                 return;
             }
 
-            // Xử lý bắp nước
+            // ====================================================================
+            // XỬ LÝ BẮP NƯỚC
+            // ====================================================================
             @SuppressWarnings("unchecked")
             java.util.List<models.Concession> concessionsListPost = (java.util.List<models.Concession>) pageData.get("concessions");
             List<Map<String, Object>> bookingConcessions = new ArrayList<>();
@@ -300,9 +233,19 @@ public class BookingTickets extends HttpServlet {
                 }
             }
 
-            // Tổng kết tiền và đóng gói vào Session
+            // ====================================================================
+            // TỔNG KẾT VÀ PHỤC HỒI VOUCHER TỪ SESSION CŨ
+            // ====================================================================
             BigDecimal grandTotal = ticketTotal.add(concessionTotalPost);
             String voucherCodeParam = request.getParameter("voucherCode");
+
+            if (voucherCodeParam == null || voucherCodeParam.trim().isEmpty()) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> oldData = (Map<String, Object>) session.getAttribute("customerBookingData");
+                if (oldData != null && oldData.get("voucherCode") != null) {
+                    voucherCodeParam = (String) oldData.get("voucherCode"); // Lôi voucher cũ ra xài lại
+                }
+            }
 
             Map<String, Object> bookingData = new java.util.HashMap<>();
             bookingData.put("showtimeId", showtimeId);
@@ -311,6 +254,7 @@ public class BookingTickets extends HttpServlet {
             bookingData.put("concessionTotal", concessionTotalPost);
             bookingData.put("seats", selectedSeats);
             bookingData.put("concessions", bookingConcessions);
+
             if (voucherCodeParam != null && !voucherCodeParam.trim().isEmpty()) {
                 bookingData.put("voucherCode", voucherCodeParam.trim());
             }
