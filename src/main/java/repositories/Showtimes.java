@@ -584,17 +584,58 @@ public class Showtimes extends DBContext {
     }
 
     /**
-     * Hard-delete a CANCELLED showtime.
+     * Hard-delete a COMPLETED or CANCELLED showtime along with all associated
+     * tickets and bookings (cascade delete inside a transaction).
      */
-    public boolean deleteShowtime(int showtimeId) {
-        String sql = "DELETE FROM showtimes WHERE showtime_id = ? AND status IN ('CANCELLED', 'COMPLETED')";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, showtimeId);
-            return ps.executeUpdate() > 0;
+    public boolean forceDeleteShowtime(int showtimeId) {
+        boolean autoCommit = true;
+        try {
+            autoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            // 1. Delete online tickets for this showtime
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "DELETE FROM online_tickets WHERE showtime_id = ?")) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // 2. Delete bookings for this showtime
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "DELETE FROM bookings WHERE showtime_id = ?")) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // 3. Delete counter tickets for this showtime
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "DELETE FROM counter_tickets WHERE showtime_id = ?")) {
+                ps.setInt(1, showtimeId);
+                ps.executeUpdate();
+            }
+
+            // 4. Delete the showtime itself (only COMPLETED or CANCELLED)
+            int rows;
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "DELETE FROM showtimes WHERE showtime_id = ? AND status IN ('CANCELLED','COMPLETED')")) {
+                ps.setInt(1, showtimeId);
+                rows = ps.executeUpdate();
+            }
+
+            if (rows > 0) {
+                connection.commit();
+                return true;
+            } else {
+                connection.rollback();
+                return false;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
+            try { connection.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            return false;
+        } finally {
+            try { connection.setAutoCommit(autoCommit); } catch (SQLException e) { e.printStackTrace(); }
         }
-        return false;
     }
 
     /**

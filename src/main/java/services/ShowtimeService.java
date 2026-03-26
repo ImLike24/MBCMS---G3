@@ -229,14 +229,8 @@ public class ShowtimeService {
             throw new IllegalArgumentException("notdeletable");
         }
 
-        boolean deleted;
-        if ("CANCELLED".equals(status)) {
-            // Force delete for cancelled showtime
-            deleted = showtimesDao.forceDeleteCancelledShowtime(showtimeId);
-        } else {
-            // Normal delete for completed showtime
-            deleted = showtimesDao.deleteShowtime(showtimeId);
-        }
+        // Force delete for both COMPLETED and CANCELLED — cascade child records first
+        boolean deleted = showtimesDao.forceDeleteShowtime(showtimeId);
 
         if (!deleted) {
             throw new RuntimeException("deletefailed");

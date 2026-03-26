@@ -448,7 +448,9 @@
                                 '⚠️  Toàn bộ vé (online & quầy) và đơn đặt liên quan sẽ bị XÓA khỏi hệ thống.\n' +
                                 'Hành động này KHÔNG THỂ HOÀN TÁC.';
                         } else {
-                            msg = 'Bạn có chắc chắn muốn xóa suất chiếu này khỏi hệ thống?\nHành động này không thể hoàn tác.';
+                            msg = 'Bạn có chắc chắn muốn XÓA VĨNH VIỄN suất chiếu đã hoàn thành này?\n\n' +
+                                '⚠️  Toàn bộ vé (online & quầy) và đơn đặt liên quan sẽ bị XÓA khỏi hệ thống.\n' +
+                                'Hành động này KHÔNG THỂ HOÀN TÁC.';
                         }
                         if (confirm(msg)) {
                             document.getElementById('deleteShowtimeId').value = id;
