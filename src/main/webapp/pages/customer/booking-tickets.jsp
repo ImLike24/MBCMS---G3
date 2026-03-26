@@ -27,7 +27,7 @@
 
                     <div class="content-layout">
                         <!-- Left: form GET – chọn ghế rồi bấm "Cập nhật ghế đã chọn" -->
-                        <form method="get" action="${pageContext.request.contextPath}/customer/booking-tickets"
+                        <form method="get" action="${pageContext.request.contextPath}/booking-tickets"
                             id="formSeatMap">
                             <input type="hidden" name="showtimeId" value="${param.showtimeId}">
                             <div>
@@ -175,7 +175,7 @@
                                     <c:choose>
                                         <c:when test="${not empty selectedSeatsInfo}">
                                             <form method="post"
-                                                action="${pageContext.request.contextPath}/customer/booking-tickets"
+                                                action="${pageContext.request.contextPath}/booking-tickets"
                                                 id="bookingSummaryForm">
                                                 <input type="hidden" name="showtimeId" value="${param.showtimeId}">
                                                 <div id="bookingPricesConfig"
@@ -197,7 +197,7 @@
                                                                         type="number" maxFractionDigits="0" /> ₫
                                                                 </span>
                                                                 <c:url var="removeSeatUrl"
-                                                                    value="/customer/booking-tickets">
+                                                                    value="/booking-tickets">
                                                                     <c:param name="showtimeId" value="${showtimeId}" />
                                                                     <c:forEach var="other" items="${selectedSeatsInfo}">
                                                                         <c:if test="${other.seatId != seatInfo.seatId}">
@@ -307,7 +307,7 @@
                                                 </div>
                                             </form>
                                             <p class="mb-2 mt-2">
-                                                <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=${showtimeId}"
+                                                <a href="${pageContext.request.contextPath}/booking-tickets?showtimeId=${showtimeId}"
                                                     class="btn btn-sm btn-outline-danger btn-clear-all">
                                                     Xóa toàn bộ ghế đã chọn
                                                 </a>
@@ -319,7 +319,7 @@
                                         </c:otherwise>
                                     </c:choose>
                                     <p class="mb-0 small text-muted mt-2">
-                                        <a href="${pageContext.request.contextPath}/customer/booking-showtimes?movieId=${showtime.movieId}&date=${showtime.showDate}"
+                                        <a href="${pageContext.request.contextPath}/booking-showtimes?movieId=${showtime.movieId}&date=${showtime.showDate}"
                                             class="text-decoration-none">&laquo; Quay lại chọn suất chiếu</a>
                                     </p>
                                 </div>

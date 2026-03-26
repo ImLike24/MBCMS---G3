@@ -163,7 +163,7 @@
                     </div>
 
                     <c:if test="${!paymentSuccess}">
-                        <form method="post" action="${pageContext.request.contextPath}/customer/booking-summary">
+                        <form method="post" action="${pageContext.request.contextPath}/booking-summary">
                             <input type="hidden" name="showtimeId" value="${showtimeId}">
                             <input type="hidden" name="voucherCode" value="${inputVoucherCode}">
                             <div class="mb-4">

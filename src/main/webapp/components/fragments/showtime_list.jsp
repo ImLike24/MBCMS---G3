@@ -30,7 +30,7 @@
                                 <c:when test="${not empty movie.showtimes}">
                                     <c:forEach var="st" items="${movie.showtimes}">
                                         <c:set var="timeStr" value="${st.startTime.toString().substring(0, 5)}" />
-                                        <a href="${pageContext.request.contextPath}/customer/booking-tickets?showtimeId=${st.showtimeId}"
+                                        <a href="${pageContext.request.contextPath}/booking-tickets?showtimeId=${st.showtimeId}"
                                             class="showtime-btn" data-start-datetime="${st.showDate}T${st.startTime}">
                                             ${timeStr}
                                         </a>
