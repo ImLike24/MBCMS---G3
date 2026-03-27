@@ -87,6 +87,14 @@
             </div>
         </div>
 
+        <%-- Branch warning --%>
+        <c:if test="${not empty branchWarning}">
+            <div class="alert alert-warning" style="margin:20px 0;padding:16px 20px;border-radius:8px;background:rgba(255,193,7,0.15);border:1px solid #ffc107;color:#ffc107;font-size:15px;">
+                <i class="fas fa-exclamation-triangle me-2"></i>${branchWarning}
+            </div>
+        </c:if>
+
+        <c:if test="${empty branchWarning}">
         <!-- Select Date & Search and Filter Section -->
         <div class="search-filter-section">
             <h3><i class="fas fa-calendar-day"></i> Chọn ngày & tìm kiếm & lọc phim</h3>
@@ -330,6 +338,7 @@
                 </c:choose>
             </div>
         </c:if>
+        </c:if><%-- end empty branchWarning --%>
     </div>
 
     <script>

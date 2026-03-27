@@ -34,6 +34,16 @@ public class CounterBookingMovies extends HttpServlet {
             return;
         }
 
+        // Kiểm tra branch
+        User currentUser = (User) session.getAttribute("user");
+        Integer branchId = currentUser != null ? currentUser.getBranchId() : null;
+        if (branchId == null) {
+            request.setAttribute("branchWarning",
+                    "Tài khoản chưa được gán chi nhánh. Vui lòng liên hệ quản lý.");
+            request.getRequestDispatcher("/pages/staff/counter-booking-movies.jsp").forward(request, response);
+            return;
+        }
+
         // Mỗi request dùng connection riêng, tránh "connection is closed" khi nhiều
         // request đồng thời
         try {
@@ -79,10 +89,7 @@ public class CounterBookingMovies extends HttpServlet {
 
             CounterBookingMoviesService service = new CounterBookingMoviesService();
 
-            // Lấy chi nhánh của staff (nếu có)
-            User currentUser = (User) session.getAttribute("user");
-            Integer branchId = currentUser != null ? currentUser.getBranchId() : null;
-CounterBookingMoviesService.MoviesPage moviesPage = service.getMoviesForCounter(
+            CounterBookingMoviesService.MoviesPage moviesPage = service.getMoviesForCounter(
                     selectedDate, showAllMovies, search, genre, ageRating, page, branchId);
 
             List<Movie> movies = moviesPage.movies;
