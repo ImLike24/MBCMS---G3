@@ -42,12 +42,10 @@
                                     <c:set var="seat" value="${seatInfo.seat}"/>
                                     <c:set var="isBooked" value="${seatInfo.bookingStatus == 'BOOKED'}"/>
 
-                                    <c:set var="seatClass" value=""/>
-                                    <c:if test="${isBooked}"><c:set var="seatClass" value="booked"/></c:if>
-                                    <c:if test="${seat.seatType == 'VIP' and not isBooked}"><c:set var="seatClass"
-                                                                                                   value="vip"/></c:if>
-                                    <c:if test="${seat.seatType == 'COUPLE' and not isBooked}"><c:set var="seatClass"
-                                                                                                      value="couple"/></c:if>
+                                    <c:set var="seatClass" value="normal" />
+                                    <c:if test="${isBooked}"><c:set var="seatClass" value="booked" /></c:if>
+                                    <c:if test="${seat.seatType == 'VIP' and not isBooked}"><c:set var="seatClass" value="vip" /></c:if>
+                                    <c:if test="${seat.seatType == 'COUPLE' and not isBooked}"><c:set var="seatClass" value="couple" /></c:if>
 
                                     <div class="seat ${seatClass}"
                                          id="ui-seat-${seat.seatId}"
@@ -86,25 +84,36 @@
 
                 <hr class="my-5">
 
-                <div class="concessions-section">
-                    <h5 class="mb-4">Combo Bắp Nước</h5>
+                <div class="concessions-section mt-5">
+                    <h5 class="mb-4 text-uppercase fw-bold" style="color: #d96c2c;">
+                        <i class="fa fa-coffee me-2"></i>Đồ ăn/Thức uống
+                    </h5>
                     <div class="row">
                         <c:forEach var="c" items="${concessionsList}">
                             <div class="col-md-6 mb-3">
-                                <div class="concession-item">
+                                <div class="d-flex align-items-center p-3 border rounded shadow-sm" style="background-color: #262626; border-color: #444 !important;">
+                                    <div class="me-3 fs-3 text-warning">🍿🥤</div>
+
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-1">${c.concessionName}</h6>
-                                        <small class="text-danger fw-bold"><fmt:formatNumber value="${c.priceBase}"
-                                                                                             type="currency"
-                                                                                             currencySymbol="₫"/></small>
+                                        <h6 class="mb-1 text-white fw-bold">${c.concessionName}</h6>
+                                        <div class="text-danger fw-bold">
+                                            <fmt:formatNumber value="${c.priceBase}" type="currency" currencySymbol="₫"/>
+                                        </div>
                                     </div>
-                                    <div class="input-group input-group-sm" style="width: 100px;">
+
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-circle d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" onclick="changeQty('${c.concessionId}', -1)">
+                                            <i class="fa fa-minus"></i>
+                                        </button>
+
+                                        <input type="text" id="qty-display-${c.concessionId}" class="form-control text-center bg-transparent text-white border-0 p-0 fw-bold fs-5" style="width: 30px;" value="0" readonly>
+
+                                        <button type="button" class="btn btn-outline-warning btn-sm rounded-circle d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" onclick="changeQty('${c.concessionId}', 1)">
+                                            <i class="fa fa-plus"></i>
+                                        </button>
+
                                         <input type="hidden" id="conc-price-${c.concessionId}" value="${c.priceBase}">
-                                        <input type="number" class="form-control text-center font-weight-bold"
-                                               name="concession_${c.concessionId}"
-                                               onchange="updateConcession('${c.concessionId}', this.value)"
-                                               onkeyup="updateConcession('${c.concessionId}', this.value)"
-                                               value="0" min="0" max="10">
+                                        <input type="hidden" name="concession_${c.concessionId}" id="conc-input-${c.concessionId}" value="0">
                                     </div>
                                 </div>
                             </div>
@@ -117,7 +126,7 @@
 
         <div class="right-col">
             <div class="booking-summary-box sticky-top p-4 rounded shadow-sm"
-                 style="top: 80px; background-color: #1a1a1a; color: #fff; border: 1px solid #333;">
+                 style="top: 80px; background-color: #1a1a1a; color: #fff; border: 1px solid #333; border-radius: 10px;>
                 <h5 class="border-bottom pb-3 mb-3 text-uppercase fw-bold"
                     style="color: #d96c2c; border-color: #333 !important;">Thông tin đặt vé</h5>
 
@@ -293,6 +302,21 @@
             // Tự động nhảy lại giá tiền khi khách chọn vé Trẻ em/HSSV
             seat.price = calculateSeatPrice(newType, seat.type);
             renderCart();
+        }
+    }
+
+    // Hàm xử lý tăng giảm số lượng bắp nước mượt mà
+    function changeQty(id, delta) {
+        let displayInput = document.getElementById('qty-display-' + id);
+        let realInput = document.getElementById('conc-input-' + id);
+        let currentVal = parseInt(displayInput.value) || 0;
+        let newVal = currentVal + delta;
+
+        // Giới hạn cho phép mua từ 0 đến 10 combo
+        if (newVal >= 0 && newVal <= 10) {
+            displayInput.value = newVal;
+            realInput.value = newVal;
+            updateConcession(id, newVal); // Gọi lại hàm tổng của bạn để tính tiền
         }
     }
 

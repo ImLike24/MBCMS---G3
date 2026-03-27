@@ -57,10 +57,9 @@ public class BookingTickets extends HttpServlet {
             request.setAttribute("occupiedSeats", pageData.get("occupiedSeats"));
             request.setAttribute("seatsByRow", pageData.get("seatsByRow"));
 
-            // Trong hàm Service put là "concessions", nhưng file JSP dùng "concessionsList"
             request.setAttribute("concessionsList", pageData.get("concessions"));
 
-            // Truyền giá vé để Javascript đọc và tính toán (Thẻ div ẩn id="bookingPricesConfig")
+            // Truyền giá vé để Javascript đọc và tính toán
             request.setAttribute("surchargeRatesJson", pageData.get("surchargeRatesJson"));
             request.setAttribute("adultPrice", pageData.get("adultPrice"));
             request.setAttribute("childPrice", pageData.get("childPrice"));
@@ -101,7 +100,7 @@ public class BookingTickets extends HttpServlet {
 
         // Chốt chặn 2: Khách cố tình submit khi chưa chọn ghế
         if (seatIdsParam == null || seatIdsParam.length == 0) {
-            // Lưu lỗi vào session để JSP hiển thị (nhớ dùng tên biến "error" cho khớp thẻ c:if của bạn)
+            // Lưu lỗi vào session để JSP hiển thị
             session.setAttribute("error", "Vui lòng chọn ít nhất 1 ghế để tiếp tục.");
             response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeIdParam);
             return;

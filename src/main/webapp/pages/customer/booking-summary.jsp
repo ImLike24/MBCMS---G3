@@ -76,14 +76,14 @@
     <div class="container mt-5 pt-4 mb-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <div class="payment-card">
+                <div class="payment-card p-0" style="background: transparent;">
                     <div class="payment-header text-center mb-4">
-                        <h1>Thanh toán vé phim</h1>
-                        <p class="text-muted mb-0">${movieTitle} - ${branchName}</p>
+                        <h1 class="fw-bold text-uppercase" style="color: #d96c2c;">Thanh toán vé phim</h1>
+                        <p class="text-light mb-0">${movieTitle} - ${branchName}</p>
                     </div>
 
                     <c:if test="${not empty error}">
-                        <div class="alert alert-danger">${error}</div>
+                        <div class="alert alert-danger fw-semibold"><i class="fa fa-exclamation-triangle me-2"></i>${error}</div>
                     </c:if>
 
                     <c:if test="${not empty sessionScope.errorMsg}">
@@ -93,14 +93,33 @@
                         <c:remove var="errorMsg" scope="session" />
                     </c:if>
 
-                    <c:if test="${pendingPaymentMessage}">
-                        <div class="alert alert-info fw-semibold mb-4">
-                            Hiện tại chưa làm bước Xử lý thanh toán
+                    <div class="user-info-box p-4 rounded shadow-sm mb-4" style="background-color: #1a1a1a; border: 1px solid #333;">
+                        <h5 class="mb-3 text-uppercase fw-bold" style="color: #d96c2c; font-size: 1.1rem;">
+                            <i class="fa fa-user-circle-o me-2"></i>Thông tin người nhận vé
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-light small opacity-75">Họ tên</label>
+                                <input type="text" class="form-control bg-dark text-white border-secondary" readonly value="${sessionScope.user.fullName}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-light small opacity-75">Email nhận vé</label>
+                                <input type="email" class="form-control bg-dark text-white border-secondary" readonly value="${sessionScope.user.email}">
+                            </div>
                         </div>
-                    </c:if>
 
-                    <div class="booking-summary-box sticky-top p-4 rounded shadow-sm" style="top: 80px; background-color: #1a1a1a; color: #fff; border: 1px solid #333;">
-                        <h5 class="border-bottom pb-3 mb-3 text-uppercase fw-bold" style="color: #d96c2c; border-color: #333 !important;">Xác nhận đặt vé</h5>
+                        <div class="mt-4 pt-3" style="border-top: 1px dashed #444;">
+                            <h5 class="mb-2 text-uppercase fw-bold" style="color: #d96c2c; font-size: 1.1rem;">
+                                <i class="fa fa-credit-card me-2"></i>Phương thức thanh toán
+                            </h5>
+                            <p class="text-light mb-0 bg-dark p-2 rounded border border-secondary d-inline-block">
+                                Thanh toán Online an toàn qua cổng VNPAY
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="booking-summary-box p-4 rounded shadow-sm" style="background-color: #1a1a1a; color: #fff; border: 1px solid #333;">
+                        <h5 class="border-bottom pb-3 mb-3 text-uppercase fw-bold" style="color: #d96c2c; border-color: #333 !important;">Xác nhận đơn hàng</h5>
 
                         <div class="mb-4 text-light">
                             <h6 class="fw-bold mb-2 fs-5 text-white">${movieTitle}</h6>
@@ -108,7 +127,7 @@
                                 <i class="fa fa-map-marker me-2" style="color: #d96c2c;"></i>Phòng chiếu: <span class="fw-bold text-white">${showtimeDetails.branchName} - ${showtimeDetails.roomName}</span>
                             </p>
                             <p class="mb-0 opacity-75 small">
-                                <i class="fa fa-clock-o me-2" style="color: #d96c2c;"></i>Giờ chiếu: <span class="fw-bold text-white">${showtimeDetails.showTime}</span>
+                                <i class="fa fa-clock-o me-2" style="color: #d96c2c;"></i>Giờ chiếu: <span class="fw-bold text-white">${showtimeDetails.showTimeFormatted} | Ngày: ${showtimeDetails.showDateFormatted}</span>
                             </p>
                         </div>
 
@@ -147,19 +166,21 @@
                             </div>
                         </c:if>
 
-                        <form action="${pageContext.request.contextPath}/booking-summary" method="POST">
-
-                            <div class="mb-4 mt-4">
-                                <h6 class="border-bottom pb-2 mb-3" style="border-color: #333 !important;">Mã giảm giá</h6>
-                                <div class="input-group">
-                                    <input type="hidden" name="showtimeId" value="${param.showtimeId}">
-                                    <input type="text" class="form-control bg-dark text-light border-secondary" name="voucherCode" placeholder="Nhập mã..." value="${param.voucherCode}">
-                                    <button class="btn btn-outline-success fw-bold" type="submit">Áp dụng</button>
-                                </div>
-                                <c:if test="${not empty voucherError}">
-                                    <small class="form-text text-danger mt-1 d-block"><i class="fa fa-exclamation-circle"></i> ${voucherError}</small>
-                                </c:if>
+                        <div class="mb-4 mt-4">
+                            <h6 class="border-bottom pb-2 mb-3" style="border-color: #333 !important;">Mã giảm giá</h6>
+                            <div class="input-group">
+                                <c:set var="currentVoucher" value="${not empty param.voucherCode ? param.voucherCode : sessionScope.customerBookingData.voucherCode}" />
+                                <input type="text" class="form-control bg-dark text-light border-secondary" id="voucherCodeInput" placeholder="Nhập mã giảm giá..." value="${currentVoucher}">
+                                <button class="btn btn-outline-success fw-bold" type="button" onclick="applyVoucher()">Áp dụng</button>
                             </div>
+                            <c:if test="${not empty voucherError}">
+                                <small class="form-text text-danger mt-1 d-block"><i class="fa fa-exclamation-circle"></i> ${voucherError}</small>
+                            </c:if>
+                        </div>
+
+                        <form action="${pageContext.request.contextPath}/booking-summary" method="POST">
+                            <input type="hidden" name="showtimeId" value="${sessionScope.customerBookingData.showtimeId}">
+                            <input type="hidden" name="voucherCode" id="hiddenVoucherCode" value="${currentVoucher}">
 
                             <div class="mt-4 pt-3" style="border-top: 1px dashed #555;">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -182,67 +203,16 @@
 
                             <div class="d-flex justify-content-between mt-4">
                                 <a href="${pageContext.request.contextPath}/booking-tickets?showtimeId=${sessionScope.customerBookingData.showtimeId}"
-                                   class="btn btn-outline-secondary px-3 fw-semibold border-secondary text-light">
-                                    <i class="fa fa-arrow-left me-1"></i> Trở lại
+                                   class="btn btn-outline-secondary px-4 fw-semibold border-secondary text-light">
+                                    <i class="fa fa-arrow-left me-2"></i> Trở lại
                                 </a>
-                                <button type="submit" class="btn px-4 fw-bold text-uppercase shadow-sm"
+                                <button type="submit" class="btn px-5 fw-bold text-uppercase shadow-sm"
                                         style="background-color: #d96c2c; border-color: #d96c2c; color: white; transition: 0.3s; border-radius: 8px;">
                                     Thanh toán <i class="fa fa-credit-card ms-2"></i>
                                 </button>
                             </div>
                         </form>
                     </div>
-
-                    <c:if test="${!paymentSuccess}">
-                        <form method="post" action="${pageContext.request.contextPath}/booking-summary">
-                            <input type="hidden" name="showtimeId" value="${showtimeId}">
-                            <input type="hidden" name="voucherCode" value="${inputVoucherCode}">
-                            <div class="mb-4">
-                                <h5 class="mb-3">Thông tin người nhận vé</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label text-light">Họ tên</label>
-                                        <input type="text" class="form-control bg-dark text-white border-secondary" required placeholder="Nhập họ tên đầy đủ" value="${sessionScope.user.fullName}">                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label text-light">Email</label>
-                                        <input type="email" class="form-control bg-dark text-white border-secondary" required placeholder="Nhập email" value="${sessionScope.user.email}">                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <h5 class="mb-3">Phương thức thanh toán</h5>
-                                <p class="text-light"><i class="fa fa-credit-card"></i> Thanh toán online (BANKING)</p>
-                            </div>
-
-                            <div class="d-flex justify-content-between mt-4">
-                                <a href="${pageContext.request.contextPath}/booking-tickets?showtimeId=${sessionScope.customerBookingData.showtimeId}"
-                                   class="btn btn-outline-secondary px-4 fw-semibold">
-                                    <i class="fa fa-arrow-left me-2"></i> Quay lại chọn ghế
-                                </a>
-                                <button type="submit" class="btn btn-primary px-5 fw-semibold">
-                                    Xử lý thanh toán <i class="fa fa-arrow-right ms-2"></i>
-                                </button>
-                            </div>
-                        </form>
-                    </c:if>
-
-                    <c:if test="${paymentSuccess}">
-                        <div class="receipt-box mt-4">
-                            <h5 class="mb-2">Hóa đơn thanh toán</h5>
-                            <p class="mb-1"><strong>Mã đơn:</strong> ${receiptInvoiceCode}</p>
-                            <p class="mb-1"><strong>Mã đặt vé:</strong> ${receiptBookingCode}</p>
-                            <p class="mb-1"><strong>Phim:</strong> ${movieTitle}</p>
-                            <p class="mb-1"><strong>Rạp:</strong> ${showtimeDetails.branchName}</p>
-                            <p class="mb-1"><strong>Ngày chiếu:</strong> ${showDateFormatted} — <strong>Giờ:</strong> ${showTimeFormatted}</p>
-                            <p class="mb-1"><strong>Ghế:</strong> ${receiptSeats}</p>
-                            <p class="mb-0"><strong>Tổng tiền:</strong>
-                                <fmt:formatNumber value="${receiptTotal}" type="currency" currencySymbol="₫" />
-                            </p>
-                        </div>
-                        <div class="mt-3">
-                            <a href="${pageContext.request.contextPath}/movies" class="btn btn-primary">Quay lại danh sách phim</a>
-                        </div>
-                    </c:if>
                 </div>
             </div>
         </div>
@@ -257,6 +227,31 @@
             // Maintain showtimeId
             window.location.href = url.toString();
         }
+
+        function applyVoucher() {
+            const code = document.getElementById('voucherCodeInput').value.trim();
+            const url = new URL(window.location.href);
+            if (code) {
+                url.searchParams.set('voucherCode', code);
+            } else {
+                url.searchParams.delete('voucherCode');
+            }
+            // Tải lại trang (GET request) để Java Server tính toán lại tổng tiền
+            window.location.href = url.toString();
+        }
+
+        // Đồng bộ giá trị voucher vào thẻ input ẩn của Form thanh toán
+        document.getElementById('voucherCodeInput').addEventListener('input', function() {
+            document.getElementById('hiddenVoucherCode').value = this.value.trim();
+        });
+
+        // Hỗ trợ ấn phím Enter để Apply Voucher
+        document.getElementById('voucherCodeInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyVoucher();
+            }
+        });
     </script>
 </body>
 

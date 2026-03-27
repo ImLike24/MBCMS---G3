@@ -206,9 +206,6 @@ public class BookingSummary extends HttpServlet {
             }
 
             // =========================================================================
-            // CHỐT CHẶN 3: XỬ LÝ ĐƠN HÀNG 0Đ
-            // =========================================================================
-            // =========================================================================
             // CHỐT CHẶN 3: XỬ LÝ ĐƠN HÀNG 0Đ (ĐỒNG BỘ UI VỚI VNPAY RETURN)
             // =========================================================================
             if (finalAmount.compareTo(BigDecimal.ZERO) == 0) {
@@ -260,7 +257,7 @@ public class BookingSummary extends HttpServlet {
 
                 String secureHash = utils.VNPay.hmacSHA512(config.VNPayConfig.secretKey, hashData.toString());
                 // Đường dẫn về trang Return của bạn
-                String returnUrl = request.getContextPath() + "/vnpay-jsp/vnpay_return.jsp?" + query.toString() + "&vnp_SecureHash=" + secureHash;
+                String returnUrl = request.getContextPath() + "/pages/vnpay/vnpay_return.jsp?" + query.toString() + "&vnp_SecureHash=" + secureHash;
 
                 response.sendRedirect(returnUrl);
                 return;
