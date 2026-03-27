@@ -126,10 +126,9 @@
 
         <div class="right-col">
             <div class="booking-summary-box sticky-top p-4 rounded shadow-sm"
-                 style="top: 80px; background-color: #1a1a1a; color: #fff; border: 1px solid #333; border-radius: 10px;>
+                 style="top: 80px; background-color: #1a1a1a; color: #fff; border: 1px solid #333; border-radius: 10px;">
                 <h5 class="border-bottom pb-3 mb-3 text-uppercase fw-bold"
                     style="color: #d96c2c; border-color: #333 !important;">Thông tin đặt vé</h5>
-
                 <div class="mb-4 text-light">
                     <h6 class="fw-bold mb-2 fs-5 text-white">${movie.title}</h6>
                     <p class="mb-1 opacity-75 small">

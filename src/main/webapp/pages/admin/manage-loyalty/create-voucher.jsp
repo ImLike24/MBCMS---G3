@@ -166,7 +166,7 @@
                         document.getElementById('maxUsage').readOnly = false;
                         document.getElementById('usageHint').innerText = 'Nhập số lượt dùng tối đa.';
                     } else {
-                        codeLabel.innerHTML = 'Tiền tố Mã (Prefix) — Không bắt buộc';
+                        codeLabel.innerHTML = 'Tiền tố Mã (Prefix)';
                         codeHint.innerText = 'Hệ thống sẽ tự ghép prefix + chuỗi ngẫu nhiên khi khách đổi.';
                         voucherCode.placeholder = 'VD: SALE50K-';
                         voucherCode.required = false;
