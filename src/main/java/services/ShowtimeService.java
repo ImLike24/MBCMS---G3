@@ -146,6 +146,9 @@ public class ShowtimeService {
             throw new IllegalArgumentException("Phòng đã có suất chiếu trong khung giờ này. Vui lòng chọn giờ khác.");
         }
 
+        // Lookup base price from ticket_prices table
+        BigDecimal basePrice = ticketPriceService.getBasePriceForShowtime(branchId, date, start);
+
         // Create new showtime object
         Showtime st = new Showtime();
         st.setMovieId(movieId);
@@ -154,6 +157,7 @@ public class ShowtimeService {
         st.setStartTime(start);
         st.setEndTime(end);
         st.setStatus("SCHEDULED");
+        st.setBasePrice(basePrice != null ? basePrice : BigDecimal.ZERO);
 
         // Insert showtime to database
         int newId = showtimesDao.createShowtime(st);

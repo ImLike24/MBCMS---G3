@@ -347,14 +347,15 @@ public class Showtimes extends DBContext {
      */
     public int createShowtime(Showtime showtime) {
         String sql = "INSERT INTO showtimes (movie_id, room_id, show_date, start_time, end_time, base_price, status) " +
-                "VALUES (?, ?, ?, ?, ?, 0, ?) ";
+                "VALUES (?, ?, ?, ?, ?, ?, ?) ";
         try (PreparedStatement ps = connection.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, showtime.getMovieId());
             ps.setInt(2, showtime.getRoomId());
             ps.setDate(3, java.sql.Date.valueOf(showtime.getShowDate()));
             ps.setTime(4, java.sql.Time.valueOf(showtime.getStartTime()));
             ps.setTime(5, java.sql.Time.valueOf(showtime.getEndTime()));
-            ps.setString(6, showtime.getStatus() != null ? showtime.getStatus() : "SCHEDULED");
+            ps.setBigDecimal(6, showtime.getBasePrice() != null ? showtime.getBasePrice() : java.math.BigDecimal.ZERO);
+            ps.setString(7, showtime.getStatus() != null ? showtime.getStatus() : "SCHEDULED");
             ps.executeUpdate();
             try (java.sql.ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next())
