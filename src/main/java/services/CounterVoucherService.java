@@ -19,6 +19,90 @@ import repositories.Vouchers;
 public class CounterVoucherService {
 
     /**
+     * Validate a voucher code for counter booking.
+     * Checks PUBLIC vouchers first, then personal vouchers by phone.
+     *
+     * @param voucherCode   the code staff entered
+     * @param customerPhone optional phone number of the customer
+     * @param totalAmount   current bill total
+     * @return JsonObject with success, discount, voucherName, message
+     */
+    public JsonObject validateVoucherCode(String voucherCode, String customerPhone, BigDecimal totalAmount) {
+        JsonObject resp = new JsonObject();
+
+        if (voucherCode == null || voucherCode.trim().isEmpty()) {
+            resp.addProperty("success", false);
+            resp.addProperty("message", "Vui lòng nhập mã voucher");
+            return resp;
+        }
+
+        Vouchers vouchersRepo = null;
+        UserVouchers userVouchersRepo = null;
+        Users usersRepo = null;
+
+        try {
+            vouchersRepo = new Vouchers();
+            userVouchersRepo = new UserVouchers();
+
+            // 1. Check PUBLIC voucher (matches voucher_code directly)
+            Voucher publicV = vouchersRepo.getActiveVoucherByCode(voucherCode.trim());
+            if (publicV != null && "PUBLIC".equalsIgnoreCase(publicV.getVoucherType())) {
+                BigDecimal discount = publicV.getDiscountAmount() != null ? publicV.getDiscountAmount() : BigDecimal.ZERO;
+                if (totalAmount != null && discount.compareTo(totalAmount) > 0) {
+                    discount = totalAmount;
+                }
+                resp.addProperty("success", true);
+                resp.addProperty("voucherType", "PUBLIC");
+                resp.addProperty("voucherName", publicV.getVoucherName() != null ? publicV.getVoucherName() : voucherCode.trim());
+                resp.addProperty("discount", discount.toPlainString());
+                return resp;
+            }
+
+            // 2. Check personal voucher in user_vouchers by code
+            UserVoucher uv = userVouchersRepo.getVoucherByCode(voucherCode.trim());
+            if (uv != null && "AVAILABLE".equalsIgnoreCase(uv.getStatus())) {
+                // If phone provided, verify it belongs to that customer
+                if (customerPhone != null && !customerPhone.trim().isEmpty()) {
+                    usersRepo = new Users();
+                    User customer = usersRepo.findByPhone(customerPhone.trim());
+                    if (customer == null || customer.getUserId() != uv.getUserId()) {
+                        resp.addProperty("success", false);
+                        resp.addProperty("message", "Voucher này không thuộc về khách hàng với số điện thoại đã nhập");
+                        return resp;
+                    }
+                }
+                Voucher v = vouchersRepo.getVoucherById(uv.getVoucherId());
+                if (v != null && Boolean.TRUE.equals(v.getIsActive())) {
+                    BigDecimal discount = v.getDiscountAmount() != null ? v.getDiscountAmount() : BigDecimal.ZERO;
+                    if (totalAmount != null && discount.compareTo(totalAmount) > 0) {
+                        discount = totalAmount;
+                    }
+                    resp.addProperty("success", true);
+                    resp.addProperty("voucherType", "PERSONAL");
+                    resp.addProperty("voucherName", v.getVoucherName() != null ? v.getVoucherName() : voucherCode.trim());
+                    resp.addProperty("discount", discount.toPlainString());
+                    return resp;
+                }
+            }
+
+            resp.addProperty("success", false);
+            resp.addProperty("message", "Không tìm thấy voucher này, vui lòng chọn voucher khác hoặc bỏ nhập voucher");
+            return resp;
+
+        } catch (Exception e) {
+            resp.addProperty("success", false);
+            resp.addProperty("message", "Lỗi khi kiểm tra voucher: " + e.getMessage());
+            return resp;
+        } finally {
+            if (vouchersRepo != null) vouchersRepo.closeConnection();
+            if (userVouchersRepo != null) userVouchersRepo.closeConnection();
+            if (usersRepo != null) usersRepo.closeConnection();
+        }
+    }
+
+
+
+    /**
      * Find all usable vouchers for a customer (by phone) and determine the best
      * one for a given bill total.
      *

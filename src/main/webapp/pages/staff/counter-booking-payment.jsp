@@ -189,6 +189,17 @@
             display: block;
         }
 
+        .field-success-msg {
+            color: #2ecc71;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        input:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
         .payment-methods {
             display: grid;
             grid-template-columns: 1fr;
@@ -637,7 +648,9 @@
                 <h3><i class="fas fa-ticket-alt"></i> Voucher</h3>
                 <div class="form-group">
                     <label for="voucherCode">Mã voucher (không bắt buộc)</label>
-                    <input type="text" id="voucherCode" placeholder="Nhập mã voucher nếu có">
+                    <input type="text" id="voucherCode" placeholder="Nhập mã voucher nếu có" oninput="onVoucherInput()" onblur="validateVoucher()">
+                    <span class="field-error-msg" id="voucherError" style="display:none;"></span>
+                    <span class="field-success-msg" id="voucherSuccess" style="display:none;"></span>
                 </div>
                 <div class="form-group">
                     <button type="button" class="btn btn-secondary" style="width:100%;justify-content:center;" onclick="suggestBestVoucher()">
@@ -654,26 +667,29 @@
             <div class="form-section">
                 <h3><i class="fas fa-star"></i> Điểm tích lũy (không bắt buộc)</h3>
                 <div class="form-group">
-                    <label for="redeemPoints">Số điểm muốn dùng</label>
-                    <input type="number" id="redeemPoints" min="0" step="1" placeholder="Nhập số điểm khách muốn sử dụng">
-                </div>
-                <p style="color:#777;font-size:12px;margin-top:-8px;">
-                    1 điểm = giảm 1.000 VND. Số điểm thực tế sử dụng sẽ bị giới hạn bởi số điểm hiện có và số tiền hóa đơn.
-                </p>
-                <div class="form-group">
-                            <button type="button" class="btn btn-secondary" style="width:100%;justify-content:center;"
+                    <button type="button" class="btn btn-secondary" style="width:100%;justify-content:center;"
                             onclick="lookupLoyalty()">
-                        <i class="fas fa-search"></i> Kiểm tra điểm hiện tại (theo số điện thoại)
+                        <i class="fas fa-search"></i> Kiểm tra điểm (theo số điện thoại)
                     </button>
                     <div id="loyaltyInfoText" class="loyalty-info-text"></div>
-                    <div class="loyalty-actions">
-                        <button type="button" class="btn btn-secondary" onclick="useAllPoints()">
-                            Dùng toàn bộ điểm
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="clearPointUsage()">
-                            Nhập số điểm tùy ý
-                        </button>
-                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="redeemPoints">Số điểm muốn dùng</label>
+                    <input type="number" id="redeemPoints" min="0" step="1"
+                           placeholder="Nhập số điện thoại và kiểm tra điểm trước"
+                           disabled oninput="onRedeemPointsInput()">
+                    <span class="field-error-msg" id="pointsError" style="display:none;"></span>
+                </div>
+                <p style="color:#777;font-size:12px;margin-top:-4px;">
+                    1 điểm = giảm 1.000 VND. Cần tra cứu số điện thoại để sử dụng điểm.
+                </p>
+                <div class="loyalty-actions" id="loyaltyActions" style="display:none;">
+                    <button type="button" class="btn btn-secondary" onclick="useAllPoints()">
+                        Dùng toàn bộ điểm
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearPointUsage()">
+                        Xóa điểm
+                    </button>
                 </div>
             </div>
 
@@ -830,6 +846,107 @@
                 new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalAmount);
         }
 
+        // ── Voucher validation ─────────────────────────────────────
+        let voucherValidateTimer = null;
+
+        function onVoucherInput() {
+            const code = document.getElementById('voucherCode').value.trim();
+            clearTimeout(voucherValidateTimer);
+            // Reset trạng thái khi xóa input
+            if (!code) {
+                resetVoucherState();
+                return;
+            }
+            // Debounce 600ms
+            voucherValidateTimer = setTimeout(validateVoucher, 600);
+        }
+
+        function resetVoucherState() {
+            const errEl = document.getElementById('voucherError');
+            const okEl  = document.getElementById('voucherSuccess');
+            errEl.style.display = 'none';
+            okEl.style.display  = 'none';
+            document.getElementById('voucherCode').classList.remove('input-error', 'input-valid');
+            selectedVoucherCode = null;
+            currentVoucherDiscountPreview = 0;
+            updatePreviewTotals();
+        }
+
+        async function validateVoucher() {
+            const code = document.getElementById('voucherCode').value.trim();
+            const errEl = document.getElementById('voucherError');
+            const okEl  = document.getElementById('voucherSuccess');
+            const input = document.getElementById('voucherCode');
+
+            if (!code) { resetVoucherState(); return; }
+
+            errEl.style.display = 'none';
+            okEl.style.display  = 'none';
+            input.classList.remove('input-error', 'input-valid');
+
+            try {
+                const phone = document.getElementById('customerPhone').value.trim();
+                const payload = {
+                    voucherCode:   code,
+                    customerPhone: phone || null,
+                    totalAmount:   String(lastTotalAmount || 0)
+                };
+                const res  = await fetch('${pageContext.request.contextPath}/staff/counter-validate-voucher', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    input.classList.add('input-valid');
+                    okEl.textContent = 'Voucher hợp lệ: ' + data.voucherName + ' – Giảm ' +
+                        new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(data.discount));
+                    okEl.style.display = 'block';
+                    selectedVoucherCode = code;
+                    currentVoucherDiscountPreview = Number(data.discount) || 0;
+                    updatePreviewTotals();
+                } else {
+                    input.classList.add('input-error');
+                    errEl.textContent = data.message || 'Không tìm thấy voucher này, vui lòng chọn voucher khác hoặc bỏ nhập voucher';
+                    errEl.style.display = 'block';
+                    selectedVoucherCode = null;
+                    currentVoucherDiscountPreview = 0;
+                    updatePreviewTotals();
+                }
+            } catch (e) {
+                errEl.textContent = 'Lỗi khi kiểm tra voucher.';
+                errEl.style.display = 'block';
+            }
+        }
+
+        // ── Points real-time validation ────────────────────────────
+        function onRedeemPointsInput() {
+            const input   = document.getElementById('redeemPoints');
+            const errEl   = document.getElementById('pointsError');
+            const val     = parseInt(input.value, 10);
+
+            errEl.style.display = 'none';
+            input.classList.remove('input-error');
+
+            if (isNaN(val) || val <= 0) {
+                lastRedeemPointsRequested = 0;
+                updatePreviewTotals();
+                return;
+            }
+
+            if (currentCustomerPoints !== null && val > currentCustomerPoints) {
+                input.classList.add('input-error');
+                errEl.textContent = 'Khách chỉ có ' + currentCustomerPoints + ' điểm, không thể nhập nhiều hơn';
+                errEl.style.display = 'block';
+                input.value = currentCustomerPoints;
+                lastRedeemPointsRequested = currentCustomerPoints;
+            } else {
+                lastRedeemPointsRequested = val;
+            }
+            updatePreviewTotals();
+        }
+
         function applyVoucherChoice(voucherCode, effectiveDiscountStr) {
             const codeInput = document.getElementById('voucherCode');
             const discountInfo = document.getElementById('discountInfo');
@@ -916,12 +1033,16 @@
         async function suggestBestVoucher() {
             const phone = document.getElementById('customerPhone').value.trim();
             const errorEl = document.getElementById('errorMessage');
+            const phoneError = document.getElementById('phoneError');
 
             errorEl.classList.remove('show');
+            phoneError.classList.remove('visible');
 
             if (!phone) {
-                errorEl.textContent = 'Vui lòng nhập số điện thoại khách hàng để tra cứu voucher.';
-                errorEl.classList.add('show');
+                phoneError.textContent = 'Vui lòng nhập số điện thoại khách hàng để tra cứu voucher.';
+                phoneError.classList.add('visible');
+                document.getElementById('customerPhone').classList.add('input-error');
+                document.getElementById('customerPhone').focus();
                 return;
             }
 
@@ -946,8 +1067,9 @@
                 const data = await res.json();
 
                 if (!data.success) {
-                    errorEl.textContent = data.message || 'Không thể gợi ý voucher.';
-                    errorEl.classList.add('show');
+                    phoneError.textContent = data.message || 'Không thể gợi ý voucher.';
+                    phoneError.classList.add('visible');
+                    document.getElementById('customerPhone').classList.add('input-error');
                     return;
                 }
 
@@ -975,7 +1097,7 @@
                 renderVoucherSuggestions(data);
             } catch (e) {
                 console.error('Suggest voucher error:', e);
-                errorEl.textContent = 'Error while suggesting voucher.';
+                errorEl.textContent = 'Lỗi khi gợi ý voucher.';
                 errorEl.classList.add('show');
             }
         }
@@ -985,14 +1107,29 @@
             const phone = document.getElementById('customerPhone').value.trim();
             const errorEl = document.getElementById('errorMessage');
             const infoEl = document.getElementById('loyaltyInfoText');
+            const phoneError = document.getElementById('phoneError');
+            const redeemInput = document.getElementById('redeemPoints');
+            const loyaltyActions = document.getElementById('loyaltyActions');
 
             errorEl.classList.remove('show');
+            phoneError.classList.remove('visible');
             infoEl.textContent = '';
+            infoEl.style.color = '';
             currentCustomerPoints = null;
 
+            // Reset & lock điểm
+            redeemInput.disabled = true;
+            redeemInput.value = '';
+            redeemInput.placeholder = 'Nhập số điện thoại và kiểm tra điểm trước';
+            loyaltyActions.style.display = 'none';
+            lastRedeemPointsRequested = 0;
+            updatePreviewTotals();
+
             if (!phone) {
-                errorEl.textContent = 'Vui lòng nhập số điện thoại khách hàng để tra cứu điểm.';
-                errorEl.classList.add('show');
+                phoneError.textContent = 'Vui lòng nhập số điện thoại khách hàng để tra cứu điểm.';
+                phoneError.classList.add('visible');
+                document.getElementById('customerPhone').classList.add('input-error');
+                document.getElementById('customerPhone').focus();
                 return;
             }
 
@@ -1006,32 +1143,32 @@
                 const data = await res.json();
 
                 if (!data.success) {
-                    errorEl.textContent = data.message || 'Không thể tải thông tin điểm thưởng.';
-                    errorEl.classList.add('show');
+                    phoneError.textContent = data.message || 'Không tìm thấy khách hàng với số điện thoại này.';
+                    phoneError.classList.add('visible');
+                    document.getElementById('customerPhone').classList.add('input-error');
                     return;
                 }
 
                 currentCustomerPoints = typeof data.points === 'number' ? data.points : 0;
 
-                const namePart = data.fullName ? ' (' + data.fullName + ')' : '';
+                const namePart = data.fullName ? ' ' + data.fullName : '';
                 const totalAccumulated =
                     (typeof data.totalAccumulatedPoints === 'number')
-                        ? data.totalAccumulatedPoints
-                        : 0;
+                        ? data.totalAccumulatedPoints : 0;
                 infoEl.textContent =
-                    'Customer' + namePart + ' has ' + currentCustomerPoints +
-                    ' points. Total accumulated: ' + totalAccumulated + '.';
+                    'Khách hàng' + namePart + ' có ' + currentCustomerPoints +
+                    ' điểm. Tổng tích lũy: ' + totalAccumulated + ' điểm.';
 
-                const redeemInput = document.getElementById('redeemPoints');
-                if (redeemInput) {
-                    redeemInput.max = currentCustomerPoints;
-                }
+                // Mở khóa input điểm
+                redeemInput.disabled = false;
+                redeemInput.placeholder = 'Nhập số điểm muốn dùng (tối đa ' + currentCustomerPoints + ')';
+                redeemInput.max = currentCustomerPoints;
+                loyaltyActions.style.display = '';
 
-                // Cập nhật preview nếu đã có số điểm nhập trước đó
                 updatePreviewTotals();
             } catch (e) {
                 console.error('Lookup loyalty error:', e);
-                errorEl.textContent = 'Error while loading loyalty info.';
+                errorEl.textContent = 'Lỗi khi tải thông tin điểm thưởng.';
                 errorEl.classList.add('show');
             }
         }
@@ -1039,16 +1176,15 @@
         function useAllPoints() {
             const redeemInput = document.getElementById('redeemPoints');
             const errorEl = document.getElementById('errorMessage');
+            const infoEl = document.getElementById('loyaltyInfoText');
 
-            if (currentCustomerPoints == null) {
-                errorEl.textContent = 'Vui lòng kiểm tra điểm của khách trước.';
-                errorEl.classList.add('show');
-                return;
-            }
+            if (currentCustomerPoints == null) return;
 
             errorEl.classList.remove('show');
             redeemInput.value = currentCustomerPoints;
             lastRedeemPointsRequested = currentCustomerPoints;
+            document.getElementById('pointsError').style.display = 'none';
+            redeemInput.classList.remove('input-error');
             updatePreviewTotals();
         }
 
@@ -1056,6 +1192,8 @@
             const redeemInput = document.getElementById('redeemPoints');
             redeemInput.value = '';
             lastRedeemPointsRequested = 0;
+            document.getElementById('pointsError').style.display = 'none';
+            redeemInput.classList.remove('input-error');
             updatePreviewTotals();
         }
 
@@ -1324,8 +1462,10 @@
 
             const phoneInput = document.getElementById('customerPhone');
             const phoneError = document.getElementById('phoneError');
+            const phoneErrorDefaultText = phoneError.textContent;
             phoneInput.addEventListener('input', function() {
                 const val = this.value.trim();
+                phoneError.textContent = phoneErrorDefaultText;
                 if (val === '') {
                     this.classList.remove('input-error', 'input-valid');
                     phoneError.classList.remove('visible');

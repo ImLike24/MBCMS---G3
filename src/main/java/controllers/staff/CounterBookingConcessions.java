@@ -1,7 +1,6 @@
 package controllers.staff;
 
 import models.Concession;
-import models.User;
 import repositories.Concessions;
 import services.CounterBookingSeatsService;
 import jakarta.servlet.ServletException;
@@ -71,9 +70,7 @@ public class CounterBookingConcessions extends HttpServlet {
             }
 
             Concessions concessionsRepo = new Concessions();
-            User currentUser = (User) session.getAttribute("user");
-            int staffId = currentUser != null ? currentUser.getUserId() : 0;
-            List<Concession> concessionsList = concessionsRepo.getConcessionsForSale(staffId);
+            List<Concession> concessionsList = concessionsRepo.getConcessionsForSale();
             concessionsRepo.closeConnection();
             if (concessionsList == null) concessionsList = new ArrayList<>();
             request.setAttribute("concessionsList", concessionsList);
