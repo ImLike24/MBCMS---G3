@@ -43,6 +43,12 @@
             </a>
         </li>
         <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/assign-staff"
+               class="nav-link ${param.page == 'assign-staff' ? 'active' : ''}">
+                <i class="fa fa-user-plus me-3"></i>Phân công nhân viên
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/staff-schedule"
                class="nav-link ${param.page == 'staff-schedule' ? 'active' : ''}">
                 <i class="fas fa-calendar-check me-3"></i>Lịch làm việc NV

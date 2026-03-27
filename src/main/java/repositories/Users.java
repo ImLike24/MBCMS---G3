@@ -461,6 +461,22 @@ public class Users extends DBContext {
         return false;
     }
 
+    /** Lấy danh sách CINEMA_STAFF và BRANCH_MANAGER chưa được gán branch */
+    public java.util.List<User> getUnassignedManagers() {
+        String sql = """
+            SELECT u.* FROM users u
+            JOIN roles r ON u.role_id = r.role_id
+            WHERE r.role_name = 'BRANCH_MANAGER' AND u.branch_id IS NULL AND u.status = 'ACTIVE'
+            ORDER BY u.fullName ASC
+            """;
+        java.util.List<User> list = new java.util.ArrayList<>();
+        try (PreparedStatement st = connection.prepareStatement(sql);
+             ResultSet rs = st.executeQuery()) {
+            while (rs.next()) list.add(mapResultSetToUser(rs));
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
     /** Lấy danh sách CINEMA_STAFF thuộc một branch */
     public java.util.List<User> getStaffByBranch(int branchId) {
         String sql = """
