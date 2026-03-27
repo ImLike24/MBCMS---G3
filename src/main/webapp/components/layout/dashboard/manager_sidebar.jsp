@@ -88,7 +88,7 @@
             </li>
 
             <li class="nav-item">
-                <a href="${pageContext.request.contextPath}"
+                <a href="${pageContext.request.contextPath}/manager/report/revenue"
                    class="nav-link text-white ${param.page == 'revenue' ? 'active' : ''}">
                     <i class="fa fa-bar-chart me-2" style="width: 20px; text-align: center;"></i>
                     Báo cáo Doanh thu
@@ -96,7 +96,7 @@
             </li>
 
             <li class="nav-item">
-                <a href="${pageContext.request.contextPath}"
+                <a href="${pageContext.request.contextPath}/manager/report/performance"
                    class="nav-link text-white ${param.page == 'performance' ? 'active' : ''}">
                     <i class="fa fa-line-chart me-2" style="width: 20px; text-align: center;"></i>
                     Báo cáo Hiệu suất

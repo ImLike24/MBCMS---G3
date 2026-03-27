@@ -224,3 +224,13 @@ label.seat:has(.seat-checkbox:checked) {
 .rounded{
    border-radius: 1.25rem!important;
 }
+
+.seat.selected,
+.seat.normal.selected,
+.seat.vip.selected,
+.seat.couple.selected {
+    background-color: #d96c2c !important;
+    color: #fff !important;
+    border-color: #d96c2c !important;
+    box-shadow: 0 0 8px rgba(217, 108, 44, 0.6) !important;
+}

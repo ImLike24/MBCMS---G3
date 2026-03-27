@@ -12,30 +12,6 @@ import java.util.List;
 public class DashboardRepository extends DBContext {
 
     // --- KPI Queries ---
-
-    public Double getTotalRevenue(LocalDate date) {
-        String sql = """
-                    SELECT SUM(price) FROM (
-                        SELECT price FROM online_tickets WHERE CAST(created_at AS DATE) = ?
-                        UNION ALL
-                        SELECT price FROM counter_tickets WHERE CAST(sold_at AS DATE) = ?
-                    ) AS combined_revenue
-                """;
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setDate(1, java.sql.Date.valueOf(date));
-            st.setDate(2, java.sql.Date.valueOf(date));
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) {
-                    // getDouble returns 0.0 if SQL NULL
-                    return rs.getDouble(1);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0.0;
-    }
-
     public Double getTotalRevenueForMonth(int month, int year) {
         String sql = """
                      SELECT SUM(price) FROM (

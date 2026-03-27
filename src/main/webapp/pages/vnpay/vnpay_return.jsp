@@ -215,7 +215,7 @@
 
 <body onload="checkAndSaveBooking()">
 <footer>
-    <p>© 2025 VNPAY - Hệ thống thanh toán vé xem phim</p>
+    <p>© 2026 VNPAY - Hệ thống thanh toán vé xem phim</p>
 </footer>
 
 <!-- Bootstrap JS -->

@@ -92,7 +92,7 @@ public class PerformanceReportIndex extends HttpServlet {
             request.setAttribute("selectedMonth", null);
         }
 
-        request.getRequestDispatcher("/pages/manager/report/performance/index.jsp").forward(request, response);
+        request.getRequestDispatcher("/pages/manager/report//index.jsp").forward(request, response);
     }
 
     private LocalDate parseDate(String value, LocalDate defaultVal) {
