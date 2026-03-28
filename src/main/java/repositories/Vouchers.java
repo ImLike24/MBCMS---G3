@@ -47,11 +47,35 @@ public class Vouchers extends DBContext {
         return null;
     }
 
+    public boolean isVoucherCodeExists(String code, Integer excludeVoucherId) {
+        if (code == null || code.trim().isEmpty()) {
+            return false;
+        }
+
+        String sql = "SELECT 1 FROM vouchers WHERE UPPER(voucher_code) = UPPER(?)";
+        if (excludeVoucherId != null) {
+            sql += " AND voucher_id != ?";
+        }
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, code.trim());
+            if (excludeVoucherId != null) {
+                st.setInt(2, excludeVoucherId);
+            }
+            try (ResultSet rs = st.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public List<Voucher> getAllVouchers() {
         List<Voucher> lists = new ArrayList<>();
         String sql = "SELECT * FROM vouchers ORDER BY created_at DESC";
         try (PreparedStatement st = connection.prepareStatement(sql);
-             ResultSet rs = st.executeQuery()) {
+                ResultSet rs = st.executeQuery()) {
             while (rs.next()) {
                 lists.add(mapResultSetToVoucher(rs));
             }
@@ -65,7 +89,7 @@ public class Vouchers extends DBContext {
         List<Voucher> lists = new ArrayList<>();
         String sql = "SELECT * FROM vouchers WHERE is_active = 1 ORDER BY created_at DESC";
         try (PreparedStatement st = connection.prepareStatement(sql);
-             ResultSet rs = st.executeQuery()) {
+                ResultSet rs = st.executeQuery()) {
             while (rs.next()) {
                 lists.add(mapResultSetToVoucher(rs));
             }
@@ -79,7 +103,7 @@ public class Vouchers extends DBContext {
         List<Voucher> lists = new ArrayList<>();
         String sql = "SELECT * FROM vouchers WHERE is_active = 1 AND voucher_type = 'LOYALTY' AND current_usage < max_usage_limit ORDER BY points_cost ASC";
         try (PreparedStatement st = connection.prepareStatement(sql);
-             ResultSet rs = st.executeQuery()) {
+                ResultSet rs = st.executeQuery()) {
             while (rs.next()) {
                 lists.add(mapResultSetToVoucher(rs));
             }
@@ -93,7 +117,7 @@ public class Vouchers extends DBContext {
         List<Voucher> lists = new ArrayList<>();
         String sql = "SELECT * FROM vouchers WHERE is_active = 1 AND voucher_type = 'PUBLIC' AND current_usage < max_usage_limit ORDER BY created_at DESC";
         try (PreparedStatement st = connection.prepareStatement(sql);
-             ResultSet rs = st.executeQuery()) {
+                ResultSet rs = st.executeQuery()) {
             while (rs.next()) {
                 lists.add(mapResultSetToVoucher(rs));
             }
@@ -168,8 +192,9 @@ public class Vouchers extends DBContext {
     }
 
     public boolean incrementVoucherUsage(String code) {
-        if (code == null || code.trim().isEmpty()) return false;
-        
+        if (code == null || code.trim().isEmpty())
+            return false;
+
         // 1. Try to increment directly (for PUBLIC codes)
         String directSql = "UPDATE vouchers SET current_usage = current_usage + 1 WHERE UPPER(voucher_code) = UPPER(?)";
         try (PreparedStatement st = connection.prepareStatement(directSql)) {
@@ -181,16 +206,17 @@ public class Vouchers extends DBContext {
             e.printStackTrace();
         }
 
-        // 2. If not found, try to find the voucher_id from user_vouchers (for UNIQUE codes)
+        // 2. If not found, try to find the voucher_id from user_vouchers (for UNIQUE
+        // codes)
         String lookupSql = "UPDATE vouchers SET current_usage = current_usage + 1 " +
-                           "WHERE voucher_id = (SELECT voucher_id FROM user_vouchers WHERE voucher_code = ?)";
+                "WHERE voucher_id = (SELECT voucher_id FROM user_vouchers WHERE voucher_code = ?)";
         try (PreparedStatement st = connection.prepareStatement(lookupSql)) {
             st.setString(1, code.trim());
             return st.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        
+
         return false;
     }
 }

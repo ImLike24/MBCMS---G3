@@ -51,6 +51,30 @@ public class MembershipTiers extends DBContext {
         return null;
     }
 
+    public boolean isTierNameExists(String name, Integer excludeTierId) {
+        if (name == null || name.trim().isEmpty()) {
+            return false;
+        }
+
+        String sql = "SELECT 1 FROM membership_tiers WHERE UPPER(tier_name) = UPPER(?)";
+        if (excludeTierId != null) {
+            sql += " AND tier_id != ?";
+        }
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, name.trim());
+            if (excludeTierId != null) {
+                st.setInt(2, excludeTierId);
+            }
+            try (ResultSet rs = st.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public boolean insert(MembershipTier tier) {
         String sql = "INSERT INTO membership_tiers (tier_name, min_points_required, point_multiplier) VALUES (?, ?, ?)";
         try (PreparedStatement st = connection.prepareStatement(sql)) {

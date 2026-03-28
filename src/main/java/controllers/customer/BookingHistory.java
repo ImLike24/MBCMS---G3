@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 import models.User;
-import models.dtos.BookingHistoryDTO;
+import models.BookingHistoryDTO;
 import repositories.BookingHistories;
 
 @WebServlet(name = "BookingHistory", urlPatterns = { "/customer/booking-history" })

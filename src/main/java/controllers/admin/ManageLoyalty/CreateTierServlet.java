@@ -25,23 +25,41 @@ public class CreateTierServlet extends HttpServlet {
             throws ServletException, IOException {
 
         MembershipTiers dao = new MembershipTiers();
+        MembershipTier tier = new MembershipTier();
 
         try {
-            MembershipTier tier = new MembershipTier();
             tier.setTierName(request.getParameter("tierName"));
-            tier.setMinPointsRequired(Integer.parseInt(request.getParameter("minPoints")));
-            tier.setPointMultiplier(new BigDecimal(request.getParameter("multiplier")));
+            
+            String minPointsStr = request.getParameter("minPoints");
+            if (minPointsStr != null && !minPointsStr.isEmpty()) {
+                tier.setMinPointsRequired(Integer.parseInt(minPointsStr));
+            }
+            
+            String multiplierStr = request.getParameter("multiplier");
+            if (multiplierStr != null && !multiplierStr.isEmpty()) {
+                tier.setPointMultiplier(new BigDecimal(multiplierStr));
+            }
+
+            if (dao.isTierNameExists(tier.getTierName(), null)) {
+                request.setAttribute("tierNameError", "Tên hạng này đã tồn tại.");
+                request.setAttribute("tier", tier);
+                request.getRequestDispatcher("/pages/admin/manage-loyalty/create-tier.jsp").forward(request, response);
+                return;
+            }
 
             if (dao.insert(tier)) {
                 request.getSession().setAttribute("success", "Thêm hạng thành viên thành công!");
+                response.sendRedirect(request.getContextPath() + "/admin/manage-tiers");
             } else {
-                request.getSession().setAttribute("error", "Lỗi: Không thể thêm hạng.");
+                request.setAttribute("error", "Lỗi: Không thể thêm hạng vào cơ sở dữ liệu.");
+                request.setAttribute("tier", tier);
+                request.getRequestDispatcher("/pages/admin/manage-loyalty/create-tier.jsp").forward(request, response);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            request.getSession().setAttribute("error", "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.");
+            request.setAttribute("error", "Dữ liệu không hợp lệ: " + e.getMessage());
+            request.setAttribute("tier", tier);
+            request.getRequestDispatcher("/pages/admin/manage-loyalty/create-tier.jsp").forward(request, response);
         }
-
-        response.sendRedirect(request.getContextPath() + "/admin/manage-tiers");
     }
 }
