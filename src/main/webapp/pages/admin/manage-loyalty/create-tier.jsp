@@ -37,9 +37,9 @@
     </div>
 
     <!-- Error Alert -->
-    <c:if test="${not empty errorMessage}">
+    <c:if test="${not empty error}">
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i>${errorMessage}
+            <i class="fas fa-exclamation-circle me-2"></i>${error}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     </c:if>
@@ -50,22 +50,30 @@
 
         <div class="col-md-6">
             <label class="form-label">Tên Hạng <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" name="tierName"
-                   placeholder="VD: BRONZE, SILVER, GOLD, DIAMOND" required>
-            <div class="invalid-feedback">Vui lòng nhập tên hạng</div>
+            <input type="text" class="form-control ${not empty tierNameError ? 'is-invalid' : ''}" name="tierName"
+                   placeholder="VD: BRONZE, SILVER, GOLD, DIAMOND" value="${tier.tierName}" required>
+            <c:choose>
+                <c:when test="${not empty tierNameError}">
+                    <div class="invalid-feedback d-block">${tierNameError}</div>
+                </c:when>
+                <c:otherwise>
+                    <div class="invalid-feedback">Vui lòng nhập tên hạng</div>
+                </c:otherwise>
+            </c:choose>
         </div>
 
         <div class="col-md-3">
             <label class="form-label">Điểm yêu cầu tối thiểu <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" name="minPoints" min="0" value="0" required>
+            <input type="number" class="form-control" name="minPoints" min="0" value="${tier.minPointsRequired != null ? tier.minPointsRequired : 0}" required>
             <div class="form-text">Số điểm tích lũy để đạt hạng này.</div>
+            <div class="invalid-feedback">Điểm yêu cầu không được nhỏ hơn 0</div>
         </div>
 
         <div class="col-md-3">
             <label class="form-label">Hệ số nhân (Multiplier) <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" name="multiplier" step="0.1" min="1.0" max="2.0" value="1.0" required>
+            <input type="number" class="form-control" name="multiplier" step="0.1" min="1.0" max="2.0" value="${tier.pointMultiplier != null ? tier.pointMultiplier : 1.0}" required>
             <div class="form-text">VD: 1.0, 1.2, 1.5, 2.0</div>
-            <div class="invalid-feedback">Vui lòng nhập hệ số hợp lệ (≥ 1.0)</div>
+            <div class="invalid-feedback">Hệ số nhân phải từ 1.0 đến 2.0</div>
         </div>
 
         <!-- Buttons -->

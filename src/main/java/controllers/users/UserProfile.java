@@ -45,7 +45,7 @@ public class UserProfile extends HttpServlet {
         if (error != null) {
             request.setAttribute("error", error);
         }
-
+        
         request.getRequestDispatcher("/pages/user/profile.jsp").forward(request, response);
     }
 

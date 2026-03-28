@@ -174,10 +174,6 @@
                                 <!-- Info -->
                                 <div class="showtime-info">
                                     <div class="showtime-info-item">
-                                        <span>Giá cơ bản:</span>
-                                        <strong><fmt:formatNumber value="${showtime.basePrice}" pattern="#,###" /> VND</strong>
-                                    </div>
-                                    <div class="showtime-info-item">
                                         <span>Trạng thái:</span>
                                         <strong>${showtime.status}</strong>
                                     </div>

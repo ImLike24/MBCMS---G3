@@ -265,11 +265,13 @@
                         <div class="info-icon"><i class="fas fa-envelope"></i></div>
                         <span class="info-label">Email</span>
                         <span class="info-value">${u.email}</span>
+                        <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
                     </div>
                     <div class="info-row">
                         <div class="info-icon"><i class="fas fa-phone"></i></div>
                         <span class="info-label">Số điện thoại</span>
                         <span class="info-value">${u.phone}</span>
+                        <div class="invalid-feedback">Số điện thoại phải có 10 chữ số.</div>
                     </div>
                     <div class="info-row">
                         <div class="info-icon"><i class="fas fa-birthday-cake"></i></div>
@@ -294,24 +296,42 @@
                         <div class="row g-4">
                             <div class="col-12">
                                 <label class="form-label">Họ và tên</label>
-                                <input type="text" class="form-control" name="fullName" value="${u.fullName}" required>
+                                <input type="text" class="form-control px-3 py-2" name="fullName" value="${u.fullName}" required>
                             </div>
+
                             <div class="col-12">
                                 <label class="form-label">Email</label>
-                                <input type="email" class="form-control" name="email" value="${u.email}" required>
+                                <input type="email" class="form-control px-3 py-2" name="email" value="${u.email}" required>
+                                <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
                             </div>
+
                             <div class="col-md-6">
                                 <label class="form-label">Số điện thoại</label>
-                                <input type="tel" class="form-control" name="phone" value="${u.phone}">
+                                <input type="tel" class="form-control px-3 py-2" name="phone" value="${u.phone}">
+                                <div class="invalid-feedback">Số điện thoại phải có 10 chữ số.</div>
                             </div>
+
                             <div class="col-md-6">
                                 <label class="form-label">Ngày sinh</label>
-                                <input type="date" class="form-control" name="birthday"
-                                       value="${u.birthday != null ? u.birthday.toLocalDate() : ''}">
+                                <input type="date" class="form-control px-3 py-2" 
+                                       name="birthday" 
+                                       id="birthday"
+                                       min="1950-01-01" 
+                                       max="<%= java.time.LocalDate.now() %>"
+                                       value="${u.birthday != null ? u.birthday.toLocalDate() : ''}"
+                                       onblur="let today='<%= java.time.LocalDate.now() %>'; 
+                                               if(this.value) { 
+                                                   if(this.value < '1950-01-01') this.value = '1950-01-01'; 
+                                                   if(this.value > today) this.value = today; 
+                                               }">
+                                <div class="invalid-feedback">Ngày sinh phải từ năm 1950 đến hiện tại.</div>
                             </div>
                         </div>
+
                         <div class="mt-5 text-center">
-                            <button type="submit" class="btn btn-primary px-5 py-3">Lưu thông tin</button>
+                            <button type="submit" class="btn btn-primary px-5 py-3 fw-bold shadow-sm">
+                                <i class="fas fa-save me-2"></i>Lưu thông tin
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -346,5 +366,62 @@
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // --- 1. Validate Ngày sinh (Ép giá trị 1950 - Hiện tại) ---
+        const birthdayInput = document.getElementById('birthday');
+        if (birthdayInput) {
+            birthdayInput.addEventListener('blur', function() {
+                const minDate = "1950-01-01";
+                const today = new Date().toISOString().split('T')[0];
+                if (this.value) {
+                    if (this.value < minDate) this.value = minDate;
+                    if (this.value > today) this.value = today;
+                }
+            });
+        }
+
+        // --- 2. Validate Email (Định dạng) ---
+        const emailInput = document.querySelector('input[name="email"]');
+        emailInput.addEventListener('blur', function() {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(this.value)) {
+                alert("Email không đúng định dạng!");
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        // --- 3. Validate Số điện thoại (10 số) ---
+        const phoneInput = document.querySelector('input[name="phone"]');
+        phoneInput.addEventListener('blur', function() {
+            const phoneRegex = /^[0-9]{10}$/;
+            if (this.value && !phoneRegex.test(this.value)) {
+                alert("Số điện thoại phải bao gồm 10 chữ số!");
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        // --- 4. Validate Khớp mật khẩu ---
+        const newPass = document.querySelector('input[name="newPassword"]');
+        const confirmPass = document.querySelector('input[name="confirmPassword"]');
+        
+        function checkPasswordMatch() {
+            if (confirmPass.value && newPass.value !== confirmPass.value) {
+                confirmPass.setCustomValidity("Mật khẩu xác nhận không khớp");
+                confirmPass.classList.add('is-invalid');
+            } else {
+                confirmPass.setCustomValidity("");
+                confirmPass.classList.remove('is-invalid');
+            }
+        }
+
+        newPass.addEventListener('change', checkPasswordMatch);
+        confirmPass.addEventListener('keyup', checkPasswordMatch);
+    });
+</script>
 </body>
 </html>

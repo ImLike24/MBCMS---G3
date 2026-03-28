@@ -27,6 +27,18 @@
     <main>
         <div class="container-fluid">
 
+            <c:if test="${noBranchAssigned}">
+                <div class="d-flex justify-content-center align-items-center" style="min-height: 60vh;">
+                    <div class="text-center">
+                        <i class="fa fa-map-marker fa-4x text-secondary mb-3"></i>
+                        <h4 class="text-secondary">Bạn chưa được phân công vào chi nhánh nào</h4>
+                        <p class="text-muted">Vui lòng liên hệ quản trị viên để được phân công chi nhánh.</p>
+                    </div>
+                </div>
+            </c:if>
+
+            <c:if test="${not noBranchAssigned}">
+
             <!-- Page header -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="mb-0"><i class="fa fa-users me-2"></i>Quản lý nhân viên</h4>
@@ -173,6 +185,9 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+            </c:if>
         </div>
     </main>
 

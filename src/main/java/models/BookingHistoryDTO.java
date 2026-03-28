@@ -1,4 +1,4 @@
-package models.dtos;
+package models;
 
 import java.sql.Timestamp;
 import lombok.*;

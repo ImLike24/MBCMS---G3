@@ -565,15 +565,12 @@ public class Movies extends DBContext {
                 ps.setInt(idx++, m.getDuration() != null ? m.getDuration() : 0);
                 ps.setDate(idx++, m.getReleaseDate() != null ? java.sql.Date.valueOf(m.getReleaseDate()) : null);
                 ps.setDate(idx++, m.getEndDate() != null ? java.sql.Date.valueOf(m.getEndDate()) : null);
-                ps.setString(idx++, m.getAgeRating());          // index 6 - sửa chỗ thiếu
+                ps.setString(idx++, m.getAgeRating());          
                 ps.setString(idx++, m.getDirector());
                 ps.setString(idx++, m.getCast());
                 ps.setString(idx++, m.getPosterUrl());
                 ps.setBoolean(idx++, m.isActive());
-                // KHÔNG cần set cho updated_at vì dùng GETDATE()
-                ps.setInt(idx++, m.getMovieId());               // index 11 - WHERE
-
-
+                ps.setInt(idx++, m.getMovieId());             
 
                 int rows = ps.executeUpdate();
                 if (rows == 0) {

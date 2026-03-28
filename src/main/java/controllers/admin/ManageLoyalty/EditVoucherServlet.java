@@ -44,6 +44,8 @@ public class EditVoucherServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        Voucher v = new Voucher();
+        Vouchers voucherRepo = new Vouchers();
         try {
             int voucherId = Integer.parseInt(request.getParameter("voucherId"));
             String voucherName = request.getParameter("voucherName");
@@ -63,7 +65,6 @@ public class EditVoucherServlet extends HttpServlet {
             int validDays = Integer.parseInt(request.getParameter("validDays"));
             boolean isActive = "1".equals(request.getParameter("isActive"));
 
-            Voucher v = new Voucher();
             v.setVoucherId(voucherId);
             v.setVoucherName(voucherName);
             v.setVoucherType(voucherType);
@@ -75,21 +76,28 @@ public class EditVoucherServlet extends HttpServlet {
             v.setValidDays(validDays);
             v.setIsActive(isActive);
 
-            Vouchers voucherRepo = new Vouchers();
+            if (voucherRepo.isVoucherCodeExists(voucherCode, voucherId)) {
+                request.setAttribute("voucherCodeError", "Mã Voucher này đã tồn tại.");
+                request.setAttribute("voucher", v);
+                request.getRequestDispatcher("/pages/admin/manage-loyalty/edit-voucher.jsp").forward(request, response);
+                return;
+            }
+
             boolean success = voucherRepo.update(v);
 
             if (success) {
                 request.getSession().setAttribute("success", "Cập nhật voucher thành công!");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-vouchers");
             } else {
-                request.setAttribute("errorMessage", "Cập nhật thất bại. Vui lòng kiểm tra lại!");
+                request.setAttribute("error", "Cập nhật thất bại. Vui lòng kiểm tra lại!");
                 request.setAttribute("voucher", v);
                 request.getRequestDispatcher("/pages/admin/manage-loyalty/edit-voucher.jsp").forward(request, response);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("errorMessage", "Đã có lỗi xảy ra: " + e.getMessage());
-            doGet(request, response);
+            request.setAttribute("error", "Đã có lỗi xảy ra: " + e.getMessage());
+            request.setAttribute("voucher", v);
+            request.getRequestDispatcher("/pages/admin/manage-loyalty/edit-voucher.jsp").forward(request, response);
         }
     }
 }

@@ -150,10 +150,12 @@
                             <input type="text" class="form-control" name="cast" value="${movie.cast}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Ngày phát hành</label>
-                            <input type="date" class="form-control" name="releaseDate"
-                                   value="${movie.releaseDate != null ? movie.releaseDate : ''}"
-                                   id="releaseDate">
+                            <label class="form-label fw-semibold required">Ngày phát hành</label>
+                            <input type="date" class="form-control" name="releaseDate" id="releaseDate"
+                                   min="1975-01-01" max="2100-12-31" 
+                                   value="${movie.releaseDate != null ? movie.releaseDate : ''}" required
+                                   onblur="if(this.value){ if(this.value < '1975-01-01') this.value = '1975-01-01'; if(this.value > '2100-12-31') this.value = '2100-12-31'; }">
+                            <div class="invalid-feedback">Ngày phát hành phải từ năm 1975 đến 2100</div>
                         </div>
                     </div>
                     <hr class="my-4">

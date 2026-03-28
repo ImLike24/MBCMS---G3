@@ -41,9 +41,9 @@
                     </div>
 
                     <!-- Error Alert -->
-                    <c:if test="${not empty errorMessage}">
+                    <c:if test="${not empty error}">
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="fas fa-exclamation-circle me-2"></i>${errorMessage}
+                            <i class="fas fa-exclamation-circle me-2"></i>${error}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     </c:if>
@@ -77,8 +77,16 @@
                         <!-- Mã / Prefix -->
                         <div class="col-md-6">
                             <label class="form-label" id="codeLabel">Mã / Tiền tố Mã</label>
-                            <input type="text" class="form-control font-monospace" name="voucherCode" id="voucherCode"
+                            <input type="text" class="form-control font-monospace ${not empty voucherCodeError ? 'is-invalid' : ''}" name="voucherCode" id="voucherCode"
                                 value="${voucher.voucherCode}" placeholder="VD: SALE50K-">
+                            <c:choose>
+                                <c:when test="${not empty voucherCodeError}">
+                                    <div class="invalid-feedback d-block">${voucherCodeError}</div>
+                                </c:when>
+                                <c:otherwise>
+                                    <div class="invalid-feedback">Vui lòng nhập mã hoặc tiền tố voucher</div>
+                                </c:otherwise>
+                            </c:choose>
                             <div class="form-text" id="codeHint">Hệ thống sẽ tự ghép prefix + chuỗi ngẫu nhiên khi khách
                                 đổi.</div>
                         </div>
@@ -88,7 +96,7 @@
                             <label class="form-label">Số tiền giảm giá (VNĐ) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="discountAmount"
                                 value="${voucher.discountAmount.intValue()}" min="1000" max="500000" step="1000" required>
-                            <div class="invalid-feedback">Vui lòng nhập số tiền giảm hợp lệ.(≤ 500.000đ)</div>
+                            <div class="invalid-feedback">Số tiền giảm từ 1.000đ đến 500.000đ</div>
                         </div>
 
                         <!-- Giá đổi điểm (chỉ LOYALTY) -->
@@ -97,7 +105,7 @@
                             <input type="number" class="form-control" name="pointsCost" id="pointsCost"
                                    value="${voucher.pointsCost}" min="0" max="1000">
                             <div class="form-text">Số điểm khách cần tiêu để lấy voucher này.</div>
-                            <div class="invalid-feedback">Vui lòng nhập số điểm hợp lệ.(≤ 1000)</div>
+                            <div class="invalid-feedback">Số điểm từ 0 đến 1000</div>
                         </div>
 
                         <!-- Lượt dùng tối đa -->
@@ -106,7 +114,7 @@
                             <input type="number" class="form-control" name="maxUsage" id="maxUsage"
                                    value="${voucher.maxUsageLimit}" min="1" max="100">
                             <div class="form-text" id="usageHint">Nhập số lượt dùng tối đa.</div>
-                            <div class="invalid-feedback">Vui lòng nhập số lượt dùng hợp lệ. (≤ 100)</div>
+                            <div class="invalid-feedback">Lượt dùng tối đa từ 1 đến 100</div>
                         </div>
 
                         <!-- Lượt dùng hiện tại -->
@@ -124,7 +132,7 @@
                             <input type="number" class="form-control" name="validDays" value="${voucher.validDays}"
                                    min="1" max="30" required>
                             <div class="form-text">Với LOYALTY: tính từ lúc khách đổi quà thành công.</div>
-                            <div class="invalid-feedback">Vui lòng nhập số ngày hợp lệ. (≤ 30)</div>
+                            <div class="invalid-feedback">Hạn sử dụng từ 1 đến 30 ngày</div>
                         </div>
 
                         <!-- Trạng thái -->

@@ -37,8 +37,16 @@ public class ManageStaffServlet extends HttpServlet {
         if (manager == null) return;
 
         List<CinemaBranch> managedBranches = branchDao.findListByManagerId(manager.getUserId());
+
+        String action = request.getParameter("action");
+        if (action == null) action = "list";
+
         if (managedBranches == null || managedBranches.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không quản lý chi nhánh nào.");
+            request.setAttribute("noBranchAssigned", true);
+            String jspPage = "schedule".equals(action)
+                    ? "/pages/manager/manage-staff/schedule.jsp"
+                    : "/pages/manager/manage-staff/list.jsp";
+            request.getRequestDispatcher(jspPage).forward(request, response);
             return;
         }
 
@@ -46,9 +54,6 @@ public class ManageStaffServlet extends HttpServlet {
         request.getSession().setAttribute("selectedBranchId", selectedBranchId);
         request.setAttribute("managedBranches", managedBranches);
         request.setAttribute("selectedBranchId", selectedBranchId);
-
-        String action = request.getParameter("action");
-        if (action == null) action = "list";
 
         switch (action) {
             case "schedule" -> showSchedule(request, response, selectedBranchId, manager);
@@ -70,7 +75,7 @@ public class ManageStaffServlet extends HttpServlet {
 
         List<CinemaBranch> managedBranches = branchDao.findListByManagerId(manager.getUserId());
         if (managedBranches == null || managedBranches.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-staff");
             return;
         }
 
