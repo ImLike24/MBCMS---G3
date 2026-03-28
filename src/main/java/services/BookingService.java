@@ -20,7 +20,6 @@ import java.util.Map;
 
 public class BookingService {
 
-    // Khai báo các DAO (Công cụ) ở đây
     private final Showtimes showtimeDao = new Showtimes();
     private Bookings bookingDao;
     private final Movies movieDao = new Movies();

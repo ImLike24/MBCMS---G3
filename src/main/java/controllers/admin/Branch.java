@@ -1,6 +1,9 @@
 package controllers.admin;
 
+import config.DBContext;
+import jakarta.servlet.http.HttpSession;
 import models.CinemaBranch;
+import models.Role;
 import models.User;
 import services.BranchService;
 import jakarta.servlet.ServletException;
@@ -8,6 +11,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import services.UserService;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -15,10 +20,40 @@ import java.util.List;
 public class Branch extends HttpServlet {
 
     private final BranchService branchService = new BranchService();
+    private final UserService userService = new UserService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        // Check authentication and authorization
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        User currentUser = (User) session.getAttribute("user");
+
+        // Check if user is admin
+        DBContext dbContext = null;
+        try {
+            dbContext = new DBContext();
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
+
+            if (userRole == null || !"ADMIN".equals(userRole.getRoleName())) {
+                response.sendRedirect(request.getContextPath() + "/home");
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/home");
+            return;
+        } finally {
+            if (dbContext != null) {
+                dbContext.closeConnection();
+            }
+        }
 
         request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
@@ -52,6 +87,35 @@ public class Branch extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        // Check authentication and authorization
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        User currentUser = (User) session.getAttribute("user");
+
+        // Check if user is admin
+        DBContext dbContext = null;
+        try {
+            dbContext = new DBContext();
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
+
+            if (userRole == null || !"ADMIN".equals(userRole.getRoleName())) {
+                response.sendRedirect(request.getContextPath() + "/home");
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/home");
+            return;
+        } finally {
+            if (dbContext != null) {
+                dbContext.closeConnection();
+            }
+        }
+
         request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
         if (action == null) action = "list";
@@ -79,6 +143,10 @@ public class Branch extends HttpServlet {
                 }
             }
             request.setAttribute("branch", b);
+
+            List<User> managers = branchService.getAllManagers();
+            request.setAttribute("managers", managers);
+
             request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
         }
     }
@@ -201,6 +269,10 @@ public class Branch extends HttpServlet {
                 b.setBranchId(Integer.parseInt(idStr));
             }
             request.setAttribute("branch", b);
+
+            List<User> managers = branchService.getAllManagers();
+            request.setAttribute("managers", managers);
+
             request.getRequestDispatcher("/pages/admin/branch/form.jsp").forward(request, response);
         }
     }

@@ -103,19 +103,6 @@ public class ScreeningRooms extends DBContext {
         return false;
     }
 
-    // Update room status
-    public boolean updateRoomStatus(int roomId, String status) {
-        String sql = "UPDATE screening_rooms SET status = ?, updated_at = SYSDATETIME() WHERE room_id = ?";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setString(1, status);
-            st.setInt(2, roomId);
-            return st.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
     // Check if room name exists in branch
     public boolean roomNameExistsInBranch(String roomName, int branchId, Integer excludeRoomId) {
         String sql = "SELECT COUNT(*) FROM screening_rooms WHERE room_name = ? AND branch_id = ? AND room_id != ?";
@@ -132,37 +119,6 @@ public class ScreeningRooms extends DBContext {
             e.printStackTrace();
         }
         return false;
-    }
-
-    // Get room count by branch
-    public int getRoomCountByBranch(int branchId) {
-        String sql = "SELECT COUNT(*) FROM screening_rooms WHERE branch_id = ?";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, branchId);
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-    
-    // Lấy tất cả phòng của 1 chi nhánh cụ thể
-    public List<ScreeningRoom> findByBranchId(int branchId) {
-        List<ScreeningRoom> list = new ArrayList<>();
-        String sql = "SELECT * FROM screening_rooms WHERE branch_id = ? ORDER BY room_name ASC";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, branchId);
-            try (ResultSet rs = st.executeQuery()) {
-                while (rs.next()) list.add(mapResultSetToScreeningRoom(rs));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
     }
 
     public List<ScreeningRoom> getRoomsByBranchWithFilterAndPagination(int branchId, String search, String status, int page, int pageSize) {
@@ -197,7 +153,7 @@ public class ScreeningRooms extends DBContext {
         return rooms;
     }
 
-    // 2. Đếm tổng số phòng (để tính số trang)
+    // Đếm tổng số phòng để tính số trang
     public int countRoomsByBranchWithFilter(int branchId, String search, String status) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM screening_rooms WHERE branch_id = ?");
         List<Object> params = new ArrayList<>();
@@ -223,5 +179,37 @@ public class ScreeningRooms extends DBContext {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    // Kiểm tra phòng có suất chiếu nào chưa diễn ra không
+    public boolean hasUpcomingShowtimes(int roomId) {
+        String sql = "SELECT COUNT(*) FROM showtimes WHERE room_id = ? AND show_date >= CAST(GETDATE() AS DATE)";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, roomId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Kiểm tra phòng đã từng có suất chiếu nào chưa
+    public boolean isRoomInUse(int roomId) {
+        String sql = "SELECT COUNT(*) FROM showtimes WHERE room_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, roomId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

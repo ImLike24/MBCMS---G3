@@ -34,7 +34,9 @@ public class BranchService {
         if (branchDao.findById(branch.getBranchId()) == null) {
             throw new Exception("Chi nhánh không tồn tại");
         }
+
         validateBranch(branch);
+
         if (!branchDao.update(branch)) {
             throw new Exception("Lỗi khi cập nhật database");
         }

@@ -52,6 +52,16 @@
 
                     <div class="d-flex gap-3 align-items-center">
                         <form action="rooms" method="get" id="branchSelectForm" class="mb-0">
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-dark text-white border-dark"><i class="fa fa-building"></i></span>
+                                <select class="form-select border-dark" name="branchId" onchange="document.getElementById('branchSelectForm').submit()" style="min-width: 200px; font-weight: 500;">
+                                    <c:forEach var="b" items="${managedBranches}">
+                                        <option value="${b.branchId}" ${b.branchId == selectedBranchId ? 'selected' : ''}>
+                                                ${b.branchName}
+                                        </option>
+                                    </c:forEach>
+                                </select>
+                            </div>
                         </form>
 
                         <a href="rooms?action=create" class="btn btn-orange shadow-sm px-4 h-100 d-flex align-items-center">
@@ -66,6 +76,12 @@
         <c:if test="${not empty param.message}">
             <div class="alert alert-success border-0 shadow-sm" role="alert" style="border-left: 4px solid #d96c2c !important;">
                 Thao tác thành công!
+            </div>
+        </c:if>
+
+        <c:if test="${not empty param.error}">
+            <div class="alert alert-danger border-0 shadow-sm" role="alert" style="border-left: 4px solid #dc3545 !important;">
+                <i class="fa fa-exclamation-triangle me-2"></i> ${param.error}
             </div>
         </c:if>
 

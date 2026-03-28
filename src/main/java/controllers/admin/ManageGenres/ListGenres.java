@@ -5,22 +5,59 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import models.Genre;
 import services.GenreService;
+import services.UserService;
+
 import java.io.IOException;
 import java.util.List;
+import config.DBContext;
+import models.User;
+import models.Role;
 
 @WebServlet("/admin/manage-genres")
 public class ListGenres extends HttpServlet {
 
     private final GenreService genreService = new GenreService();
     private static final int DEFAULT_PAGE_SIZE = 10;
+    private final UserService userService = new UserService();
+
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         String pathInfo = request.getPathInfo();
+
+        // Check authentication and authorization
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        User currentUser = (User) session.getAttribute("user");
+
+        // Check if user is admin
+        DBContext dbContext = null;
+        try {
+            dbContext = new DBContext();
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
+
+            if (userRole == null || !"ADMIN".equals(userRole.getRoleName())) {
+                response.sendRedirect(request.getContextPath() + "/home");
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/home");
+            return;
+        } finally {
+            if (dbContext != null) {
+                dbContext.closeConnection();
+            }
+        }
 
         // Xử lý các route con: /add, /edit, /detail
         if (pathInfo != null && !pathInfo.equals("/") && !pathInfo.equals("")) {
