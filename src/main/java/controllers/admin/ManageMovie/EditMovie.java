@@ -59,6 +59,7 @@ public class EditMovie extends HttpServlet {
         request.setAttribute("movie", movie);
         request.setAttribute("movieGenres", movieGenres);
         request.setAttribute("allGenres", genreService.getAllActiveGenres());
+        
         request.setAttribute("mode", "edit");
 
         request.getRequestDispatcher("/pages/admin/manage-movie/movie-form.jsp")
@@ -92,15 +93,6 @@ public class EditMovie extends HttpServlet {
         StringBuilder errors = new StringBuilder();
         if (movie.getTitle() == null || movie.getTitle().trim().isEmpty()) {
             errors.append("Tên phim không được để trống. ");
-        }
-        if (movie.getDuration() <= 0) {
-            errors.append("Thời lượng phải lớn hơn 0 phút. ");
-        }
-
-        if (errors.length() > 0) {
-            request.setAttribute("errorMessage", errors.toString());
-            forwardWithData(request, response);
-            return;
         }
 
         try {
@@ -149,9 +141,8 @@ public class EditMovie extends HttpServlet {
         m.setDescription(getParameterSafe(req, "description"));
         m.setDuration(parseIntSafe(req.getParameter("duration"), 120));
         m.setDirector(getParameterSafe(req, "director"));
+        m.setAgeRating(getParameterSafe(req, "ageRating"));
         m.setCast(getParameterSafe(req, "cast"));
-
-        // Quan trọng: Đọc posterUrl từ hidden field (đây là nơi nhận giá trị mới từ AJAX upload)
         String posterUrl = getParameterSafe(req, "posterUrl");
         m.setPosterUrl(posterUrl != null && !posterUrl.trim().isEmpty() ? posterUrl : null);
 
