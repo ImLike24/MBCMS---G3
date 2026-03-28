@@ -290,6 +290,8 @@
             });
             uiSeat.classList.add('selected');
         }
+
+        console.log(id);
         renderCart();
     }
 

@@ -222,4 +222,50 @@ public class CinemaBranches extends DBContext {
         }
         return list;
     }
+
+    // =========================================================================
+    // CÁC HÀM KIỂM TRA TRÙNG LẶP (UNIQUE VALIDATION)
+    // =========================================================================
+
+    public boolean isNameExists(String branchName, int excludeBranchId) {
+        String sql = "SELECT COUNT(*) FROM cinema_branches WHERE branch_name = ? AND branch_id != ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, branchName.trim());
+            st.setInt(2, excludeBranchId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean isEmailExists(String email, int excludeBranchId) {
+        String sql = "SELECT COUNT(*) FROM cinema_branches WHERE email = ? AND branch_id != ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, email.trim());
+            st.setInt(2, excludeBranchId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean isPhoneExists(String phone, int excludeBranchId) {
+        String sql = "SELECT COUNT(*) FROM cinema_branches WHERE phone = ? AND branch_id != ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setString(1, phone.trim());
+            st.setInt(2, excludeBranchId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

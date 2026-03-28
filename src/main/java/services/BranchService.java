@@ -49,8 +49,13 @@ public class BranchService {
     }
 
     private void validateBranch(CinemaBranch branch) throws Exception {
+        // Validate Tên chi nhánh
         if (branch.getBranchName() == null || branch.getBranchName().trim().isEmpty()) {
             throw new Exception("Tên chi nhánh không được để trống.");
+        }
+        // Kiểm tra trùng Tên chi nhánh
+        if (branchDao.isNameExists(branch.getBranchName(), branch.getBranchId())) {
+            throw new Exception("Tên chi nhánh này đã tồn tại trong hệ thống. Vui lòng chọn tên khác.");
         }
 
         // Validate Email
@@ -58,12 +63,20 @@ public class BranchService {
             if (!branch.getEmail().matches("^[A-Za-z0-9+_.-]+@gmail\\.com$")) {
                 throw new Exception("Email không đúng định dạng.");
             }
+            // Kiểm tra trùng Email
+            if (branchDao.isEmailExists(branch.getEmail(), branch.getBranchId())) {
+                throw new Exception("Email này đã được sử dụng cho một chi nhánh khác.");
+            }
         }
 
-        // Validate Số điện thoại (Đầu số VN 03, 05, 07, 08, 09 + 8 số)
+        // 3. Validate Số điện thoại
         if (branch.getPhone() != null && !branch.getPhone().trim().isEmpty()) {
             if (!branch.getPhone().matches("^(84|0[3|5|7|8|9])+([0-9]{8})$")) {
                 throw new Exception("Số điện thoại không hợp lệ (Phải là SĐT Việt Nam 10 số).");
+            }
+            // Kiểm tra trùng Số điện thoại
+            if (branchDao.isPhoneExists(branch.getPhone(), branch.getBranchId())) {
+                throw new Exception("Số điện thoại này đã được sử dụng cho một chi nhánh khác.");
             }
         }
     }

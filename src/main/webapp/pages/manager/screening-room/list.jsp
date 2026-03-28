@@ -17,36 +17,51 @@
 
 <main>
     <div class="container-fluid">
-        <div class="d-flex justify-content-between align-items-end mb-4">
-            <div>
-                <h3 class="fw-bold text-dark mb-1">Phòng chiếu phim</h3>
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="#" class="text-decoration-none text-secondary">Manager</a></li>
-                        <li class="breadcrumb-item active" style="color: #d96c2c;">Phòng chiếu</li>
-                    </ol>
-                </nav>
-            </div>
-
-            <div class="d-flex gap-3 align-items-center">
-                <form action="rooms" method="get" id="branchSelectForm" class="mb-0">
-                    <div class="input-group shadow-sm">
-                        <span class="input-group-text bg-dark text-white border-dark"><i class="fa fa-building"></i></span>
-                        <select class="form-select border-dark" name="branchId" onchange="document.getElementById('branchSelectForm').submit()" style="min-width: 200px; font-weight: 500;">
-                            <c:forEach var="b" items="${managedBranches}">
-                                <option value="${b.branchId}" ${b.branchId == selectedBranchId ? 'selected' : ''}>
-                                        ${b.branchName}
-                                </option>
-                            </c:forEach>
-                        </select>
+        <c:choose>
+            <c:when test="${noBranchAssigned}">
+                <div class="d-flex justify-content-between align-items-end mb-4">
+                    <div>
+                        <h3 class="fw-bold text-dark mb-1">Phòng chiếu phim</h3>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item"><a href="#" class="text-decoration-none text-secondary">Manager</a></li>
+                                <li class="breadcrumb-item active" style="color: #d96c2c;">Phòng chiếu</li>
+                            </ol>
+                        </nav>
                     </div>
-                </form>
+                </div>
 
-                <a href="rooms?action=create" class="btn btn-orange shadow-sm px-4 h-100 d-flex align-items-center">
-                    <i class="fa fa-plus me-2"></i>Thêm Phòng
-                </a>
-            </div>
-        </div>
+                <div class="empty-state mt-4">
+                    <i class="fa fa-building-o"></i>
+                    <h3>Chưa có chi nhánh quản lý</h3>
+                    <p>Tài khoản của bạn hiện tại chưa được cấp quyền quản lý bất kỳ chi nhánh nào.<br>Vui lòng liên hệ với Quản trị viên (Admin) để được phân công trước khi thực hiện thao tác.</p>
+                </div>
+            </c:when>
+
+            <c:otherwise>
+                <div class="d-flex justify-content-between align-items-end mb-4">
+                    <div>
+                        <h3 class="fw-bold text-dark mb-1">Phòng chiếu phim</h3>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item"><a href="#" class="text-decoration-none text-secondary">Manager</a></li>
+                                <li class="breadcrumb-item active" style="color: #d96c2c;">Phòng chiếu</li>
+                            </ol>
+                        </nav>
+                    </div>
+
+                    <div class="d-flex gap-3 align-items-center">
+                        <form action="rooms" method="get" id="branchSelectForm" class="mb-0">
+                        </form>
+
+                        <a href="rooms?action=create" class="btn btn-orange shadow-sm px-4 h-100 d-flex align-items-center">
+                            <i class="fa fa-plus me-2"></i>Thêm Phòng
+                        </a>
+                    </div>
+                </div>
+
+            </c:otherwise>
+        </c:choose>
 
         <c:if test="${not empty param.message}">
             <div class="alert alert-success border-0 shadow-sm" role="alert" style="border-left: 4px solid #d96c2c !important;">

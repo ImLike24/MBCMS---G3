@@ -94,7 +94,7 @@ public class BookingTickets extends HttpServlet {
 
         // Chốt chặn 1: Đề phòng truy cập trái phép không có showtimeId
         if (showtimeIdParam == null || showtimeIdParam.isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/movies");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
             return;
         }
 
@@ -267,7 +267,7 @@ public class BookingTickets extends HttpServlet {
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/movies");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
         }
     }
 }

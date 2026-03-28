@@ -30,7 +30,8 @@ public class Room extends HttpServlet {
 
         List<CinemaBranch> managedBranches = branchDao.findListByManagerId(user.getUserId());
         if (managedBranches == null || managedBranches.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không quản lý chi nhánh nào.");
+            request.setAttribute("noBranchAssigned", true);
+            request.getRequestDispatcher("/pages/manager/screening-room/list.jsp").forward(request, response);
             return;
         }
 
