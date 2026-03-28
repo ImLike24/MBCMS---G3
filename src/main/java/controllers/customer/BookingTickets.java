@@ -109,7 +109,7 @@ public class BookingTickets extends HttpServlet {
         try {
             int showtimeId = Integer.parseInt(showtimeIdParam);
 
-            // Tận dụng lại hàm Service để lấy dữ liệu Bảng giá và Phụ phí cực kỳ tối ưu
+            // Call Service để lấy dữ liệu Bảng giá và Phụ phí
             Map<String, Object> pageData = bookingService.getBookingTicketsData(showtimeId);
 
             @SuppressWarnings("unchecked")
@@ -130,7 +130,7 @@ public class BookingTickets extends HttpServlet {
                     (java.util.Map<String, java.util.List<java.util.Map<String, Object>>>) pageData.get("seatsByRow");
 
             // ====================================================================
-            // VÒNG LẶP TÍNH TIỀN TỪNG GHẾ (ĐÃ FIX CÔNG THỨC)
+            // VÒNG LẶP TÍNH TIỀN TỪNG GHẾ
             // ====================================================================
             for (String sidStr : seatIdsParam) {
                 int seatId;
@@ -181,7 +181,6 @@ public class BookingTickets extends HttpServlet {
                     }
                 }
 
-                // ĐÃ FIX: Dùng phép CỘNG (+) thay vì nhân (*)
                 double finalSeatPrice = Math.round(basePrice * (1 + surchargeRate / 100.0));
 
                 Map<String, Object> seatData = new java.util.HashMap<>();
@@ -203,6 +202,10 @@ public class BookingTickets extends HttpServlet {
             // ====================================================================
             // XỬ LÝ BẮP NƯỚC
             // ====================================================================
+
+            repositories.Concessions concessionRepo = new repositories.Concessions();
+            List<Concession> dbConcessions = concessionRepo.getActiveConcessions();
+
             @SuppressWarnings("unchecked")
             java.util.List<models.Concession> concessionsListPost = (java.util.List<models.Concession>) pageData.get("concessions");
             List<Map<String, Object>> bookingConcessions = new ArrayList<>();
@@ -210,24 +213,44 @@ public class BookingTickets extends HttpServlet {
 
             if (concessionsListPost != null) {
                 for (models.Concession c : concessionsListPost) {
-                    String qtyParam = request.getParameter("concession_" + c.getConcessionId());
+                    int currentConcessionId = c.getConcessionId();
+                    String qtyParam = request.getParameter("concession_" + currentConcessionId);
+
                     if (qtyParam != null && !qtyParam.trim().isEmpty()) {
                         try {
                             int qty = Integer.parseInt(qtyParam.trim());
                             if (qty > 0) {
-                                BigDecimal lineTotal = BigDecimal.valueOf(c.getPriceBase() * qty);
+
+                                // Tìm sản phẩm trong DB để check tồn kho
+                                models.Concession dbItem = dbConcessions.stream()
+                                        .filter(dbC -> dbC.getConcessionId() == currentConcessionId)
+                                        .findFirst()
+                                        .orElse(null);
+
+                                // Chặn lỗi tồn kho hoặc ID ảo
+                                if (dbItem == null || qty > dbItem.getQuantity()) {
+                                    String itemName = (dbItem != null) ? dbItem.getConcessionName() : c.getConcessionName();
+                                    session.setAttribute("error", "Sản phẩm '" + itemName + "' không đủ số lượng tồn kho. Vui lòng chọn lại!");
+                                    response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeId);
+                                    return; // Dừng luồng ngay lập tức
+                                }
+
+                                // Tính toán tiền và đóng gói (Lấy giá từ dbItem để an toàn tuyệt đối)
+                                BigDecimal lineTotal = BigDecimal.valueOf(dbItem.getPriceBase() * qty);
                                 concessionTotalPost = concessionTotalPost.add(lineTotal);
 
                                 Map<String, Object> item = new java.util.HashMap<>();
-                                item.put("concessionId", c.getConcessionId());
-                                item.put("concessionName", c.getConcessionName());
-                                item.put("concessionType", c.getConcessionType());
+                                item.put("concessionId", dbItem.getConcessionId());
+                                item.put("concessionName", dbItem.getConcessionName());
+                                item.put("concessionType", dbItem.getConcessionType());
                                 item.put("quantity", qty);
-                                item.put("priceBase", c.getPriceBase());
+                                item.put("priceBase", dbItem.getPriceBase());
                                 item.put("lineTotal", lineTotal);
+
                                 bookingConcessions.add(item);
                             }
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
             }

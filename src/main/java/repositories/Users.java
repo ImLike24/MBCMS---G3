@@ -178,22 +178,6 @@ public class Users extends DBContext {
         return false;
     }
 
-    public boolean updateAvatar(User u) {
-        String sql = """
-            UPDATE users
-            SET avatarUrl = ?, updated_at = SYSDATETIME()
-            WHERE user_id = ?
-        """;
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setString(1, u.getAvatarUrl());
-            st.setInt(2, u.getUserId());
-            return st.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
     public boolean checkPhoneExists(String phone) {
         String sql = "SELECT 1 FROM users WHERE phone = ?";
         try (PreparedStatement st = connection.prepareStatement(sql)) {

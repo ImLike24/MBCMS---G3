@@ -37,22 +37,6 @@ public class SeatTypeSurcharges extends DBContext {
         return list;
     }
 
-    /** Get surcharge for a specific branch + seat type */
-    public SeatTypeSurcharge getSurchargeByBranchAndType(int branchId, String seatType) {
-        String sql = "SELECT * FROM seat_type_surcharges WHERE branch_id = ? AND seat_type = ?";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, branchId);
-            st.setString(2, seatType);
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next())
-                    return mapRow(rs);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
     /**
      * Insert or update surcharge rate for a branch + type.
      * Uses MERGE (SQL Server) for upsert.

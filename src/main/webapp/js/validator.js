@@ -23,15 +23,5 @@ const Validator = {
             return false;
         }
         return this.patterns[type].test(value);
-    },
-
-    isValidBirthday: function(dateString) {
-        if (!dateString) return false;
-        const birthday = new Date(dateString);
-        const today = new Date();
-        const minDate = new Date('1900-01-01'); // Không cho phép chọn năm quá xa trong quá khứ
-
-        // Trả về true nếu là ngày hợp lệ, nhỏ hơn hoặc bằng hôm nay, và lớn hơn năm 1900
-        return birthday instanceof Date && !isNaN(birthday) && birthday <= today && birthday >= minDate;
     }
 };

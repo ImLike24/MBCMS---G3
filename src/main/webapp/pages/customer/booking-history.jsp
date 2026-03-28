@@ -390,8 +390,6 @@
     </div>
 </div>
 
-<jsp:include page="/components/layout/Footer.jsp" />
-
 <script>
     function toggleCard(header) {
         const card = header.parentElement;

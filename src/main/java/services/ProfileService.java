@@ -11,25 +11,6 @@ public class ProfileService {
     private final Users userRepo = new Users();
 
     /**
-     * Lấy thông tin profile của user dựa vào username (thường lấy từ session)
-     */
-    public User getUserProfile(String username) {
-        if (username == null || username.trim().isEmpty()) {
-            return null;
-        }
-        return userRepo.findByUsername(username);
-    }
-
-    /**
-     * Cập nhật thời gian đăng nhập cuối (nếu cần gọi khi xem profile)
-     */
-    public void updateLastLoginIfNeeded(User user) {
-        if (user != null && user.getUserId() != null) {
-            userRepo.updateLastLogin(user.getUserId());
-        }
-    }
-
-    /**
      * Upload avatar lên Cloudinary và lưu URL vào DB
      * 
      * @param fileBytes byte[] của file ảnh
@@ -67,8 +48,4 @@ public class ProfileService {
         return userRepo.updatePassword(user);
     }
 
-    // Nếu cần thêm phương thức update avatar
-    public boolean updateAvatar(User user) {
-        return userRepo.updateAvatar(user);
-    }
 }

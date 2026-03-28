@@ -188,7 +188,7 @@ public class BookingSummary extends HttpServlet {
                     bookingData.put("savedBookingCode", bookingCode);
                     session.setAttribute("customerBookingData", bookingData);
 
-                    // Áp dụng Voucher (Gọi hàm đã được cập nhật hôm trước)
+                    // Áp dụng Voucher
                     if (summaryResult.get("appliedVoucher") != null) {
                         bookingDao.applyVoucher(bookingId, totalAmount, discountAmount, finalAmount, voucherCode);
                     } else {
@@ -209,7 +209,7 @@ public class BookingSummary extends HttpServlet {
             // CHỐT CHẶN 3: XỬ LÝ ĐƠN HÀNG 0Đ (ĐỒNG BỘ UI VỚI VNPAY RETURN)
             // =========================================================================
             if (finalAmount.compareTo(BigDecimal.ZERO) == 0) {
-                // 1. Vẫn xử lý chốt đơn và trừ kho bình thường
+                // Vẫn xử lý chốt đơn và trừ kho bình thường
                 bookingService.processSuccessfulPayment(bookingCode);
 
                 @SuppressWarnings("unchecked")
@@ -222,7 +222,7 @@ public class BookingSummary extends HttpServlet {
                 }
                 session.removeAttribute("customerBookingData");
 
-                // 2. TẠO URL GIẢ LẬP VNPAY ĐỂ ĐẨY VỀ vnpay_return.jsp
+                // TẠO URL GIẢ LẬP VNPAY ĐỂ ĐẨY VỀ vnpay_return.jsp
                 Map<String, String> returnParams = new java.util.HashMap<>();
                 returnParams.put("vnp_Amount", "0");
                 returnParams.put("vnp_BankCode", "VOUCHER"); // Hiển thị mã ngân hàng là VOUCHER
@@ -256,7 +256,6 @@ public class BookingSummary extends HttpServlet {
                 }
 
                 String secureHash = utils.VNPay.hmacSHA512(config.VNPayConfig.secretKey, hashData.toString());
-                // Đường dẫn về trang Return của bạn
                 String returnUrl = request.getContextPath() + "/pages/vnpay/vnpay_return.jsp?" + query.toString() + "&vnp_SecureHash=" + secureHash;
 
                 response.sendRedirect(returnUrl);
@@ -291,7 +290,7 @@ public class BookingSummary extends HttpServlet {
             java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
             vnp_Params.put("vnp_CreateDate", formatter.format(cld.getTime()));
 
-            cld.add(java.util.Calendar.MINUTE, 15);
+            cld.add(java.util.Calendar.MINUTE, 5);
             vnp_Params.put("vnp_ExpireDate", formatter.format(cld.getTime()));
 
             List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());

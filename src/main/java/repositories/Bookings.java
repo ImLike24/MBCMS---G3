@@ -77,27 +77,6 @@ public class Bookings {
         }
     }
 
-    // Delete booking
-    public void deleteBooking(String bookingCode) throws Exception {
-
-        String sql1 = """
-                DELETE FROM online_tickets
-                WHERE booking_id = (
-                    SELECT booking_id FROM bookings WHERE booking_code=?
-                )
-                """;
-
-        PreparedStatement ps1 = conn.prepareStatement(sql1);
-        ps1.setString(1, bookingCode);
-        ps1.executeUpdate();
-
-        String sql2 = "DELETE FROM bookings WHERE booking_code=?";
-
-        PreparedStatement ps2 = conn.prepareStatement(sql2);
-        ps2.setString(1, bookingCode);
-        ps2.executeUpdate();
-    }
-
     public void confirmBooking(String bookingCode) throws Exception {
         String sql = """
                 UPDATE bookings
@@ -152,12 +131,12 @@ public class Bookings {
 
     public void cleanupExpiredBookings() {
         try {
-            // Cập nhật các booking PENDING quá 10 phút thành EXPIRED
+            // Cập nhật các booking PENDING quá 5 phút thành EXPIRED
             String updateBookingsSql = """
                 UPDATE bookings 
                 SET status = 'EXPIRED' 
                 WHERE status = 'PENDING' 
-                AND DATEDIFF(MINUTE, booking_time, SYSDATETIME()) >= 10
+                AND DATEDIFF(MINUTE, booking_time, SYSDATETIME()) >= 5
             """;
             try (PreparedStatement ps1 = conn.prepareStatement(updateBookingsSql)) {
                 ps1.executeUpdate();

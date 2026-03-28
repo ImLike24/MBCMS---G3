@@ -42,10 +42,12 @@
                                     <c:set var="seat" value="${seatInfo.seat}"/>
                                     <c:set var="isBooked" value="${seatInfo.bookingStatus == 'BOOKED'}"/>
 
-                                    <c:set var="seatClass" value="normal" />
-                                    <c:if test="${isBooked}"><c:set var="seatClass" value="booked" /></c:if>
-                                    <c:if test="${seat.seatType == 'VIP' and not isBooked}"><c:set var="seatClass" value="vip" /></c:if>
-                                    <c:if test="${seat.seatType == 'COUPLE' and not isBooked}"><c:set var="seatClass" value="couple" /></c:if>
+                                    <c:set var="seatClass" value="normal"/>
+                                    <c:if test="${isBooked}"><c:set var="seatClass" value="booked"/></c:if>
+                                    <c:if test="${seat.seatType == 'VIP' and not isBooked}"><c:set var="seatClass"
+                                                                                                   value="vip"/></c:if>
+                                    <c:if test="${seat.seatType == 'COUPLE' and not isBooked}"><c:set var="seatClass"
+                                                                                                      value="couple"/></c:if>
 
                                     <div class="seat ${seatClass}"
                                          id="ui-seat-${seat.seatId}"
@@ -91,29 +93,47 @@
                     <div class="row">
                         <c:forEach var="c" items="${concessionsList}">
                             <div class="col-md-6 mb-3">
-                                <div class="d-flex align-items-center p-3 border rounded shadow-sm" style="background-color: #262626; border-color: #444 !important;">
+                                <div class="d-flex align-items-center p-3 border rounded shadow-sm"
+                                     style="background-color: #262626; border-color: #444 !important;">
                                     <div class="me-3 fs-3 text-warning">🍿🥤</div>
 
                                     <div class="flex-grow-1">
                                         <h6 class="mb-1 text-white fw-bold">${c.concessionName}</h6>
                                         <div class="text-danger fw-bold">
-                                            <fmt:formatNumber value="${c.priceBase}" type="currency" currencySymbol="₫"/>
+                                            <fmt:formatNumber value="${c.priceBase}" type="currency"
+                                                              currencySymbol="₫"/>
+                                        </div>
+
+                                        <div class="mt-1">
+                                            <span class="badge"
+                                                  style="background-color: rgba(255, 255, 255, 0.1); color: #ccc; border: 1px solid #555;">
+                                                <i class="fa fa-box-open me-1 text-secondary"></i>Còn lại: <b>${c.quantity}</b>
+                                            </span>
                                         </div>
                                     </div>
 
                                     <div class="d-flex align-items-center gap-2">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-circle d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" onclick="changeQty('${c.concessionId}', -1)">
+                                        <button type="button"
+                                                class="btn btn-outline-secondary btn-sm rounded-circle d-flex justify-content-center align-items-center"
+                                                style="width: 32px; height: 32px;"
+                                                onclick="changeQty('${c.concessionId}', -1, ${c.quantity})">
                                             <i class="fa fa-minus"></i>
                                         </button>
 
-                                        <input type="text" id="qty-display-${c.concessionId}" class="form-control text-center bg-transparent text-white border-0 p-0 fw-bold fs-5" style="width: 30px;" value="0" readonly>
+                                        <input type="text" id="qty-display-${c.concessionId}"
+                                               class="form-control text-center bg-transparent text-white border-0 p-0 fw-bold fs-5"
+                                               style="width: 30px;" value="0" readonly>
 
-                                        <button type="button" class="btn btn-outline-warning btn-sm rounded-circle d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" onclick="changeQty('${c.concessionId}', 1)">
+                                        <button type="button"
+                                                class="btn btn-outline-warning btn-sm rounded-circle d-flex justify-content-center align-items-center"
+                                                style="width: 32px; height: 32px;"
+                                                onclick="changeQty('${c.concessionId}', 1, ${c.quantity})">
                                             <i class="fa fa-plus"></i>
                                         </button>
 
                                         <input type="hidden" id="conc-price-${c.concessionId}" value="${c.priceBase}">
-                                        <input type="hidden" name="concession_${c.concessionId}" id="conc-input-${c.concessionId}" value="0">
+                                        <input type="hidden" name="concession_${c.concessionId}"
+                                               id="conc-input-${c.concessionId}" value="0">
                                     </div>
                                 </div>
                             </div>
@@ -190,7 +210,7 @@
     };
 
     // 2. PHỤC HỒI DỮ LIỆU TỪ SESSION (Xử lý hoàn hảo nút Back)
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
 
         <c:if test="${not empty sessionScope.customerBookingData and sessionScope.customerBookingData.showtimeId == showtimeId}">
 
@@ -338,7 +358,7 @@
 
         // Vẽ danh sách ghế
         state.seats.forEach((seat, id) => {
-            totalPrice += seat.price; // Nếu bạn có logic giảm giá cho CHILD, tính luôn ở đây
+            totalPrice += seat.price;
 
             html += `
                 <div class="selected-seat-item mb-3 p-3 border border-secondary rounded shadow-sm" style="background-color: #2b2b2b; color: #fff;">

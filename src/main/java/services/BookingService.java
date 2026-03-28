@@ -177,7 +177,7 @@ public class BookingService {
     // -------------------------------------------------------------
     public Map<String, Object> getBookingTicketsData(int showtimeId) throws Exception {
 
-        // Dọn dẹp vé rác (quá 10p) TRƯỚC KHI lấy danh sách ghế
+        // Dọn dẹp vé rác (quá 5p) TRƯỚC KHI lấy danh sách ghế
         bookingDao.cleanupExpiredBookings();
 
         Map<String, Object> data = new HashMap<>();
@@ -197,13 +197,12 @@ public class BookingService {
         if (room != null) {
             java.util.List<models.Seat> allSeats = seatDao.getSeatsByRoom(room.getRoomId());
 
-            // Cấu trúc Map bọc List các Map con (khớp 100% với JSP của bạn)
+            // Cấu trúc Map bọc List các Map con
             java.util.Map<String, java.util.List<java.util.Map<String, Object>>> seatsByRow = new java.util.LinkedHashMap<>();
 
             if (allSeats != null) {
                 for (models.Seat s : allSeats) {
-                    // Bọc thông tin ghế và trạng thái vào 1 Map con (tương đương với seatInfo trong
-                    // JSP)
+                    // Bọc thông tin ghế và trạng thái vào 1 Map con
                     java.util.Map<String, Object> seatInfo = new java.util.HashMap<>();
                     seatInfo.put("seat", s);
 
@@ -243,7 +242,7 @@ public class BookingService {
         surchargeJson.append("}");
         data.put("surchargeRatesJson", surchargeJson.toString());
 
-        // 4. Lấy giá vé Người lớn & Trẻ em từ Database
+        // Lấy giá vé Người lớn & Trẻ em từ Database
         BigDecimal adultPrice = BigDecimal.ZERO;
         BigDecimal childPrice = BigDecimal.ZERO;
 
