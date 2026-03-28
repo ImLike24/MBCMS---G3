@@ -88,8 +88,8 @@
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px solid #262625;
-            font-size: 24px;
-            font-weight: 600;
+            font-size: 28px;
+            font-weight: 700;
         }
 
         .total-amount .label {
@@ -103,8 +103,8 @@
         /* Highlight voucher discount + final amount */
         #discountInfo {
             margin-top: 10px;
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 20px;
+            font-weight: 700;
             color: #ffd27f;
         }
 
@@ -113,8 +113,12 @@
             display: block;
         }
 
-        #discountInfo strong {
+        #discountInfo .summary-row-label {
             font-size: 20px;
+        }
+
+        #discountInfo strong {
+            font-size: 28px;
             color: #ffb347;
         }
 
@@ -607,7 +611,7 @@
                     <span class="label">Tổng tiền:</span>
                     <span class="amount" id="totalAmountDisplay">0 VND</span>
                 </div>
-                <div id="discountInfo" style="display: none; margin-top: 8px; font-size: 13px;">
+                <div id="discountInfo" style="display: none; margin-top: 8px;">
                     <div class="summary-row">
                         <span class="summary-row-label">Tổng giảm giá (voucher + điểm):</span>
                         <span id="discountAmountDisplay">0 VND</span>
@@ -807,11 +811,11 @@
             if (bookingData.concessions && bookingData.concessions.length > 0) {
                 const concDiv = document.createElement('div');
                 concDiv.style.marginTop = '12px';
-                concDiv.innerHTML = '<div style="color:#d96c2c; font-size:13px; font-weight:600; margin-bottom:6px;"><i class="fas fa-coffee"></i> Đồ ăn / Thức uống</div>';
+                concDiv.innerHTML = '<div style="color:#d96c2c; font-size:17px; font-weight:700; margin-bottom:6px;"><i class="fas fa-coffee"></i> Đồ ăn / Thức uống</div>';
                 const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
                 bookingData.concessions.forEach(c => {
                     const row = document.createElement('div');
-                    row.style.cssText = 'display:flex; justify-content:space-between; font-size:13px; color:#ccc; padding:3px 0;';
+                    row.style.cssText = 'display:flex; justify-content:space-between; font-size:16px; color:#ccc; padding:3px 0;';
                     row.innerHTML = '<span>' + c.concessionName + ' x' + c.quantity + '</span><span>' + formatter.format(c.priceBase * c.quantity) + '</span>';
                     concDiv.appendChild(row);
                 });
@@ -1156,8 +1160,7 @@
                     (typeof data.totalAccumulatedPoints === 'number')
                         ? data.totalAccumulatedPoints : 0;
                 infoEl.textContent =
-                    'Khách hàng' + namePart + ' có ' + currentCustomerPoints +
-                    ' điểm. Tổng tích lũy: ' + totalAccumulated + ' điểm.';
+                    'Khách hàng' + namePart + ' có ' + currentCustomerPoints + ' điểm.';
 
                 // Mở khóa input điểm
                 redeemInput.disabled = false;
