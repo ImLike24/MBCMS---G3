@@ -57,7 +57,7 @@
                         <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Thông số tích lũy điểm</h5>
                     </div>
                     <div class="card-body p-4">
-                        <form action="${pageContext.request.contextPath}/admin/loyalty-config" method="POST">
+                        <form action="${pageContext.request.contextPath}/admin/loyalty-config" method="POST" class="needs-validation" novalidate>
 
                             <div class="mb-4">
                                 <label for="earnRatio" class="form-label fw-semibold">
@@ -66,6 +66,7 @@
                                 <input type="number" class="form-control" id="earnRatio" name="earnRatio"
                                        value="${config.earnRateAmount}" step="1000" min="1000" max="100000" required>
                                 <div class="form-text text-muted">Số tiền khách hàng cần chi để đổi lấy số điểm tương ứng.</div>
+                                <div class="invalid-feedback">Giá trị quy đổi từ 1.000đ đến 100.000đ</div>
                             </div>
 
                             <div class="mb-4">
@@ -75,6 +76,7 @@
                                 <input type="number" class="form-control" id="earnPoints" name="earnPoints"
                                        value="${config.earnPoints}" min="1" max="100" required>
                                 <div class="form-text text-muted">Số điểm cộng vào tài khoản sau khi chi tiêu theo mức trên.</div>
+                                <div class="invalid-feedback">Số điểm nhận được từ 1 đến 100</div>
                             </div>
 
                             <div class="mb-4">
@@ -84,6 +86,7 @@
                                 <input type="number" class="form-control" id="minRedeem" name="minRedeem"
                                        value="${config.minRedeemPoints}" min="0" max="1000" required>
                                 <div class="form-text text-muted">Số điểm tối thiểu để khách hàng có thể truy cập danh sách đổi thưởng.</div>
+                                <div class="invalid-feedback">Điểm tối thiểu từ 0 đến 1000</div>
                             </div>
 
                             <div class="d-flex justify-content-end pt-3 border-top">
@@ -126,5 +129,20 @@
 </main>
 
 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+<script>
+    (function () {
+        'use strict';
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>
 </body>
 </html>

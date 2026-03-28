@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import config.DBContext;
-import models.dtos.BookingHistoryDTO;
+import models.BookingHistoryDTO;
 
 public class BookingHistories extends DBContext {
 

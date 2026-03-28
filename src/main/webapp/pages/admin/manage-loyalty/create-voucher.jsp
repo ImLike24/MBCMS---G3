@@ -41,9 +41,9 @@
                     </div>
 
                     <!-- Error Alert -->
-                    <c:if test="${not empty errorMessage}">
+                    <c:if test="${not empty error}">
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="fas fa-exclamation-circle me-2"></i>${errorMessage}
+                            <i class="fas fa-exclamation-circle me-2"></i>${error}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     </c:if>
@@ -56,7 +56,7 @@
                         <div class="col-md-8">
                             <label class="form-label">Tên Voucher <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="voucherName"
-                                placeholder="VD: Giảm 50K Cuối Tuần" required>
+                                placeholder="VD: Giảm 50K Cuối Tuần" value="${voucher.voucherName}" required>
                             <div class="invalid-feedback">Vui lòng nhập tên voucher</div>
                         </div>
 
@@ -65,16 +65,24 @@
                             <label class="form-label">Phân loại <span class="text-danger">*</span></label>
                             <select class="form-select" name="voucherType" id="voucherType"
                                 onchange="handleTypeChange()" required>
-                                <option value="LOYALTY">LOYALTY — Khách dùng điểm để đổi</option>
-                                <option value="PUBLIC">PUBLIC — Mã chung công khai</option>
+                                <option value="LOYALTY" ${voucher.voucherType == 'LOYALTY' ? 'selected' : ''}>LOYALTY — Khách dùng điểm để đổi</option>
+                                <option value="PUBLIC" ${voucher.voucherType == 'PUBLIC' ? 'selected' : ''}>PUBLIC — Mã chung công khai</option>
                             </select>
                         </div>
 
                         <!-- Mã / Prefix -->
                         <div class="col-md-6">
                             <label class="form-label" id="codeLabel">Tiền tố Mã (Prefix)</label>
-                            <input type="text" class="form-control font-monospace" name="voucherCode" id="voucherCode"
-                                placeholder="VD: SALE50K-">
+                            <input type="text" class="form-control font-monospace ${not empty voucherCodeError ? 'is-invalid' : ''}" name="voucherCode" id="voucherCode"
+                                placeholder="VD: SALE50K-" value="${voucher.voucherCode}">
+                            <c:choose>
+                                <c:when test="${not empty voucherCodeError}">
+                                    <div class="invalid-feedback d-block">${voucherCodeError}</div>
+                                </c:when>
+                                <c:otherwise>
+                                    <div class="invalid-feedback">Vui lòng nhập mã hoặc tiền tố voucher</div>
+                                </c:otherwise>
+                            </c:choose>
                             <div class="form-text" id="codeHint">Hệ thống sẽ tự ghép prefix + chuỗi ngẫu nhiên khi khách
                                 đổi.</div>
                         </div>
@@ -83,33 +91,35 @@
                         <div class="col-md-6">
                             <label class="form-label">Số tiền giảm giá (VNĐ) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="discountAmount" min="1000" max="500000" step="1000"
-                                required>
-                            <div class="invalid-feedback">Vui lòng nhập số tiền giảm hợp lệ. (≤ 500.000đ)</div>
+                                value="${voucher.discountAmount != null ? voucher.discountAmount.intValue() : ''}" required>
+                            <div class="invalid-feedback">Số tiền giảm từ 1.000đ đến 500.000đ</div>
                         </div>
 
                         <!-- Giá đổi điểm (chỉ LOYALTY) -->
                         <div class="col-md-4" id="pointsCostGroup">
                             <label class="form-label">Giá đổi (Điểm) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" name="pointsCost" id="pointsCost" min="1" max="1000"
-                                value="100">
+                            <input type="number" class="form-control" name="pointsCost" id="pointsCost" min="0" max="1000"
+                                value="${voucher.pointsCost != null ? voucher.pointsCost : 100}">
                             <div class="form-text">Số điểm khách cần tiêu để lấy voucher này.</div>
-                            <div class="invalid-feedback">Vui lòng nhập số điểm hợp lệ.(≤ 1000)</div>
+                            <div class="invalid-feedback">Số điểm từ 0 đến 1000</div>
                         </div>
 
                         <!-- Lượt dùng tối đa -->
                         <div class="col-md-4">
                             <label class="form-label">Lượt dùng tối đa</label>
-                            <input type="number" class="form-control" name="maxUsage" id="maxUsage" min="1" max="100" value="1">
+                            <input type="number" class="form-control" name="maxUsage" id="maxUsage" min="1" max="100" 
+                                value="${voucher.maxUsageLimit != null ? voucher.maxUsageLimit : 1}">
                             <div class="form-text" id="usageHint">Nhập số lượt dùng tối đa.</div>
-                            <div class="invalid-feedback">Vui lòng nhập số lượt dùng hợp lệ.(≤ 100)</div>
+                            <div class="invalid-feedback">Lượt dùng tối đa từ 1 đến 100</div>
                         </div>
 
                         <!-- Hạn sử dụng -->
                         <div class="col-md-4">
                             <label class="form-label">Hạn sử dụng (Ngày) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" name="validDays" min="1" max="30" value="30" required>
+                            <input type="number" class="form-control" name="validDays" min="1" max="30" 
+                                value="${voucher.validDays != null ? voucher.validDays : 30}" required>
                             <div class="form-text">Với LOYALTY: tính từ lúc khách đổi quà thành công.</div>
-                            <div class="invalid-feedback">Vui lòng nhập số ngày hợp lệ. (≤ 30)</div>
+                            <div class="invalid-feedback">Hạn sử dụng từ 1 đến 30 ngày</div>
                         </div>
 
                         <!-- Buttons -->
