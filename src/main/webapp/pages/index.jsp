@@ -80,6 +80,13 @@
         <p class="lead">Đặt vé nhanh chóng. Khám phá điện ảnh. Tận hưởng cảm xúc.</p>
     </div>
 
+    <c:if test="${not empty sessionScope.successMsg}">
+        <div class="alert alert-success fw-semibold text-center mt-3 mb-0" style="max-width: 600px; margin: 0 auto;">
+            <i class="fa fa-check-circle me-2"></i> ${sessionScope.successMsg}
+        </div>
+        <c:remove var="successMsg" scope="session" />
+    </c:if>
+
     <div class="section-title">Phim Đang Chiếu</div>
     <div class="row">
         <c:choose>

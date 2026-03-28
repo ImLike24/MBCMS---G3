@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -228,13 +229,17 @@ public class CounterBookingReceipt extends HttpServlet {
 
             document.add(ticketsTable);
 
-            // Parse discount info from notes
+            // Parse discount info and concessions from notes
+            // (concession section rendered after parsing below)
             String notes = firstTicket.getNotes();
             String voucherCodeNote = null;
             BigDecimal voucherDiscount = null;
             int pointsUsedNote = 0;
             BigDecimal pointsDiscount = null;
             BigDecimal finalAmountNote = null;
+            // Each entry: {name, qty, priceBase}
+            List<String[]> concessionItems = new ArrayList<>();
+            BigDecimal concessionTotal = BigDecimal.ZERO;
             if (notes != null && !notes.isEmpty()) {
                 for (String part : notes.split("\\|")) {
                     if (part.startsWith("VOUCHER:")) {
@@ -247,8 +252,44 @@ public class CounterBookingReceipt extends HttpServlet {
                         if (seg.length > 1) pointsDiscount = new BigDecimal(seg[1]);
                     } else if (part.startsWith("FINAL:")) {
                         finalAmountNote = new BigDecimal(part.substring(6));
+                    } else if (part.startsWith("ITEM:")) {
+                        // Format: ITEM:name:qty:priceBase
+                        String[] seg = part.substring(5).split(":");
+                        if (seg.length >= 3) {
+                            concessionItems.add(seg);
+                            int qty = Integer.parseInt(seg[1]);
+                            double price = Double.parseDouble(seg[2]);
+                            concessionTotal = concessionTotal.add(BigDecimal.valueOf(qty * price));
+                        }
                     }
                 }
+            }
+
+            // Concessions section
+            if (!concessionItems.isEmpty()) {
+                Paragraph concHeader = new Paragraph("FOOD & BEVERAGES", FONT_HEADER);
+                concHeader.setSpacingBefore(10);
+                concHeader.setSpacingAfter(10);
+                document.add(concHeader);
+
+                PdfPTable concTable = new PdfPTable(new float[]{4, 1, 2, 2});
+                concTable.setWidthPercentage(100);
+                concTable.setSpacingAfter(20);
+                addTableHeader(concTable, "Item");
+                addTableHeader(concTable, "Qty");
+                addTableHeader(concTable, "Unit Price");
+                addTableHeader(concTable, "Subtotal");
+
+                for (String[] item : concessionItems) {
+                    String name = item[0];
+                    int qty = Integer.parseInt(item[1]);
+                    double price = Double.parseDouble(item[2]);
+                    addTableCell(concTable, name);
+                    addTableCell(concTable, String.valueOf(qty));
+                    addTableCell(concTable, formatCurrency(BigDecimal.valueOf(price)));
+                    addTableCell(concTable, formatCurrency(BigDecimal.valueOf(qty * price)));
+                }
+                document.add(concTable);
             }
 
             // Payment Summary
@@ -261,7 +302,10 @@ public class CounterBookingReceipt extends HttpServlet {
             totalTable.setWidthPercentage(100);
             totalTable.setSpacingBefore(5);
 
-            addInfoRow(totalTable, "Subtotal:", formatCurrency(totalAmount) + " VND", false);
+            addInfoRow(totalTable, "Tickets subtotal:", formatCurrency(totalAmount) + " VND", false);
+            if (concessionTotal.compareTo(BigDecimal.ZERO) > 0) {
+                addInfoRow(totalTable, "Food & Beverages:", formatCurrency(concessionTotal) + " VND", false);
+            }
 
             if (voucherCodeNote != null && voucherDiscount != null) {
                 addInfoRow(totalTable, "Voucher (" + voucherCodeNote + "):", "- " + formatCurrency(voucherDiscount) + " VND", false);

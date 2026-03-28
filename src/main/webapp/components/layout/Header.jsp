@@ -134,6 +134,7 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarMain">
+
                 <!-- Phần User / Login - góc phải -->
                 <ul class="navbar-nav ms-auto align-items-center">
                     <c:choose>

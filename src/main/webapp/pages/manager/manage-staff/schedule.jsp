@@ -99,6 +99,9 @@
             <c:if test="${param.error == 'invalid_shift'}">
                 <div class="alert alert-danger alert-dismissible fade show">Ca làm việc không hợp lệ. <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
             </c:if>
+            <c:if test="${param.error == 'past_date'}">
+                <div class="alert alert-danger alert-dismissible fade show">Không được chọn ngày trong quá khứ. <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+            </c:if>
 
             <!-- Add schedule button -->
             <div class="mb-3">
@@ -181,7 +184,7 @@
     <div class="modal fade" id="addScheduleModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="post" action="${pageContext.request.contextPath}/branch-manager/manage-staff">
+                <form method="post" action="${pageContext.request.contextPath}/branch-manager/manage-staff" onsubmit="return validateScheduleForm()">
                     <input type="hidden" name="action" value="create-schedule">
                     <input type="hidden" name="branchId" value="${selectedBranchId}">
                     <input type="hidden" name="date" value="${referenceDateStr}">
@@ -201,7 +204,9 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Ngày làm việc <span class="text-danger">*</span></label>
-                            <input type="date" name="workDate" class="form-control" required>
+                            <input type="date" name="workDate" id="workDate" class="form-control" required
+                                   min="<%= java.time.LocalDate.now() %>">
+                            <div id="workDateError" class="text-danger small mt-1" style="display:none;">Không được chọn ngày trong quá khứ.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Ca làm việc <span class="text-danger">*</span></label>
@@ -220,7 +225,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-success"><i class="fa fa-save me-1"></i>Lưu</button>
+                        <button type="submit" id="saveScheduleBtn" class="btn btn-success"><i class="fa fa-save me-1"></i>Lưu</button>
                     </div>
                 </form>
             </div>
@@ -239,6 +244,46 @@
     <script>
         document.getElementById('sidebarToggle')?.addEventListener('click', () =>
             document.body.classList.toggle('sidebar-collapsed'));
+
+        const workDateInput = document.getElementById('workDate');
+        const saveBtn = document.getElementById('saveScheduleBtn');
+        const todayStr = workDateInput ? workDateInput.min : '';
+
+        function checkWorkDate() {
+            if (!workDateInput) return;
+            const errorDiv = document.getElementById('workDateError');
+            const isPast = workDateInput.value && workDateInput.value < todayStr;
+            const isEmpty = !workDateInput.value;
+            if (isPast) {
+                errorDiv.style.display = 'block';
+                workDateInput.classList.add('is-invalid');
+                workDateInput.classList.remove('is-valid');
+                saveBtn.disabled = true;
+            } else if (isEmpty) {
+                errorDiv.style.display = 'none';
+                workDateInput.classList.remove('is-invalid', 'is-valid');
+                saveBtn.disabled = false;
+            } else {
+                errorDiv.style.display = 'none';
+                workDateInput.classList.remove('is-invalid');
+                workDateInput.classList.add('is-valid');
+                saveBtn.disabled = false;
+            }
+        }
+
+        if (workDateInput) {
+            workDateInput.addEventListener('change', checkWorkDate);
+            workDateInput.addEventListener('input', checkWorkDate);
+        }
+
+        function validateScheduleForm() {
+            checkWorkDate();
+            if (!workDateInput.value || workDateInput.value < todayStr) {
+                workDateInput.focus();
+                return false;
+            }
+            return true;
+        }
 
         function confirmCancel(scheduleId, date, branchId) {
             if (!confirm('Hủy ca làm việc này?')) return;

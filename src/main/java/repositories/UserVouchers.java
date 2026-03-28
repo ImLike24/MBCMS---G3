@@ -30,22 +30,6 @@ public class UserVouchers extends DBContext {
         return uv;
     }
 
-    public List<UserVoucher> getVouchersByUserId(int userId) {
-        List<UserVoucher> lists = new ArrayList<>();
-        String sql = "SELECT * FROM user_vouchers WHERE user_id = ? ORDER BY redeemed_at DESC";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setInt(1, userId);
-            try (ResultSet rs = st.executeQuery()) {
-                while (rs.next()) {
-                    lists.add(mapResultSetToUserVoucher(rs));
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return lists;
-    }
-
     /**
      * Lấy các voucher còn hiệu lực cho 1 user:
      * - status = 'AVAILABLE'
@@ -92,10 +76,25 @@ public class UserVouchers extends DBContext {
         if (voucher.getVoucherCode() != null) {
             prefix = voucher.getVoucherCode() + "-";
         }
-        String randomCode = prefix + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-        java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now().plusDays(voucher.getValidDays());
 
         try {
+            // 0. Check if user already has this loyalty voucher (same prefix)
+            if (!prefix.isEmpty()) {
+                String checkPrefixSql = "SELECT count(*) FROM user_vouchers WHERE user_id = ? AND voucher_code LIKE ?";
+                try (PreparedStatement stCheck = connection.prepareStatement(checkPrefixSql)) {
+                    stCheck.setInt(1, userId);
+                    stCheck.setString(2, prefix + "%");
+                    try (ResultSet rsCheck = stCheck.executeQuery()) {
+                        if (rsCheck.next() && rsCheck.getInt(1) > 0) {
+                            return false; // User already has a voucher with this prefix
+                        }
+                    }
+                }
+            }
+
+            String randomCode = prefix + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+            java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now().plusDays(voucher.getValidDays());
+
             // 1. Check if voucher is still active and valid
             String checkActiveSql = "SELECT is_active, current_usage, max_usage_limit FROM vouchers WHERE voucher_id = ? AND is_active = 1";
             try (PreparedStatement st = connection.prepareStatement(checkActiveSql)) {
@@ -148,7 +147,7 @@ public class UserVouchers extends DBContext {
     public boolean savePublicVoucher(int userId, models.Voucher voucher) {
         String insertUserVoucherSql = "INSERT INTO user_vouchers (user_id, voucher_id, voucher_code, expires_at) VALUES (?, ?, ?, ?)";
 
-        // Check if user already has this specific public voucher (status AVAILABLE)
+        
         String checkSql = "SELECT count(*) FROM user_vouchers WHERE user_id = ? AND voucher_id = ? AND status = 'AVAILABLE'";
 
         try (PreparedStatement stCheck = connection.prepareStatement(checkSql)) {
@@ -193,10 +192,10 @@ public class UserVouchers extends DBContext {
         return false;
     }
 
-    public boolean markVoucherAsUsed(String code) {
+    public boolean deleteVoucherByCode(String code) {
         if (code == null || code.trim().isEmpty())
             return false;
-        String sql = "UPDATE user_vouchers SET status = 'USED', used_at = SYSDATETIME() WHERE voucher_code = ? AND status = 'AVAILABLE'";
+        String sql = "DELETE FROM user_vouchers WHERE voucher_code = ?";
         try (PreparedStatement st = connection.prepareStatement(sql)) {
             st.setString(1, code.trim());
             return st.executeUpdate() > 0;

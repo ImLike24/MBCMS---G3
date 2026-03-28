@@ -30,7 +30,8 @@ public class Room extends HttpServlet {
 
         List<CinemaBranch> managedBranches = branchDao.findListByManagerId(user.getUserId());
         if (managedBranches == null || managedBranches.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không quản lý chi nhánh nào.");
+            request.setAttribute("noBranchAssigned", true);
+            request.getRequestDispatcher("/pages/manager/screening-room/list.jsp").forward(request, response);
             return;
         }
 
@@ -179,17 +180,13 @@ public class Room extends HttpServlet {
     }
 
     private void deleteRoom(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        int id = Integer.parseInt(request.getParameter("id"));
-        roomService.deleteRoom(id);
-        response.sendRedirect("rooms?message=deleted");
-    }
-
-    private ScreeningRoom extractFromRequest(HttpServletRequest request) {
-        ScreeningRoom r = new ScreeningRoom();
-        r.setRoomName(request.getParameter("roomName"));
-        String seats = request.getParameter("totalSeats");
-        r.setTotalSeats((seats != null && !seats.isEmpty()) ? Integer.parseInt(seats) : 0);
-        r.setStatus(request.getParameter("status"));
-        return r;
+        try {
+            int id = Integer.parseInt(request.getParameter("id"));
+            roomService.deleteRoom(id);
+            response.sendRedirect("rooms?message=deleted");
+        } catch (Exception e) {
+            String errorMsg = java.net.URLEncoder.encode(e.getMessage(), "UTF-8");
+            response.sendRedirect("rooms?error=" + errorMsg);
+        }
     }
 }

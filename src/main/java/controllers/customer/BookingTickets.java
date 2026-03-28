@@ -20,244 +20,62 @@ import models.Concession;
 import models.Seat;
 import models.SeatTypeSurcharge;
 import models.Showtime;
-import repositories.Concessions;
-import repositories.SeatTypeSurcharges;
-import repositories.Showtimes;
-import repositories.TicketPrices;
+import repositories.*;
 
-@WebServlet(name = "TicketsOfChosenMovie", urlPatterns = { "/customer/booking-tickets" })
+@WebServlet(name = "TicketsOfChosenMovie", urlPatterns = { "/booking-tickets" })
 public class BookingTickets extends HttpServlet {
 
-    // force update
+    private final services.BookingService bookingService = new services.BookingService();
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // Đảm bảo user đã đăng nhập trước khi đặt vé
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        // Hiển thị lỗi từ session (khi redirect từ doPost)
-        if (session.getAttribute("bookingError") != null) {
-            request.setAttribute("error", session.getAttribute("bookingError"));
-            session.removeAttribute("bookingError");
-        }
-
-        // Lấy showtimeId từ query string
         String showtimeIdParam = request.getParameter("showtimeId");
         if (showtimeIdParam == null || showtimeIdParam.isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/movies");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
             return;
         }
 
-        int showtimeId;
         try {
-            showtimeId = Integer.parseInt(showtimeIdParam);
-        } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/movies");
-            return;
-        }
+            int showtimeId = Integer.parseInt(showtimeIdParam);
 
-        Showtimes showtimesRepo = null;
-        try {
-            showtimesRepo = new Showtimes();
+            Map<String, Object> pageData = bookingService.getBookingTicketsData(showtimeId);
 
-            Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
-            if (showtimeDetails == null || showtimeDetails.isEmpty()) {
-                response.sendRedirect(request.getContextPath() + "/movies");
-                return;
-            }
-
-            List<Map<String, Object>> seatsWithStatus = showtimesRepo.getSeatsWithBookingStatus(showtimeId);
-            int availableSeats = showtimesRepo.countAvailableSeats(showtimeId);
-
-            // Nhóm ghế theo hàng để hiển thị sơ đồ (server-side)
-            Map<String, List<Map<String, Object>>> seatsByRow = new LinkedHashMap<>();
-            for (Map<String, Object> sws : seatsWithStatus) {
-                Seat seat = (Seat) sws.get("seat");
-                String row = seat != null && seat.getRowNumber() != null ? seat.getRowNumber() : "";
-                seatsByRow.computeIfAbsent(row, k -> new ArrayList<>()).add(sws);
-            }
-
-            // Map seatId -> seatInfo để tra cứu ghế đã chọn từ GET
-            Map<Integer, Map<String, Object>> seatIdToInfo = new java.util.HashMap<>();
-            for (Map<String, Object> sws : seatsWithStatus) {
-                Seat s = (Seat) sws.get("seat");
-                if (s != null) {
-                    seatIdToInfo.put(s.getSeatId(), sws);
-                }
-            }
-
-            // Phụ phí theo loại ghế (một lần gọi repo, dùng cho tính giá + JSP)
-            Integer branchId = (Integer) showtimeDetails.get("branchId");
-            Map<String, Double> surchargeRates = new java.util.HashMap<>();
-            List<SeatTypeSurcharge> surchargeList = new ArrayList<>();
-            if (branchId != null) {
-                SeatTypeSurcharges surchargesRepo = new SeatTypeSurcharges();
-                surchargeList = surchargesRepo.getSurchargesByBranch(branchId);
-                for (SeatTypeSurcharge s : surchargeList) {
-                    if (s.getSurchargeRate() != null) {
-                        surchargeRates.put(s.getSeatType(), s.getSurchargeRate());
-                    }
-                }
-                StringBuilder jsonBuilder = new StringBuilder();
-                jsonBuilder.append("{");
-                for (int i = 0; i < surchargeList.size(); i++) {
-                    SeatTypeSurcharge s = surchargeList.get(i);
-                    if (s.getSeatType() == null) continue;
-                    double rate = s.getSurchargeRate() != null ? s.getSurchargeRate() : 0.0;
-                    if (jsonBuilder.length() > 1) jsonBuilder.append(",");
-                    jsonBuilder.append("\"").append(s.getSeatType()).append("\":").append(rate);
-                }
-                jsonBuilder.append("}");
-                request.setAttribute("surchargeRatesJson", jsonBuilder.toString());
-                surchargesRepo.closeConnection();
-            } else {
-                request.setAttribute("surchargeRatesJson", "{}");
-            }
-            request.setAttribute("surchargeList", surchargeList);
-
-            // Giá vé theo cấu hình manager (ticket_prices), không dùng giá suất chiếu
-            Showtime st = (Showtime) showtimeDetails.get("showtime");
-            double adultPriceValue = 0.0;
-            double childPriceValue = 0.0;
-            if (branchId != null && st != null && st.getShowDate() != null && st.getStartTime() != null) {
-                DayOfWeek dayOfWeek = st.getShowDate().getDayOfWeek();
-                String dayType = (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) ? "WEEKEND" : "WEEKDAY";
-                int hour = st.getStartTime().getHour();
-                String timeSlot = (hour >= 6 && hour < 12) ? "MORNING" : (hour >= 12 && hour < 17) ? "AFTERNOON" : (hour >= 17 && hour < 22) ? "EVENING" : "NIGHT";
-                TicketPrices ticketPricesDao = new TicketPrices();
-                BigDecimal adultBd = ticketPricesDao.getTicketPrice(branchId, "ADULT", dayType, timeSlot, st.getShowDate());
-                BigDecimal childBd = ticketPricesDao.getTicketPrice(branchId, "CHILD", dayType, timeSlot, st.getShowDate());
-                adultPriceValue = adultBd != null ? adultBd.doubleValue() : 0.0;
-                childPriceValue = childBd != null ? childBd.doubleValue() : 0.0;
-                ticketPricesDao.closeConnection();
-            }
-            request.setAttribute("adultPrice", adultPriceValue);
-            request.setAttribute("childPrice", childPriceValue);
-            request.setAttribute("basePrice", adultPriceValue);
-
-            String[] seatIdsParam = request.getParameterValues("seatIds");
-            List<Integer> selectedSeatIds = new ArrayList<>();
-            List<Map<String, Object>> selectedSeatsInfo = new ArrayList<>();
-            BigDecimal totalAmount = BigDecimal.ZERO;
-            if (seatIdsParam != null && seatIdsParam.length > 0) {
-                for (String sid : seatIdsParam) {
-                    try {
-                        int seatId = Integer.parseInt(sid.trim());
-                        Map<String, Object> sws = seatIdToInfo.get(seatId);
-                        if (sws != null && "AVAILABLE".equals(sws.get("bookingStatus"))) {
-                            Seat seat = (Seat) sws.get("seat");
-                            selectedSeatIds.add(seatId);
-
-                            String ticketType = request.getParameter("ticketType_" + seatId);
-                            if (ticketType == null || ticketType.isEmpty()) ticketType = "ADULT";
-                            if (!"ADULT".equals(ticketType) && !"CHILD".equals(ticketType)) ticketType = "ADULT";
-
-                            String seatType = seat.getSeatType() != null ? seat.getSeatType() : "NORMAL";
-                            double rate = surchargeRates.getOrDefault(seatType, 0.0);
-                            double baseByType = "CHILD".equals(ticketType) ? childPriceValue : adultPriceValue;
-                            double price = baseByType * (1 + rate / 100);
-                            BigDecimal seatPrice = BigDecimal.valueOf(price);
-                            totalAmount = totalAmount.add(seatPrice);
-
-                            Map<String, Object> info = new java.util.HashMap<>();
-                            info.put("seatId", seat.getSeatId());
-                            info.put("seatCode", seat.getSeatCode());
-                            info.put("seatType", seatType);
-                            info.put("ticketType", ticketType);
-                            info.put("price", seatPrice);
-                            selectedSeatsInfo.add(info);
-                        }
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-            }
-            // Concessions (đồ ăn / thức uống) — luôn set để JSP hiển thị quầy hoặc thông báo "chưa được bán"
-            Concessions concessionsRepo = new Concessions();
-            List<Concession> concessionsList = concessionsRepo.getConcessionsForSale();
-            concessionsRepo.closeConnection();
-            if (concessionsList == null) {
-                concessionsList = new ArrayList<>();
-            }
-            request.setAttribute("concessionsList", concessionsList);
-
-            Map<Integer, Integer> concessionQty = new java.util.HashMap<>();
-            List<Map<String, Object>> selectedConcessions = new ArrayList<>();
-            BigDecimal concessionTotal = BigDecimal.ZERO;
-            for (Concession c : concessionsList) {
-                String qtyParam = request.getParameter("concession_" + c.getConcessionId());
-                int qty = 0;
-                if (qtyParam != null && !qtyParam.isEmpty()) {
-                    try {
-                        qty = Integer.parseInt(qtyParam.trim());
-                        if (qty < 0) qty = 0;
-                    } catch (NumberFormatException ignored) { }
-                }
-                concessionQty.put(c.getConcessionId(), qty);
-                if (qty > 0 && c.getPriceBase() != null) {
-                    BigDecimal lineTotal = BigDecimal.valueOf(c.getPriceBase() * qty);
-                    concessionTotal = concessionTotal.add(lineTotal);
-                    Map<String, Object> item = new java.util.HashMap<>();
-                    item.put("concessionId", c.getConcessionId());
-                    item.put("concessionName", c.getConcessionName());
-                    item.put("concessionType", c.getConcessionType());
-                    item.put("quantity", qty);
-                    item.put("priceBase", c.getPriceBase());
-                    item.put("lineTotal", lineTotal);
-                    selectedConcessions.add(item);
-                }
-            }
-            request.setAttribute("concessionQty", concessionQty);
-            request.setAttribute("selectedConcessions", selectedConcessions);
-            request.setAttribute("concessionTotal", concessionTotal);
-            request.setAttribute("ticketTotal", totalAmount);
-            request.setAttribute("totalAmount", totalAmount.add(concessionTotal));
-
-            request.setAttribute("seatsByRow", seatsByRow);
-            request.setAttribute("showtimeDetails", showtimeDetails);
-            request.setAttribute("seatsWithStatus", seatsWithStatus);
-            request.setAttribute("availableSeats", availableSeats);
             request.setAttribute("showtimeId", showtimeId);
-            request.setAttribute("selectedSeatIds", selectedSeatIds);
-            request.setAttribute("selectedSeatsInfo", selectedSeatsInfo);
 
-            Showtime showtime = (Showtime) showtimeDetails.get("showtime");
-            request.setAttribute("showtime", showtime);
-            request.setAttribute("movieTitle", showtimeDetails.get("movieTitle"));
-            request.setAttribute("moviePosterUrl", showtimeDetails.get("moviePosterUrl"));
-            request.setAttribute("roomName", showtimeDetails.get("roomName"));
-            request.setAttribute("totalSeats", showtimeDetails.get("totalSeats"));
-            request.setAttribute("branchName", showtimeDetails.get("branchName"));
+            // Truyền các biến cần thiết ra JSP để vẽ Sơ đồ ghế và Bắp nước
+            request.setAttribute("movie", pageData.get("movie"));
+            request.setAttribute("showtime", pageData.get("showtime"));
+            request.setAttribute("room", pageData.get("room"));
+            request.setAttribute("occupiedSeats", pageData.get("occupiedSeats"));
+            request.setAttribute("seatsByRow", pageData.get("seatsByRow"));
 
+            request.setAttribute("concessionsList", pageData.get("concessions"));
 
-            if (showtime != null) {
-                if (showtime.getStartTime() != null) {
-                    request.setAttribute("formattedStartTime",
-                            showtime.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
-                }
-                if (showtime.getShowDate() != null) {
-                    request.setAttribute("formattedShowDate",
-                            showtime.getShowDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                }
+            // Truyền giá vé để Javascript đọc và tính toán
+            request.setAttribute("surchargeRatesJson", pageData.get("surchargeRatesJson"));
+            request.setAttribute("adultPrice", pageData.get("adultPrice"));
+            request.setAttribute("childPrice", pageData.get("childPrice"));
+            request.setAttribute("basePrice", pageData.get("basePrice"));
 
+            // Hỗ trợ hiển thị thẻ <title> của web
+            models.Movie m = (models.Movie) pageData.get("movie");
+            if (m != null) {
+                request.setAttribute("movieTitle", m.getTitle());
             }
 
-            request.getRequestDispatcher("/pages/customer/booking-tickets.jsp")
-                    .forward(request, response);
+            request.getRequestDispatcher("/pages/customer/booking-tickets.jsp").forward(request, response);
 
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "Có lỗi xảy ra khi tải sơ đồ ghế.");
-            request.getRequestDispatcher("/pages/customer/booking-tickets.jsp")
-                    .forward(request, response);
-        } finally {
-            if (showtimesRepo != null) {
-                showtimesRepo.closeConnection();
-            }
+            response.sendRedirect(request.getContextPath() + "/showtimes");
         }
     }
 
@@ -274,175 +92,182 @@ public class BookingTickets extends HttpServlet {
         String[] seatIdsParam = request.getParameterValues("seatIds");
         String showtimeIdParam = request.getParameter("showtimeId");
 
-        if (showtimeIdParam == null || showtimeIdParam.isEmpty() || seatIdsParam == null || seatIdsParam.length == 0) {
-            response.sendRedirect(request.getContextPath() + "/movies");
+        // Chốt chặn 1: Đề phòng truy cập trái phép không có showtimeId
+        if (showtimeIdParam == null || showtimeIdParam.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/showtimes");
             return;
         }
 
-        int showtimeId;
-        try {
-            showtimeId = Integer.parseInt(showtimeIdParam);
-        } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/movies");
+        // Chốt chặn 2: Khách cố tình submit khi chưa chọn ghế
+        if (seatIdsParam == null || seatIdsParam.length == 0) {
+            // Lưu lỗi vào session để JSP hiển thị
+            session.setAttribute("error", "Vui lòng chọn ít nhất 1 ghế để tiếp tục.");
+            response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeIdParam);
             return;
         }
 
-        Showtimes showtimesRepo = null;
         try {
-            showtimesRepo = new Showtimes();
-            Map<String, Object> showtimeDetails = showtimesRepo.getShowtimeDetails(showtimeId);
-            if (showtimeDetails == null || showtimeDetails.isEmpty()) {
-                response.sendRedirect(request.getContextPath() + "/movies");
-                return;
-            }
+            int showtimeId = Integer.parseInt(showtimeIdParam);
 
-            Showtime showtime = (Showtime) showtimeDetails.get("showtime");
-            Integer branchId = (Integer) showtimeDetails.get("branchId");
+            // Tận dụng lại hàm Service để lấy dữ liệu Bảng giá và Phụ phí cực kỳ tối ưu
+            Map<String, Object> pageData = bookingService.getBookingTicketsData(showtimeId);
 
-            // Giá vé theo cấu hình manager (ticket_prices)
-            double adultPriceVal = 0.0;
-            double childPriceVal = 0.0;
-            if (branchId != null && showtime != null && showtime.getShowDate() != null && showtime.getStartTime() != null) {
-                DayOfWeek dayOfWeek = showtime.getShowDate().getDayOfWeek();
-                String dayType = (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) ? "WEEKEND" : "WEEKDAY";
-                int hour = showtime.getStartTime().getHour();
-                String timeSlot = (hour >= 6 && hour < 12) ? "MORNING" : (hour >= 12 && hour < 17) ? "AFTERNOON" : (hour >= 17 && hour < 22) ? "EVENING" : "NIGHT";
-                TicketPrices ticketPricesRepo = new TicketPrices();
-                BigDecimal adultBd = ticketPricesRepo.getTicketPrice(branchId, "ADULT", dayType, timeSlot, showtime.getShowDate());
-                BigDecimal childBd = ticketPricesRepo.getTicketPrice(branchId, "CHILD", dayType, timeSlot, showtime.getShowDate());
-                adultPriceVal = adultBd != null ? adultBd.doubleValue() : 0.0;
-                childPriceVal = childBd != null ? childBd.doubleValue() : 0.0;
-                ticketPricesRepo.closeConnection();
-            }
+            @SuppressWarnings("unchecked")
+            java.util.List<Integer> occupiedSeats = (java.util.List<Integer>) pageData.get("occupiedSeats");
 
-            Map<String, Double> surchargeRates = new java.util.HashMap<>();
-            if (branchId != null) {
-                SeatTypeSurcharges surchargesRepo = new SeatTypeSurcharges();
-                for (SeatTypeSurcharge s : surchargesRepo.getSurchargesByBranch(branchId)) {
-                    if (s.getSurchargeRate() != null) {
-                        surchargeRates.put(s.getSeatType(), s.getSurchargeRate());
-                    }
-                }
-                surchargesRepo.closeConnection();
-            }
+            // Ép kiểu an toàn cho giá tiền (Đề phòng trường hợp Service trả về BigDecimal hoặc Integer)
+            double adultPrice = ((Number) pageData.get("adultPrice")).doubleValue();
+            double childPrice = ((Number) pageData.get("childPrice")).doubleValue();
 
-            List<Map<String, Object>> seatsWithStatus = showtimesRepo.getSeatsWithBookingStatus(showtimeId);
-            Map<Integer, Map<String, Object>> seatMap = new java.util.HashMap<>();
-            for (Map<String, Object> sws : seatsWithStatus) {
-                Seat seat = (Seat) sws.get("seat");
-                if (seat != null) {
-                    seatMap.put(seat.getSeatId(), sws);
-                }
-            }
+            @SuppressWarnings("unchecked")
+            java.util.List<models.SeatTypeSurcharge> surcharges = (java.util.List<models.SeatTypeSurcharge>) pageData.get("surchargeList");
 
-            List<Map<String, Object>> selectedSeats = new ArrayList<>();
-            BigDecimal totalAmount = BigDecimal.ZERO;
+            java.util.List<Map<String, Object>> selectedSeats = new ArrayList<>();
+            BigDecimal ticketTotal = BigDecimal.ZERO;
 
-            for (String sid : seatIdsParam) {
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, java.util.List<java.util.Map<String, Object>>> seatsByRow =
+                    (java.util.Map<String, java.util.List<java.util.Map<String, Object>>>) pageData.get("seatsByRow");
+
+            // ====================================================================
+            // VÒNG LẶP TÍNH TIỀN TỪNG GHẾ (ĐÃ FIX CÔNG THỨC)
+            // ====================================================================
+            for (String sidStr : seatIdsParam) {
                 int seatId;
                 try {
-                    seatId = Integer.parseInt(sid.trim());
-                } catch (NumberFormatException e) {
-                    continue;
-                }
+                    seatId = Integer.parseInt(sidStr.trim());
+                } catch (Exception e) { continue; }
 
-                Map<String, Object> sws = seatMap.get(seatId);
-                if (sws == null) continue;
-                if (!"AVAILABLE".equals(sws.get("bookingStatus"))) {
-                    request.getSession().setAttribute("bookingError", "Ghế đã được đặt trước. Vui lòng chọn ghế khác.");
-                    response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeId);
-                    return;
-                }
-                if (!showtimesRepo.isSeatAvailable(showtimeId, seatId)) {
-                    request.getSession().setAttribute("bookingError", "Ghế đã được đặt trước. Vui lòng chọn ghế khác.");
-                    response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeId);
+                // Kiểm tra: Ghế có bị người khác nhanh tay mua mất không?
+                if (occupiedSeats.contains(seatId)) {
+                    session.setAttribute("error", "Ghế bạn chọn vừa có người đặt. Vui lòng chọn ghế khác.");
+                    response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeId);
                     return;
                 }
 
+                // Tìm thông tin ghế từ sơ đồ
+                models.Seat s = null;
+                if (seatsByRow != null) {
+                    for (java.util.List<java.util.Map<String, Object>> row : seatsByRow.values()) {
+                        for (java.util.Map<String, Object> seatInfo : row) {
+                            models.Seat temp = (models.Seat) seatInfo.get("seat");
+                            if (temp != null && temp.getSeatId() == seatId) {
+                                s = temp;
+                                break;
+                            }
+                        }
+                        if (s != null) break;
+                    }
+                }
+
+                if (s == null) continue;
+
+                // Xác định loại vé khách chọn
                 String ticketType = request.getParameter("ticketType_" + seatId);
-                if (ticketType == null || ticketType.isEmpty()) {
-                    ticketType = "ADULT";
-                }
-                if (!"ADULT".equals(ticketType) && !"CHILD".equals(ticketType)) {
-                    ticketType = "ADULT";
+                ticketType = (ticketType != null && ticketType.equals("CHILD")) ? "CHILD" : "ADULT";
+
+                // ---------------------------------------------------
+                // CÔNG THỨC CHUẨN: Giá Cuối = Giá Cơ Bản + Phụ Phí Ghế
+                // ---------------------------------------------------
+                double basePrice = "CHILD".equals(ticketType) ? childPrice : adultPrice;
+                double surchargeRate = 0;
+
+                if (surcharges != null) {
+                    for (models.SeatTypeSurcharge sur : surcharges) {
+                        if (sur.getSeatType().equals(s.getSeatType())) {
+                            surchargeRate = sur.getSurchargeRate().doubleValue();
+                            break;
+                        }
+                    }
                 }
 
-                Seat seat = (Seat) sws.get("seat");
-                String seatType = seat.getSeatType() != null ? seat.getSeatType() : "NORMAL";
-                double rate = surchargeRates.getOrDefault(seatType, 0.0);
-                double baseByType = "CHILD".equals(ticketType) ? childPriceVal : adultPriceVal;
-                double price = baseByType * (1 + rate / 100);
+                // ĐÃ FIX: Dùng phép CỘNG (+) thay vì nhân (*)
+                double finalSeatPrice = Math.round(basePrice * (1 + surchargeRate / 100.0));
 
                 Map<String, Object> seatData = new java.util.HashMap<>();
                 seatData.put("seatId", seatId);
-                seatData.put("seatCode", seat.getSeatCode());
-                seatData.put("seatType", seatType);
+                seatData.put("seatCode", s.getSeatCode());
+                seatData.put("seatType", s.getSeatType());
                 seatData.put("ticketType", ticketType);
-                seatData.put("price", BigDecimal.valueOf(price));
+                seatData.put("price", BigDecimal.valueOf(finalSeatPrice));
+
                 selectedSeats.add(seatData);
-                totalAmount = totalAmount.add(BigDecimal.valueOf(price));
+                ticketTotal = ticketTotal.add(BigDecimal.valueOf(finalSeatPrice));
             }
 
             if (selectedSeats.isEmpty()) {
-                response.sendRedirect(request.getContextPath() + "/customer/booking-tickets?showtimeId=" + showtimeId);
+                response.sendRedirect(request.getContextPath() + "/booking-tickets?showtimeId=" + showtimeId);
                 return;
             }
 
-            // Đồ ăn / thức uống
-            Concessions concessionsRepoPost = new Concessions();
-            List<Concession> concessionsListPost = concessionsRepoPost.getConcessionsForSale();
+            // ====================================================================
+            // XỬ LÝ BẮP NƯỚC
+            // ====================================================================
+            @SuppressWarnings("unchecked")
+            java.util.List<models.Concession> concessionsListPost = (java.util.List<models.Concession>) pageData.get("concessions");
             List<Map<String, Object>> bookingConcessions = new ArrayList<>();
             BigDecimal concessionTotalPost = BigDecimal.ZERO;
-            for (Concession c : concessionsListPost) {
-                String qtyParam = request.getParameter("concession_" + c.getConcessionId());
-                int qty = 0;
-                if (qtyParam != null && !qtyParam.isEmpty()) {
-                    try {
-                        qty = Integer.parseInt(qtyParam.trim());
-                        if (qty < 0) qty = 0;
-                    } catch (NumberFormatException ignored) { }
-                }
-                if (qty > 0 && c.getPriceBase() != null) {
-                    BigDecimal lineTotal = BigDecimal.valueOf(c.getPriceBase() * qty);
-                    concessionTotalPost = concessionTotalPost.add(lineTotal);
-                    Map<String, Object> item = new java.util.HashMap<>();
-                    item.put("concessionId", c.getConcessionId());
-                    item.put("concessionName", c.getConcessionName());
-                    item.put("concessionType", c.getConcessionType());
-                    item.put("quantity", qty);
-                    item.put("priceBase", c.getPriceBase());
-                    item.put("lineTotal", lineTotal);
-                    bookingConcessions.add(item);
+
+            if (concessionsListPost != null) {
+                for (models.Concession c : concessionsListPost) {
+                    String qtyParam = request.getParameter("concession_" + c.getConcessionId());
+                    if (qtyParam != null && !qtyParam.trim().isEmpty()) {
+                        try {
+                            int qty = Integer.parseInt(qtyParam.trim());
+                            if (qty > 0) {
+                                BigDecimal lineTotal = BigDecimal.valueOf(c.getPriceBase() * qty);
+                                concessionTotalPost = concessionTotalPost.add(lineTotal);
+
+                                Map<String, Object> item = new java.util.HashMap<>();
+                                item.put("concessionId", c.getConcessionId());
+                                item.put("concessionName", c.getConcessionName());
+                                item.put("concessionType", c.getConcessionType());
+                                item.put("quantity", qty);
+                                item.put("priceBase", c.getPriceBase());
+                                item.put("lineTotal", lineTotal);
+                                bookingConcessions.add(item);
+                            }
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
-            concessionsRepoPost.closeConnection();
-            BigDecimal grandTotal = totalAmount.add(concessionTotalPost);
 
+            // ====================================================================
+            // TỔNG KẾT VÀ PHỤC HỒI VOUCHER TỪ SESSION CŨ
+            // ====================================================================
+            BigDecimal grandTotal = ticketTotal.add(concessionTotalPost);
             String voucherCodeParam = request.getParameter("voucherCode");
-            String voucherCodeToSummary = (voucherCodeParam != null && !voucherCodeParam.trim().isEmpty())
-                    ? voucherCodeParam.trim() : null;
+
+            if (voucherCodeParam == null || voucherCodeParam.trim().isEmpty()) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> oldData = (Map<String, Object>) session.getAttribute("customerBookingData");
+                if (oldData != null && oldData.get("voucherCode") != null) {
+                    voucherCodeParam = (String) oldData.get("voucherCode"); // Lôi voucher cũ ra xài lại
+                }
+            }
 
             Map<String, Object> bookingData = new java.util.HashMap<>();
             bookingData.put("showtimeId", showtimeId);
             bookingData.put("totalAmount", grandTotal);
-            bookingData.put("ticketTotal", totalAmount);
+            bookingData.put("ticketTotal", ticketTotal);
             bookingData.put("concessionTotal", concessionTotalPost);
             bookingData.put("seats", selectedSeats);
             bookingData.put("concessions", bookingConcessions);
-            if (voucherCodeToSummary != null) {
-                bookingData.put("voucherCode", voucherCodeToSummary);
+
+            if (voucherCodeParam != null && !voucherCodeParam.trim().isEmpty()) {
+                bookingData.put("voucherCode", voucherCodeParam.trim());
             }
+
             session.setAttribute("customerBookingData", bookingData);
 
-            response.sendRedirect(request.getContextPath() + "/customer/booking-summary?showtimeId=" + showtimeId);
+            // =====================================================================
+            // THÀNH CÔNG: Chuyển hướng sang trang Summary
+            // =====================================================================
+            response.sendRedirect(request.getContextPath() + "/booking-summary?showtimeId=" + showtimeId);
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/movies");
-        } finally {
-            if (showtimesRepo != null) {
-                showtimesRepo.closeConnection();
-            }
+            response.sendRedirect(request.getContextPath() + "/showtimes");
         }
     }
 }

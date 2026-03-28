@@ -5,21 +5,55 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import models.Concession;
 import services.ConcessionService;
 import java.io.IOException;
 import java.util.List;
+import models.Role;
+import config.DBContext;
+import models.User;
+import services.UserService;
 
 @WebServlet("/admin/concessions")
 public class ListConcession extends HttpServlet {
 
     private final ConcessionService service = new ConcessionService();
-
+    private final UserService userService = new UserService();
     private static final int DEFAULT_PAGE_SIZE = 5;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        // Check authentication and authorization
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        User currentUser = (User) session.getAttribute("user");
+
+        // Check if user is admin
+        DBContext dbContext = null;
+        try {
+            dbContext = new DBContext();
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
+
+            if (userRole == null || !"ADMIN".equals(userRole.getRoleName())) {
+                response.sendRedirect(request.getContextPath() + "/home");
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/home");
+            return;
+        } finally {
+            if (dbContext != null) {
+                dbContext.closeConnection();
+            }
+        }
 
         // Lấy tham số phân trang từ request (query string)
         String pageStr = request.getParameter("page");

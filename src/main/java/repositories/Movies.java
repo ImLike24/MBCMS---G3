@@ -84,18 +84,6 @@ public class Movies extends DBContext {
         }
         return 0;
     }
-    
-    public boolean updatePosterUrl(int movieId, String posterUrl) {
-        String sql = "UPDATE movies SET poster_url = ?, updated_at = SYSDATETIME() WHERE movie_id = ?";
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            st.setString(1, posterUrl);
-            st.setInt(2, movieId);
-            return st.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
 
     // Get all active movies
     public List<Movie> getAllActiveMovies() {
@@ -154,6 +142,40 @@ public class Movies extends DBContext {
             e.printStackTrace();
         }
         return null;
+    }
+
+    // Get all active movies that have at least one showtime from today onwards
+    public List<Movie> getAllActiveMoviesWithFutureShowtimes() {
+        List<Movie> movies = new ArrayList<>();
+
+        String sql = """
+                SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list
+                FROM movies m
+                INNER JOIN showtimes s ON m.movie_id = s.movie_id
+                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.genre_id
+                WHERE m.is_active = 1
+                  AND s.show_date >= CAST(GETDATE() AS DATE)
+                  AND s.status IN ('SCHEDULED', 'ONGOING')
+                GROUP BY
+                    m.movie_id, m.title, m.description, m.duration,
+                    m.release_date, m.end_date, m.rating, m.age_rating,
+                    m.director, m.cast, m.poster_url, m.is_active,
+                    m.created_at, m.updated_at
+                ORDER BY m.release_date DESC
+                """;
+
+        try (PreparedStatement st = connection.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
+
+            while (rs.next()) {
+                movies.add(mapResultSetToMovie(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return movies;
     }
 
     // Get movies showing on date with search, filter and pagination
@@ -215,7 +237,6 @@ public class Movies extends DBContext {
         params.add(offset);
         params.add(pageSize);
 
-        System.out.println("[DEBUG Movies.getMoviesShowingOnDateWithFilter] sql=" + sql + " params=" + params);
         try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 Object param = params.get(i);
@@ -236,7 +257,6 @@ public class Movies extends DBContext {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        System.out.println("[DEBUG Movies.getMoviesShowingOnDateWithFilter] result count=" + movies.size());
         return movies;
     }
 
@@ -553,8 +573,7 @@ public class Movies extends DBContext {
                 // KHÔNG cần set cho updated_at vì dùng GETDATE()
                 ps.setInt(idx++, m.getMovieId());               // index 11 - WHERE
 
-                // Debug: in ra số tham số đã set
-                System.out.println("Đã set " + (idx-1) + " tham số cho update movies");
+
 
                 int rows = ps.executeUpdate();
                 if (rows == 0) {
@@ -677,95 +696,6 @@ public class Movies extends DBContext {
         }
         return list;
     }
-
-    /**
-     * Get movies with showtimes (SCHEDULED/ONGOING) grouped by day of week.
-     * When branchId is null, all branches; otherwise only movies with showtimes at that branch.
-     */
-    public List<DayGroup> getMoviesWithShowtimesGroupedByDayOfWeek(LocalDate fromDate, LocalDate toDate, Integer branchId) {
-        Map<Integer, List<Movie>> byDay = new LinkedHashMap<>();
-        int[] displayOrder = {2, 3, 4, 5, 6, 7, 1};
-        for (int d : displayOrder) {
-            byDay.put(d, new ArrayList<>());
-        }
-
-        String branchFilter = (branchId != null)
-                ? " INNER JOIN screening_rooms sr ON s.room_id = sr.room_id AND sr.branch_id = ? "
-                : "";
-        String sql = """
-                SELECT m.*, STRING_AGG(g.genre_name, ', ') AS genre_list,
-                       DATEPART(weekday, s.show_date) AS day_of_week
-                FROM movies m
-                INNER JOIN showtimes s ON m.movie_id = s.movie_id
-                """ + branchFilter + """
-                LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
-                LEFT JOIN genres g ON mg.genre_id = g.genre_id
-                WHERE m.is_active = 1
-                  AND s.show_date >= ? AND s.show_date <= ?
-                  AND s.status IN ('SCHEDULED', 'ONGOING')
-                GROUP BY m.movie_id, m.title, m.description, m.duration,
-                    m.release_date, m.end_date, m.rating, m.age_rating,
-                    m.director, m.cast, m.poster_url, m.is_active,
-                    m.created_at, m.updated_at, DATEPART(weekday, s.show_date)
-                ORDER BY CASE WHEN DATEPART(weekday, s.show_date) = 1 THEN 7 ELSE DATEPART(weekday, s.show_date) - 1 END,
-                    m.title
-                """;
-
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            int idx = 1;
-            if (branchId != null) {
-                ps.setInt(idx++, branchId);
-            }
-            ps.setDate(idx++, java.sql.Date.valueOf(fromDate));
-            ps.setDate(idx, java.sql.Date.valueOf(toDate));
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    int dw = rs.getInt("day_of_week");
-                    Movie movie = mapResultSetToMovie(rs);
-                    byDay.get(dw).add(movie);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        List<DayGroup> result = new ArrayList<>();
-        for (int d : displayOrder) {
-            result.add(new DayGroup(getDayNameVi(d), byDay.get(d)));
-        }
-        return result;
-    }
-
-    private static String getDayNameVi(int sqlServerWeekday) {
-        return switch (sqlServerWeekday) {
-            case 1 -> "Chủ nhật";
-            case 2 -> "Thứ 2";
-            case 3 -> "Thứ 3";
-            case 4 -> "Thứ 4";
-            case 5 -> "Thứ 5";
-            case 6 -> "Thứ 6";
-            case 7 -> "Thứ 7";
-            default -> "Ngày " + sqlServerWeekday;
-        };
-    }
-
-    public static class DayGroup {
-    private String dayName;
-    private List<Movie> movies;
-
-    public DayGroup(String dayName, List<Movie> movies) {
-        this.dayName = dayName;
-        this.movies = movies;
-    }
-
-    public String getDayName() {
-        return dayName;
-    }
-
-    public List<Movie> getMovies() {
-        return movies;
-    }
-}
 
     // Count showtimes for a specific movie on a specific date
     public int countShowtimesForMovieOnDate(int movieId, LocalDate date) {

@@ -76,6 +76,11 @@ public class CounterBookingService {
 
             JsonArray seatsArray = requestData.getAsJsonArray("seats");
 
+            // Parse concessions from request
+            JsonArray concessionsArray = requestData.has("concessions") && !requestData.get("concessions").isJsonNull()
+                    ? requestData.getAsJsonArray("concessions")
+                    : new JsonArray();
+
             // Validate payment method (counter booking: cash only)
             if (!"CASH".equals(paymentMethod)) {
                 resp.addProperty("success", false);
@@ -198,6 +203,18 @@ public class CounterBookingService {
 
                 ticketsToCreate.add(ticket);
             }
+
+            // Add concession total to bill
+            BigDecimal concessionTotal = BigDecimal.ZERO;
+            for (int i = 0; i < concessionsArray.size(); i++) {
+                JsonObject cObj = concessionsArray.get(i).getAsJsonObject();
+                int qty = cObj.has("quantity") ? cObj.get("quantity").getAsInt() : 0;
+                double priceBase = cObj.has("priceBase") ? cObj.get("priceBase").getAsDouble() : 0.0;
+                if (qty > 0 && priceBase > 0) {
+                    concessionTotal = concessionTotal.add(BigDecimal.valueOf(priceBase * qty));
+                }
+            }
+            totalAmount = totalAmount.add(concessionTotal);
 
             // Apply voucher discount to total bill if voucher code is provided
             String appliedVoucherCode = null;
@@ -416,6 +433,18 @@ public class CounterBookingService {
                             .append(":").append(pointDiscount.toPlainString());
             }
             notesBuilder.append("|FINAL:").append(finalAmount.toPlainString());
+            // Persist concessions into notes
+            for (int i = 0; i < concessionsArray.size(); i++) {
+                JsonObject cObj = concessionsArray.get(i).getAsJsonObject();
+                int qty = cObj.has("quantity") ? cObj.get("quantity").getAsInt() : 0;
+                if (qty > 0) {
+                    String cName = cObj.has("concessionName") ? cObj.get("concessionName").getAsString() : "";
+                    double priceBase = cObj.has("priceBase") ? cObj.get("priceBase").getAsDouble() : 0.0;
+                    notesBuilder.append("|ITEM:").append(cName)
+                                .append(":").append(qty)
+                                .append(":").append(priceBase);
+                }
+            }
             counterTicketsRepo.updateNotesByTicketIds(ticketIds, notesBuilder.toString());
 
             JsonObject successResponse = new JsonObject();

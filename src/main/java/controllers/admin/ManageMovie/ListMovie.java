@@ -12,17 +12,50 @@ import services.MovieService;
 import java.io.IOException;
 import java.util.List;
 import repositories.Movies;
+import services.UserService;
+
+import models.User;
+import models.Role;
+import config.DBContext;
 
 @WebServlet("/admin/movies")
 public class ListMovie extends HttpServlet {
-    private final MovieService movieService = new MovieService();
+    private final UserService userService = new UserService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        MovieService movieService = new MovieService();
-        Movies movieRepo = new Movies(); 
+        // Check authentication and authorization
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        User currentUser = (User) session.getAttribute("user");
+
+        // Check if user is admin
+        DBContext dbContext = null;
+        try {
+            dbContext = new DBContext();
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
+
+            if (userRole == null || !"ADMIN".equals(userRole.getRoleName())) {
+                response.sendRedirect(request.getContextPath() + "/home");
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/home");
+            return;
+        } finally {
+            if (dbContext != null) {
+                dbContext.closeConnection();
+            }
+        }
+
+        Movies movieRepo = new Movies();
 
         // Lấy tham số trang, mặc định là 1
         String pageStr = request.getParameter("page");
@@ -51,10 +84,5 @@ public class ListMovie extends HttpServlet {
         request.setAttribute("totalMovies", totalMovies);
 
         request.getRequestDispatcher("/pages/admin/manage-movie/manage-movie.jsp").forward(request, response);
-    }
-
-    private boolean isAdminLoggedIn(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        return session != null && session.getAttribute("user") != null;
     }
 }

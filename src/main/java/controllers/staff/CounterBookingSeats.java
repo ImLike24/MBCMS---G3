@@ -1,6 +1,8 @@
 package controllers.staff;
 
 import models.Showtime;
+import models.Concession;
+import repositories.Concessions;
 import services.CounterBookingSeatsService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -10,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -79,7 +82,14 @@ public class CounterBookingSeats extends HttpServlet {
             if (result.formattedShowDate != null) {
                 request.setAttribute("formattedShowDate", result.formattedShowDate);
             }
-            
+
+            // Load concessions for sale
+            Concessions concessionsRepo = new Concessions();
+            List<Concession> concessionsList = concessionsRepo.getConcessionsForSale();
+            concessionsRepo.closeConnection();
+            if (concessionsList == null) concessionsList = new ArrayList<>();
+            request.setAttribute("concessionsList", concessionsList);
+
             request.getRequestDispatcher("/pages/staff/counter-booking-seats.jsp").forward(request, response);
             
         } catch (NumberFormatException e) {

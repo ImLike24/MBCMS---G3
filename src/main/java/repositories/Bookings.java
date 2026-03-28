@@ -20,28 +20,23 @@ public class Bookings {
         conn = new DBContext().getConnection();
     }
 
-    public String generateBookingCode() {
-        String timestamp = LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-
-        int randomNumber = new Random().nextInt(900) + 100; // 100-999
-
-        return "BK" + timestamp + randomNumber;
-    }
-
     public int createOnlineBooking(int userId,
                                    int showtimeId,
                                    String paymentMethod,
-                                   String bookingCode) throws SQLException {
+                                   String bookingCode,
+                                   BigDecimal totalAmount,
+                                   BigDecimal discountAmount,
+                                   BigDecimal finalAmount,
+                                   String appliedVoucherCode) throws SQLException {
 
         String sql = """
                 INSERT INTO bookings
                 (user_id, showtime_id, booking_code,
                  total_amount, discount_amount, final_amount,
-                 payment_method, payment_status, status, payment_time)
+                 payment_method, payment_status, status, payment_time, applied_voucher_code)
                 VALUES (?, ?, ?,
-                        0, 0, 0,
-                        ?, 'PENDING', 'PENDING', SYSDATETIME())
+                        ?, ?, ?,
+                        ?, 'PENDING', 'PENDING', SYSDATETIME(), ?)
                 """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -49,7 +44,11 @@ public class Bookings {
             ps.setInt(1, userId);
             ps.setInt(2, showtimeId);
             ps.setString(3, bookingCode);
-            ps.setString(4, paymentMethod);
+            ps.setBigDecimal(4, totalAmount);
+            ps.setBigDecimal(5, discountAmount);
+            ps.setBigDecimal(6, finalAmount);
+            ps.setString(7, paymentMethod);
+            ps.setString(8, appliedVoucherCode);
 
             int affectedRows = ps.executeUpdate();
 
@@ -78,25 +77,6 @@ public class Bookings {
         }
     }
 
-    public void insertOnlineTicket(int bookingId, int showtimeId, int seatId, String ticketType, String seatType,
-            BigDecimal price) throws Exception {
-        String sql = """
-                INSERT INTO online_tickets
-                (booking_id, showtime_id, seat_id, ticket_type, seat_type, price)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """;
-
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setInt(1, bookingId);
-        ps.setInt(2, showtimeId);
-        ps.setInt(3, seatId);
-        ps.setString(4, ticketType);
-        ps.setString(5, seatType);
-        ps.setBigDecimal(6, price);
-
-        ps.executeUpdate();
-    }
-
     // Delete booking
     public void deleteBooking(String bookingCode) throws Exception {
 
@@ -118,96 +98,6 @@ public class Bookings {
         ps2.executeUpdate();
     }
 
-    public int getShowtimeIdByCode(String bookingCode) throws Exception {
-        String sql = "SELECT showtime_id FROM bookings WHERE booking_code=?";
-
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setString(1, bookingCode);
-
-        ResultSet rs = ps.executeQuery();
-
-        if (rs.next()) {
-            return rs.getInt("showtime_id");
-        }
-
-        return 0;
-    }
-
-    public int getBookingIdByCode(String bookingCode) throws Exception {
-
-        String sql = "SELECT booking_id FROM bookings WHERE booking_code = ?";
-
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setString(1, bookingCode);
-
-        ResultSet rs = ps.executeQuery();
-
-        if (rs.next()) {
-            return rs.getInt("booking_id");
-        }
-
-        return 0;
-    }
-
-    public String getSeatIdsByBookingCode(String bookingCode) throws Exception {
-
-        String sql = """
-                    SELECT seat_id
-                    FROM online_tickets
-                    WHERE booking_id = (
-                        SELECT booking_id
-                        FROM bookings
-                        WHERE booking_code = ?
-                    )
-                """;
-
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setString(1, bookingCode);
-
-        ResultSet rs = ps.executeQuery();
-
-        StringBuilder seatIds = new StringBuilder();
-
-        while (rs.next()) {
-
-            if (seatIds.length() > 0) {
-                seatIds.append(",");
-            }
-
-            seatIds.append(rs.getInt("seat_id"));
-        }
-
-        return seatIds.toString();
-    }
-
-    public int insertBooking(int userId, int showtimeId, String bookingCode, BigDecimal totalAmount,
-            BigDecimal discountAmount, BigDecimal finalAmount, String appliedVoucherCode) throws Exception {
-        String sql = """
-                INSERT INTO bookings
-                (user_id, showtime_id, booking_code, total_amount, discount_amount, final_amount, payment_status, applied_voucher_code)
-                VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?)
-                """;
-
-        PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-
-        ps.setInt(1, userId);
-        ps.setInt(2, showtimeId);
-        ps.setString(3, bookingCode);
-        ps.setBigDecimal(4, totalAmount);
-        ps.setBigDecimal(5, discountAmount);
-        ps.setBigDecimal(6, finalAmount);
-        ps.setString(7, appliedVoucherCode);
-
-        ps.executeUpdate();
-
-        ResultSet rs = ps.getGeneratedKeys();
-
-        if (rs.next()) {
-            return rs.getInt(1);
-        }
-        return 0;
-    }
-
     public void confirmBooking(String bookingCode) throws Exception {
         String sql = """
                 UPDATE bookings
@@ -224,12 +114,13 @@ public class Bookings {
     }
 
     public java.util.Map<String, Object> getBookingInfoForPoints(String bookingCode) throws Exception {
-        String sql = "SELECT user_id, final_amount, applied_voucher_code FROM bookings WHERE booking_code = ?";
+        String sql = "SELECT booking_id, user_id, final_amount, applied_voucher_code FROM bookings WHERE booking_code = ?";
         PreparedStatement ps = conn.prepareStatement(sql);
         ps.setString(1, bookingCode);
         ResultSet rs = ps.executeQuery();
         if (rs.next()) {
             java.util.Map<String, Object> info = new java.util.HashMap<>();
+            info.put("bookingId", rs.getInt("booking_id"));
             info.put("userId", rs.getInt("user_id"));
             info.put("finalAmount", rs.getBigDecimal("final_amount"));
             info.put("voucherCode", rs.getString("applied_voucher_code"));
@@ -258,4 +149,67 @@ public class Bookings {
             }
         }
     }
+
+    public void cleanupExpiredBookings() {
+        try {
+            // Cập nhật các booking PENDING quá 10 phút thành EXPIRED
+            String updateBookingsSql = """
+                UPDATE bookings 
+                SET status = 'EXPIRED' 
+                WHERE status = 'PENDING' 
+                AND DATEDIFF(MINUTE, booking_time, SYSDATETIME()) >= 10
+            """;
+            try (PreparedStatement ps1 = conn.prepareStatement(updateBookingsSql)) {
+                ps1.executeUpdate();
+            }
+
+            // GIẢI PHÓNG GHẾ
+            // Xóa sạch vé của tất cả những đơn hàng đã bị EXPIRED (Quá hạn) hoặc CANCELLED (Đã hủy).
+            // Lệnh này sẽ tự động "chữa lành" cho toàn bộ các ghế đang bị kẹt trong DB của bạn ngay lập tức.
+            String deleteTicketsSql = """
+                DELETE FROM online_tickets 
+                WHERE booking_id IN (
+                    SELECT booking_id FROM bookings 
+                    WHERE status IN ('EXPIRED', 'CANCELLED')
+                )
+            """;
+            try (PreparedStatement ps2 = conn.prepareStatement(deleteTicketsSql)) {
+                ps2.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Hàm này để ốp mã giảm giá SAU KHI đã insert xong toàn bộ vé và bắp nước
+    public void applyVoucher(int bookingId, BigDecimal totalAmount, BigDecimal discountAmount, BigDecimal finalAmount, String voucherCode) throws SQLException {
+        String sql = "UPDATE bookings SET total_amount = ?, discount_amount = ?, final_amount = ?, applied_voucher_code = ? WHERE booking_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBigDecimal(1, totalAmount);
+            ps.setBigDecimal(2, discountAmount);
+            ps.setBigDecimal(3, finalAmount);
+            ps.setString(4, voucherCode);
+            ps.setInt(5, bookingId);
+            ps.executeUpdate();
+        }
+    }
+
+    // HÀM XỬ LÝ KHI KHÁCH HÀNG HỦY THANH TOÁN (HOẶC VNPAY LỖI)
+    public void cancelFailedBooking(String bookingCode) throws SQLException {
+        // Đổi trạng thái đơn thành CANCELLED và FAILED
+        String updateSql = "UPDATE bookings SET status = 'CANCELLED', payment_status = 'FAILED' WHERE booking_code = ?";
+        try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
+            ps.setString(1, bookingCode);
+            ps.executeUpdate();
+        }
+
+        // Xóa sạch vé (online_tickets) để giải phóng ghế ngay lập tức cho người khác mua
+        String deleteTicketsSql = "DELETE FROM online_tickets WHERE booking_id = (SELECT booking_id FROM bookings WHERE booking_code = ?)";
+        try (PreparedStatement ps2 = conn.prepareStatement(deleteTicketsSql)) {
+            ps2.setString(1, bookingCode);
+            ps2.executeUpdate();
+        }
+    }
+
 }

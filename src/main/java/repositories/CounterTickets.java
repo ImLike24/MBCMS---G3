@@ -37,10 +37,6 @@ public class CounterTickets extends DBContext {
         String selectSql = "SELECT TOP 1 ticket_id FROM counter_tickets " +
                     "WHERE showtime_id = ? AND seat_id = ? ORDER BY ticket_id DESC";
 
-        System.out.println("[CounterTickets] INSERT: showtimeId=" + ticket.getShowtimeId()
-                + " seatId=" + ticket.getSeatId()
-                + " soldBy=" + ticket.getSoldBy());
-
         try {
             try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
                 insertStmt.setInt(1, ticket.getShowtimeId());
@@ -62,9 +58,7 @@ public class CounterTickets extends DBContext {
                 selectStmt.setInt(2, ticket.getSeatId());
                 try (ResultSet rs = selectStmt.executeQuery()) {
                     if (rs.next()) {
-                        int id = rs.getInt("ticket_id");
-                        System.out.println("[CounterTickets] Created ticket_id=" + id);
-                        return id;
+                        return rs.getInt("ticket_id");
                     }
                 }
             }

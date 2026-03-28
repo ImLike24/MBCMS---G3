@@ -6,277 +6,401 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lịch sử đặt vé | MyCinema</title>
-    <link href="${pageContext.request.contextPath}/css/bootstrap.min.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/css/font-awesome.min.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/css/global.css" rel="stylesheet">
+    <title>Lịch sử giao dịch | MyCinema</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        :root { --dark: #212529; --orange: #d96c2c; }
-        body { background: #111; color: #fff; padding-top: 56px; min-height: 100vh; }
-        .history-hero {
-            background: linear-gradient(135deg, #000 0%, #212529 50%, #1a1a1a 100%);
-            padding: 40px 30px;
-            border-radius: 12px;
+        :root {
+            --bg-dark: #0a0b10;
+            --card-bg: #161821;
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-orange: #d96c2c;
+            --accent-red: #fc6076;
+            --text-main: #f8f9fb;
+            --text-muted: #8e93a6;
+            --primary-color: #d96c2c;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            padding-top: 80px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1000px; }
+
+        .page-header {
+            margin-bottom: 40px;
+            border-left: 5px solid var(--accent-orange);
+            padding-left: 20px;
+        }
+
+        .filter-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
             margin-bottom: 32px;
-            border-left: 6px solid var(--orange);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
-        .invoice-card {
-            background: var(--dark);
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.08);
+
+        .form-control {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--card-border);
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px 15px;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        .form-control:focus {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--accent-orange);
+            box-shadow: none;
+            color: #fff;
+        }
+
+        .transaction-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
             overflow: hidden;
-            margin-bottom: 24px;
         }
-        .invoice-card:hover { border-color: rgba(217,108,44,0.4); }
-        .invoice-header {
-            padding: 20px 24px;
+
+        .transaction-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255,255,255,0.15);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+        }
+
+        .card-header-custom {
+            padding: 24px;
+            cursor: pointer;
             display: flex;
-            flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            cursor: pointer;
-            user-select: none;
         }
-        .invoice-header:focus { outline: none; }
-        .invoice-card:not(.expanded) .invoice-header { border-bottom: 1px solid rgba(255,255,255,0.06); }
-        .invoice-header .invoice-toggle { transition: transform 0.2s; color: #888; }
-        .invoice-card.expanded .invoice-header .invoice-toggle { transform: rotate(180deg); color: var(--orange); }
-        .invoice-header-left { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
-        .invoice-code { font-weight: 700; font-size: 1.1rem; color: var(--orange); }
-        .invoice-meta { font-size: 0.9rem; color: #aaa; }
-        .invoice-total { font-size: 1.25rem; font-weight: 600; color: var(--orange); }
-        .invoice-detail { display: none; padding: 0 24px 24px; }
-        .invoice-card.expanded .invoice-detail { display: block; }
-        .detail-section { margin-top: 20px; }
-        .detail-section h6 { color: var(--orange); margin-bottom: 12px; font-weight: 600; }
-        .ticket-table { width: 100%; margin: 0; }
-        .ticket-table th, .ticket-table td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-        .ticket-table th { color: #888; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
-        .ticket-table tr:last-child td { border-bottom: none; }
-        .ticket-table tbody tr:hover { background: rgba(255,255,255,0.03); }
-        .seat-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; margin-right: 6px; margin-bottom: 4px; font-size: 0.85rem; }
-        .pagination-wrap { margin-top: 32px; margin-bottom: 48px; }
-        .pagination .page-link { background: var(--dark); border-color: #444; color: #fff; }
-        .pagination .page-link:hover { background: var(--orange); border-color: var(--orange); color: #fff; }
-        .pagination .page-item.active .page-link { background: var(--orange); border-color: var(--orange); }
-        .empty-state { text-align: center; padding: 60px 20px; color: #888; }
-        .badge-method { font-size: 0.75rem; }
+
+        .left-info {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .trans-code {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .trans-code i { color: var(--accent-orange); }
+
+        .meta-item {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .meta-item i { color: var(--accent-orange); opacity: 0.8; }
+
+        .payment-badge {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-cash {
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
+            background: rgba(255, 154, 68, 0.05);
+        }
+
+        .badge-banking {
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            background: rgba(252, 96, 118, 0.05);
+        }
+
+        .total-amount {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+
+        .expand-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: none;
+        }
+
+        .transaction-card.active .expand-btn {
+            transform: rotate(180deg);
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        .details-pane {
+            max-height: 0;
+            overflow: hidden;
+            transition: none;
+            background: rgba(0,0,0,0.15);
+        }
+
+        .transaction-card.active .details-pane {
+            max-height: 500px;
+            padding: 24px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+
+        .detail-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .seat-tag {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-right: 5px;
+            font-family: monospace;
+        }
+
+        .btn-search {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 10px 25px;
+            border-radius: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 0;
+            color: var(--text-muted);
+        }
+
+        .pagination-container {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .page-link-custom {
+            padding: 8px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        .page-link-custom:hover {
+            border-color: var(--accent-orange);
+            color: var(--accent-orange);
+            transform: translateY(-2px);
+        }
+        .page-link-custom.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(217, 108, 44, 0.3);
+        }
+        .page-link-custom.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
-<jsp:include page="/components/layout/Header.jsp"/>
+<jsp:include page="/components/layout/Header.jsp" />
 
-<div class="container mt-4 mb-5">
-    <div class="history-hero">
-        <h1><i class="fa fa-history me-2" style="color: var(--orange);"></i> Lịch sử đặt vé</h1>
-        <p class="text-white-50 mb-0 mt-2">Các hóa đơn đặt vé online của bạn. Mỗi hóa đơn kèm chi tiết vé.</p>
+<div class="container">
+    <div class="page-header">
+        <h1 class="fw-bold">Lịch sử giao dịch</h1>
+        <p class="text-muted">Theo dõi toàn bộ vé xem phim bạn đã mua online và tại quầy.</p>
     </div>
 
-    <!-- force update-->
-    <!-- Bo loc: Khoang thoi gian danh sach phim -->
-    <form class="row g-3 mb-3" method="get" action="${pageContext.request.contextPath}/customer/booking-history">
-        <div class="col-md-3 col-sm-6">
-            <label class="form-label text-white-50 small mb-1">Khoảng thời gian</label>
-            <select name="range" class="form-select form-select-sm bg-dark text-white border-secondary">
-                <option value="all"   ${range == 'all'   ? 'selected' : ''}>Tất cả</option>
-                <option value="week"  ${range == 'week'  ? 'selected' : ''}>Gần đây (1 tuần)</option>
-                <option value="month" ${range == 'month' ? 'selected' : ''}>Tháng này</option>
-                <option value="year"  ${range == 'year'  ? 'selected' : ''}>Năm nay</option>
-            </select>
-        </div>
-        <div class="col-md-4 col-sm-6">
-            <label class="form-label text-white-50 small mb-1">Danh sách phim</label>
-            <select name="movie" class="form-select form-select-sm bg-dark text-white border-secondary">
-                <option value="">Tất cả phim</option>
-                <c:forEach var="m" items="${movieList}">
-                    <option value="${m}" ${selectedMovie != null && selectedMovie == m ? 'selected' : ''}><c:out value="${m}"/></option>
+    <!-- Filters -->
+    <section class="filter-section">
+        <form action="${pageContext.request.contextPath}/customer/booking-history" method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Từ ngày</label>
+                <input type="date" name="fromDate" value="${fromDate}" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Đến ngày</label>
+                <input type="date" name="toDate" value="${toDate}" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-search w-100">Tìm kiếm</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- History List -->
+    <div class="history-list">
+        <c:choose>
+            <c:when test="${not empty historyList}">
+                <c:forEach var="item" items="${historyList}">
+                    <div class="transaction-card">
+                        <div class="card-header-custom" onclick="toggleCard(this)">
+                            <div class="left-info">
+                                <div class="trans-code">
+                                    <i class="fa-solid fa-ticket-simple"></i>
+                                    ${item.transactionCode}
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fa-regular fa-calendar"></i>
+                                    <fmt:formatDate value="${item.transactionDate}" pattern="dd/MM/yyyy • HH:mm" />
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                    ${item.branchName}
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-4">
+                                <div class="total-amount">
+                                    <fmt:formatNumber value="${item.totalAmount}" type="currency" currencySymbol="₫" />
+                                </div>
+                                <div class="expand-btn">
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="details-pane">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Phim</span>
+                                        <span class="detail-value">${item.movieTitle}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Ghế ngồi</span>
+                                        <span class="detail-value">
+                                            <c:out value="${item.seatCodes}" />
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Loại ghế</span>
+                                        <span class="detail-value">
+                                            <c:out value="${item.seatTypes}" />
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Phương thức thanh toán</span>
+                                        <span class="detail-value" style="color: var(--accent-orange)">${item.paymentMethod}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </c:forEach>
-            </select>
-        </div>
-        <div class="col-md-2 col-sm-4 d-flex align-items-end">
-            <button type="submit" class="btn btn-sm btn-outline-warning px-3">
-                <i class="fa fa-filter me-1"></i> Lọc dữ liệu
-            </button>
-        </div>
-    </form>
 
-    <c:choose>
-        <c:when test="${not empty invoices}">
-            <c:forEach var="inv" items="${invoices}" varStatus="st">
-                <div class="invoice-card" data-invoice-index="${st.index}">
-                    <div class="invoice-header" role="button" tabindex="0" aria-expanded="false" aria-controls="invoice-detail-${st.index}" id="invoice-header-${st.index}">
-                        <div class="invoice-header-left">
-                            <span class="invoice-code">#${inv.invoiceCode}</span>
-                            <span class="invoice-meta">
-                                <i class="fa fa-calendar me-1"></i>
-                                <fmt:formatDate value="${inv.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
-                            </span>
-                            <span class="invoice-meta">
-                                <i class="fa fa-building me-1"></i><c:out value="${inv.branchName}"/>
-                            </span>
-                            <c:if test="${not empty inv.bookingCode}">
-                                <span class="invoice-meta"><i class="fa fa-ticket me-1"></i>${inv.bookingCode}</span>
-                            </c:if>
-                            <span class="badge bg-secondary badge-method">${inv.paymentMethod}</span>
-                            <span class="invoice-meta ms-2 text-white-50">(Ấn để xem chi tiết vé & ghế)</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="invoice-total">
-                                <fmt:formatNumber value="${inv.finalAmount}" type="currency" currencyCode="VND" currencySymbol="₫"/>
-                            </span>
-                            <i class="fa fa-chevron-down invoice-toggle"></i>
-                        </div>
-                    </div>
-                    <div class="invoice-detail" id="invoice-detail-${st.index}" aria-hidden="true">
-                        <div class="detail-section">
-                            <h6><i class="fa fa-film me-2"></i>Chi tiết vé</h6>
-                            <div class="table-responsive">
-                                <table class="ticket-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Tên phim</th>
-                                            <th>Giờ suất chiếu</th>
-                                            <th>Phòng</th>
-                                            <th class="text-end">Đơn giá</th>
-                                            <th class="text-end">Thành tiền</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <c:forEach var="item" items="${inv.items}">
-                                            <tr>
-                                                <td><c:out value="${item.movieTitle}"/></td>
-                                                <td>
-                                                    <c:if test="${not empty item.showtimeDate}"><fmt:formatDate value="${item.showtimeDate}" pattern="dd/MM/yyyy"/></c:if>
-                                                    <c:if test="${not empty item.showtimeTime}"> — <fmt:formatDate value="${item.showtimeTime}" type="time" timeStyle="short"/></c:if>
-                                                    <c:if test="${empty item.showtimeDate && empty item.showtimeTime}">—</c:if>
-                                                </td>
-                                                <td><c:out value="${item.roomName}"/></td>
-                                                <td class="text-end"><fmt:formatNumber value="${item.unitPrice}" type="currency" currencyCode="VND" currencySymbol="₫"/></td>
-                                                <td class="text-end"><fmt:formatNumber value="${item.amount}" type="currency" currencyCode="VND" currencySymbol="₫"/></td>
-                                            </tr>
-                                        </c:forEach>
-                                        <c:if test="${empty inv.items}">
-                                            <tr><td colspan="5" class="text-center text-muted py-3">Chưa có chi tiết vé.</td></tr>
-                                        </c:if>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="detail-section">
-                            <h6><i class="fa fa-chair me-2"></i>Ghế đã đặt</h6>
-                            <div class="table-responsive">
-                                <table class="ticket-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Mã ghế</th>
-                                            <th>Vị trí ghế</th>
-                                            <th>Loại ghế</th>
-                                            <th>Loại vé</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <c:forEach var="item" items="${inv.items}">
-                                            <tr>
-                                                <td><span class="badge bg-dark">${item.seatCode}</span></td>
-                                                <td>
-                                                    <c:choose>
-                                                        <c:when test="${not empty item.seatRow || item.seatCol != null}">
-                                                            Hàng <c:out value="${item.seatRow}"/><c:if test="${item.seatCol != null}">, Số ${item.seatCol}</c:if>
-                                                        </c:when>
-                                                        <c:otherwise><c:out value="${item.seatCode}"/></c:otherwise>
-                                                    </c:choose>
-                                                </td>
-                                                <td><c:out value="${item.seatType != null ? item.seatType : '—'}"/></td>
-                                                <td>${item.ticketType == 'ADULT' ? 'Người lớn' : 'Trẻ em'}</td>
-                                            </tr>
-                                        </c:forEach>
-                                        <c:if test="${empty inv.items}">
-                                            <tr><td colspan="4" class="text-center text-muted py-3">Chưa có ghế nào.</td></tr>
-                                        </c:if>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </c:forEach>
+                <!-- Pagination -->
+                <c:if test="${totalPages > 1}">
+                    <div class="pagination-container mb-5">
+                        <c:url var="prevUrl" value="/customer/booking-history">
+                            <c:param name="page" value="${currentPage - 1}" />
+                            <c:param name="fromDate" value="${fromDate}" />
+                            <c:param name="toDate" value="${toDate}" />
+                        </c:url>
+                        <a href="${prevUrl}" class="page-link-custom ${currentPage <= 1 ? 'disabled' : ''}">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
 
-            <div class="pagination-wrap d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div class="text-muted">
-                    <c:choose>
-                        <c:when test="${totalCount == 0}">Hiển thị 0 / 0 hóa đơn</c:when>
-                        <c:otherwise>Hiển thị ${(page - 1) * pageSize + 1}–${(page - 1) * pageSize + invoices.size()} / ${totalCount} hóa đơn</c:otherwise>
-                    </c:choose>
-                </div>
-                <nav>
-                    <ul class="pagination pagination-sm mb-0">
-                        <c:if test="${page > 1}">
-                            <li class="page-item">
-                                <c:url var="prevUrl" value="/customer/booking-history">
-                                    <c:param name="page" value="${page - 1}"/>
-                                    <c:param name="range" value="${range}"/>
-                                    <c:if test="${not empty selectedMovie}"><c:param name="movie" value="${selectedMovie}"/></c:if>
-                                </c:url>
-                                <a class="page-link" href="${prevUrl}">Trước</a>
-                            </li>
-                        </c:if>
                         <c:forEach begin="1" end="${totalPages}" var="p">
-                            <li class="page-item ${p == page ? 'active' : ''}">
-                                <c:url var="pageUrl" value="/customer/booking-history">
-                                    <c:param name="page" value="${p}"/>
-                                    <c:param name="range" value="${range}"/>
-                                    <c:if test="${not empty selectedMovie}"><c:param name="movie" value="${selectedMovie}"/></c:if>
-                                </c:url>
-                                <a class="page-link" href="${pageUrl}">${p}</a>
-                            </li>
+                            <c:url var="pageUrl" value="/customer/booking-history">
+                                <c:param name="page" value="${p}" />
+                                <c:param name="fromDate" value="${fromDate}" />
+                                <c:param name="toDate" value="${toDate}" />
+                            </c:url>
+                            <a href="${pageUrl}" class="page-link-custom ${p == currentPage ? 'active' : ''}">${p}</a>
                         </c:forEach>
-                        <c:if test="${page < totalPages}">
-                            <li class="page-item">
-                                <c:url var="nextUrl" value="/customer/booking-history">
-                                    <c:param name="page" value="${page + 1}"/>
-                                    <c:param name="range" value="${range}"/>
-                                    <c:if test="${not empty selectedMovie}"><c:param name="movie" value="${selectedMovie}"/></c:if>
-                                </c:url>
-                                <a class="page-link" href="${nextUrl}">Sau</a>
-                            </li>
-                        </c:if>
-                    </ul>
-                </nav>
-            </div>
-        </c:when>
-        <c:otherwise>
-            <div class="empty-state">
-                <i class="fa fa-receipt fa-4x text-muted mb-3"></i>
-                <h5>Chưa có hóa đơn nào</h5>
-                <p class="mb-0">Bạn chưa đặt vé online. Đặt vé tại <a href="${pageContext.request.contextPath}/movies" class="text-warning">Phim đang chiếu</a> hoặc <a href="${pageContext.request.contextPath}/showtimes" class="text-warning">Lịch chiếu</a>.</p>
-            </div>
-        </c:otherwise>
-    </c:choose>
+
+                        <c:url var="nextUrl" value="/customer/booking-history">
+                            <c:param name="page" value="${currentPage + 1}" />
+                            <c:param name="fromDate" value="${fromDate}" />
+                            <c:param name="toDate" value="${toDate}" />
+                        </c:url>
+                        <a href="${nextUrl}" class="page-link-custom ${currentPage >= totalPages ? 'disabled' : ''}">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                    </div>
+                </c:if>
+            </c:when>
+            <c:otherwise>
+                <div class="empty-state">
+                    <i class="fa-regular fa-folder-open fa-3x mb-3"></i>
+                    <p>Không tìm thấy dữ liệu giao dịch nào.</p>
+                </div>
+            </c:otherwise>
+        </c:choose>
+    </div>
 </div>
 
-<jsp:include page="/components/layout/Footer.jsp"/>
+<jsp:include page="/components/layout/Footer.jsp" />
 
-<script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
 <script>
-(function() {
-    document.querySelectorAll('.invoice-header').forEach(function(header) {
-        header.addEventListener('click', function() {
-            var card = this.closest('.invoice-card');
-            var detail = card.querySelector('.invoice-detail');
-            var expanded = card.classList.toggle('expanded');
-            header.setAttribute('aria-expanded', expanded);
-            if (detail) detail.setAttribute('aria-hidden', !expanded);
-        });
-        header.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                this.click();
-            }
-        });
-    });
-})();
+    function toggleCard(header) {
+        const card = header.parentElement;
+        card.classList.toggle('active');
+    }
 </script>
+
+<!-- Bootstrap Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

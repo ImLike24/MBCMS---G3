@@ -18,21 +18,13 @@ import models.Movie;
 import models.ScreeningRoom;
 import models.Showtime;
 import models.User;
-import repositories.CinemaBranches;
-import repositories.Movies;
-import repositories.ScreeningRooms;
-import repositories.Showtimes;
-import services.TicketPriceService;
+import services.ShowtimeService;
 import java.math.BigDecimal;
 
 @WebServlet(name = "ManageShowtimesServlet", urlPatterns = { "/branch-manager/manage-showtimes" })
 public class ManageShowtimesServlet extends HttpServlet {
 
-    private final Showtimes showtimesDao = new Showtimes();
-    private final Movies moviesDao = new Movies();
-    private final ScreeningRooms roomsDao = new ScreeningRooms();
-    private final CinemaBranches branchDao = new CinemaBranches();
-    private final TicketPriceService ticketPriceService = new TicketPriceService();
+    private final ShowtimeService showtimeService = new ShowtimeService();
 
     // ─────────────────────────────────────────────────────────────────────────
     // GET
@@ -52,7 +44,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             return;
         }
 
-        List<CinemaBranch> managedBranches = branchDao.findListByManagerId(user.getUserId());
+        List<CinemaBranch> managedBranches = showtimeService.getManagedBranches(user.getUserId());
         if (managedBranches == null || managedBranches.isEmpty()) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không quản lý chi nhánh nào.");
             return;
@@ -153,7 +145,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             throws ServletException, IOException {
 
         // Auto-update statuses for this branch (fresh connection)
-        showtimesDao.autoUpdateStatuses(branchId);
+        showtimeService.autoUpdateStatuses(branchId);
 
         // Read optional filters
         String dateStr = request.getParameter("filterDate");
@@ -168,20 +160,8 @@ public class ManageShowtimesServlet extends HttpServlet {
             }
         }
 
-        List<Map<String, Object>> allShowtimes = showtimesDao.getShowtimesByBranch(branchId, filterDate, statusFilter,
-                movieKw);
-
-        // Overwrite base price dynamically
-        for (Map<String, Object> showtimeMap : allShowtimes) {
-            LocalDate showDate = (LocalDate) showtimeMap.get("showDate");
-            LocalTime startTime = (LocalTime) showtimeMap.get("startTime");
-            if (showDate != null && startTime != null) {
-                BigDecimal basePrice = ticketPriceService.getBasePriceForShowtime(branchId, showDate, startTime);
-                showtimeMap.put("basePrice", basePrice);
-            }
-        }
-
-        Map<String, Integer> stats = showtimesDao.countShowtimesByBranch(branchId);
+        List<Map<String, Object>> allShowtimes = showtimeService.getShowtimesByBranch(branchId, filterDate, statusFilter, movieKw);
+        Map<String, Integer> stats = showtimeService.countShowtimesByBranch(branchId);
 
         // ── Pagination ────────────────────────────────────────────────────
         int pageSize = 5;
@@ -213,6 +193,7 @@ public class ManageShowtimesServlet extends HttpServlet {
         request.setAttribute("filterDate", dateStr);
         request.setAttribute("filterStatus", statusFilter);
         request.setAttribute("filterMovie", movieKw);
+
         request.setAttribute("currentPage", currentPage);
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("totalShowtimes", totalShowtimes);
@@ -227,8 +208,8 @@ public class ManageShowtimesServlet extends HttpServlet {
     private void showScheduleForm(HttpServletRequest request, HttpServletResponse response, int branchId)
             throws ServletException, IOException {
 
-        List<Movie> movies = moviesDao.getAllActiveMovies();
-        List<ScreeningRoom> rooms = roomsDao.getAllRoomsByBranch(branchId);
+        List<Movie> movies = showtimeService.getAllActiveMovies();
+        List<ScreeningRoom> rooms = showtimeService.getRoomsByBranch(branchId);
 
         request.setAttribute("movies", movies);
         request.setAttribute("rooms", rooms);
@@ -249,7 +230,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             return;
         }
 
-        Showtime showtime = showtimesDao.getShowtimeById(Integer.parseInt(idStr));
+        Showtime showtime = showtimeService.getShowtimeById(Integer.parseInt(idStr));
         if (showtime == null) {
             response.sendRedirect(request.getContextPath()
                     + "/branch-manager/manage-showtimes?error=notfound");
@@ -263,11 +244,11 @@ public class ManageShowtimesServlet extends HttpServlet {
             return;
         }
 
-        List<Movie> movies = moviesDao.getAllActiveMovies();
-        List<ScreeningRoom> rooms = roomsDao.getAllRoomsByBranch(branchId);
+        List<Movie> movies = showtimeService.getAllActiveMovies();
+        List<ScreeningRoom> rooms = showtimeService.getRoomsByBranch(branchId);
 
         // Get movie info for current showtime (for duration display)
-        Movie currentMovie = moviesDao.getMovieById(showtime.getMovieId());
+        Movie currentMovie = showtimeService.getMovieById(showtime.getMovieId());
 
         request.setAttribute("showtime", showtime);
         request.setAttribute("movies", movies);
@@ -292,63 +273,16 @@ public class ManageShowtimesServlet extends HttpServlet {
             LocalTime end = LocalTime.parse(request.getParameter("endTime"));
             boolean overnight = "1".equals(request.getParameter("overnight"));
 
-            // If overnight, end is on the next calendar day
-            LocalDate endDate = overnight ? date.plusDays(1) : date;
-
-            // Validate room belongs to this branch
-            ScreeningRoom room = roomsDao.getRoomById(roomId);
-            if (room == null || room.getBranchId() != branchId) {
-                forwardWithError(request, response, "create", branchId,
-                        "Phòng không hợp lệ.", movieId, roomId, date, start, null);
-                return;
-            }
-
-            // Validate end is after start (using LocalDateTime to handle overnight)
-            java.time.LocalDateTime startDT = java.time.LocalDateTime.of(date, start);
-            java.time.LocalDateTime endDT = java.time.LocalDateTime.of(endDate, end);
-            if (!endDT.isAfter(startDT)) {
-                forwardWithError(request, response, "create", branchId,
-                        "Giờ kết thúc phải sau giờ bắt đầu.", movieId, roomId, date, start, null);
-                return;
-            }
-
-            // Check date not in the past
-            if (date.isBefore(LocalDate.now())) {
-                forwardWithError(request, response, "create", branchId,
-                        "Ngày chiếu không được ở trong quá khứ.", movieId, roomId, date, start, null);
-                return;
-            }
-
-            // Check scheduling conflict (pass endDate so overnight conflicts are caught)
-            if (showtimesDao.hasSchedulingConflict(roomId, date, start, end, null)) {
-                forwardWithError(request, response, "create", branchId,
-                        "Phòng đã có suất chiếu trong khung giờ này. Vui lòng chọn giờ khác.",
-                        movieId, roomId, date, start, null);
-                return;
-            }
-
-            Showtime st = new Showtime();
-            st.setMovieId(movieId);
-            st.setRoomId(roomId);
-            st.setShowDate(date);
-            st.setStartTime(start);
-            st.setEndTime(end);
-            st.setStatus("SCHEDULED");
-
-            int newId = showtimesDao.createShowtime(st);
-            if (newId > 0) {
-                response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-showtimes?message=created");
-            } else {
-                forwardWithError(request, response, "create", branchId,
-                        "Lỗi khi tạo suất chiếu. Vui lòng thử lại.",
-                        movieId, roomId, date, start, null);
+            try {
+                showtimeService.createShowtime(branchId, movieId, roomId, date, start, end, overnight);
+                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?message=created");
+            } catch (RuntimeException e) {
+                forwardWithError(request, response, "create", branchId, e.getMessage(), movieId, roomId, date, start, null);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath()
-                    + "/branch-manager/manage-showtimes?error=invalid");
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=invalid");
         }
     }
 
@@ -367,59 +301,22 @@ public class ManageShowtimesServlet extends HttpServlet {
             LocalTime end = LocalTime.parse(request.getParameter("endTime"));
             boolean overnight = "1".equals(request.getParameter("overnight"));
 
-            // Verify showtime exists and is SCHEDULED
-            Showtime existing = showtimesDao.getShowtimeById(showtimeId);
-            if (existing == null || !"SCHEDULED".equals(existing.getStatus())) {
-                response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-showtimes?error=noteditable");
-                return;
-            }
-
-            // Validate room belongs to this branch
-            ScreeningRoom room = roomsDao.getRoomById(roomId);
-            if (room == null || room.getBranchId() != branchId) {
-                forwardWithError(request, response, "edit", branchId,
-                        "Phòng không hợp lệ.", movieId, roomId, date, start, showtimeId);
-                return;
-            }
-
-            // Validate end > start (use LocalDateTime to support overnight showtimes)
-            LocalDate endDate = overnight ? date.plusDays(1) : date;
-            java.time.LocalDateTime startDT = java.time.LocalDateTime.of(date, start);
-            java.time.LocalDateTime endDT = java.time.LocalDateTime.of(endDate, end);
-            if (!endDT.isAfter(startDT)) {
-                forwardWithError(request, response, "edit", branchId,
-                        "Giờ kết thúc phải sau giờ bắt đầu.", movieId, roomId, date, start, showtimeId);
-                return;
-            }
-
-            // Check scheduling conflict (exclude current showtime)
-            if (showtimesDao.hasSchedulingConflict(roomId, date, start, end, showtimeId)) {
-                forwardWithError(request, response, "edit", branchId,
-                        "Phòng đã có suất chiếu trong khung giờ này. Vui lòng chọn giờ khác.",
-                        movieId, roomId, date, start, showtimeId);
-                return;
-            }
-
-            // base_price is NOT updated here — managed by the ticket price config screen
-            boolean updated = showtimesDao.updateShowtime(showtimeId, date, start, end, null);
-            if (updated) {
-                // Also update room if changed
-                if (existing.getRoomId() != roomId) {
-                    // updateShowtime only changes date/time/price – we need to update room too
-                    updateShowtimeRoom(showtimeId, roomId);
+            try {
+                showtimeService.updateShowtime(showtimeId, branchId, movieId, roomId, date, start, end, overnight);
+                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?message=updated");
+            } catch (IllegalArgumentException e) {
+                if ("Khong the sua.".equals(e.getMessage())) {
+                    response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=noteditable");
+                } else {
+                    forwardWithError(request, response, "edit", branchId, e.getMessage(), movieId, roomId, date, start, showtimeId);
                 }
-                response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-showtimes?message=updated");
-            } else {
-                forwardWithError(request, response, "edit", branchId,
-                        "Lỗi khi cập nhật suất chiếu.", movieId, roomId, date, start, showtimeId);
+            } catch (RuntimeException e) {
+                forwardWithError(request, response, "edit", branchId, e.getMessage(), movieId, roomId, date, start, showtimeId);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath()
-                    + "/branch-manager/manage-showtimes?error=invalid");
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=invalid");
         }
     }
 
@@ -442,7 +339,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             return;
         }
 
-        Showtime showtime = showtimesDao.getShowtimeById(showtimeId);
+        Showtime showtime = showtimeService.getShowtimeById(showtimeId);
         if (showtime == null) {
             response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notfound");
             return;
@@ -455,48 +352,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             return;
         }
 
-        // Dynamically compute base price
-        // Lấy thông tin chi tiết (Map) từ Database lên trước
-        java.util.Map<String, Object> detail = showtimesDao.getActiveShowtimeDetail(showtimeId);
-
-        // Dynamically compute base price (Tính toán lại giá động)
-        if (showtime.getShowDate() != null && showtime.getStartTime() != null) {
-            repositories.TicketPrices ticketPricesDao = new repositories.TicketPrices();
-
-            // 1. Xác định Loại ngày (WEEKDAY / WEEKEND)
-            java.time.DayOfWeek dayOfWeek = showtime.getShowDate().getDayOfWeek();
-            String dayType = (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY)
-                    ? "WEEKEND"
-                    : "WEEKDAY";
-
-            // 2. Xác định Khung giờ
-            int hour = showtime.getStartTime().getHour();
-            String timeSlot;
-            if (hour >= 6 && hour < 12)
-                timeSlot = "MORNING";
-            else if (hour >= 12 && hour < 17)
-                timeSlot = "AFTERNOON";
-            else if (hour >= 17 && hour < 22)
-                timeSlot = "EVENING";
-            else
-                timeSlot = "NIGHT";
-
-            // Query Database lấy giá vé mặc định (ADULT)
-            BigDecimal dynamicPrice = ticketPricesDao.getTicketPrice(
-                    branchId,
-                    "ADULT",
-                    dayType,
-                    timeSlot,
-                    showtime.getShowDate());
-
-            // Ghi đè giá trị mới vào cả 2 object để đảm bảo JSP gọi cái nào cũng đúng
-            if (dynamicPrice != null) {
-                showtime.setBasePrice(dynamicPrice);
-                if (detail != null) {
-                    detail.put("basePrice", dynamicPrice);
-                }
-            }
-        }
+        java.util.Map<String, Object> detail = showtimeService.getActiveShowtimeDetail(showtimeId, branchId, showtime);
 
         request.setAttribute("showtime", showtime);
         request.setAttribute("detail", detail);
@@ -523,7 +379,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             return;
         }
 
-        Showtime showtime = showtimesDao.getShowtimeById(showtimeId);
+        Showtime showtime = showtimeService.getShowtimeById(showtimeId);
         if (showtime == null || !"CANCELLED".equals(showtime.getStatus())) {
             response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notfound");
             return;
@@ -531,13 +387,12 @@ public class ManageShowtimesServlet extends HttpServlet {
 
         // Dynamically compute base price
         if (showtime.getShowDate() != null && showtime.getStartTime() != null) {
-            BigDecimal price = ticketPriceService.getBasePriceForShowtime(branchId, showtime.getShowDate(),
-                    showtime.getStartTime());
+            BigDecimal price = showtimeService.getBasePriceForShowtime(branchId, showtime.getShowDate(), showtime.getStartTime());
             showtime.setBasePrice(price);
         }
 
-        Movie movie = moviesDao.getMovieById(showtime.getMovieId());
-        java.util.Map<String, Object> detail = showtimesDao.getCancelledShowtimeDetail(showtimeId);
+        Movie movie = showtimeService.getMovieById(showtime.getMovieId());
+        java.util.Map<String, Object> detail = showtimeService.getCancelledShowtimeDetail(showtimeId);
 
         request.setAttribute("showtime", showtime);
         request.setAttribute("movie", movie);
@@ -566,7 +421,7 @@ public class ManageShowtimesServlet extends HttpServlet {
             return;
         }
 
-        Showtime showtime = showtimesDao.getShowtimeById(showtimeId);
+        Showtime showtime = showtimeService.getShowtimeById(showtimeId);
         if (showtime == null || !"SCHEDULED".equals(showtime.getStatus())) {
             response.sendRedirect(request.getContextPath()
                     + "/branch-manager/manage-showtimes?error=noteditable");
@@ -575,15 +430,14 @@ public class ManageShowtimesServlet extends HttpServlet {
 
         // Dynamically compute base price
         if (showtime.getShowDate() != null && showtime.getStartTime() != null) {
-            BigDecimal price = ticketPriceService.getBasePriceForShowtime(branchId, showtime.getShowDate(),
-                    showtime.getStartTime());
+            BigDecimal price = showtimeService.getBasePriceForShowtime(branchId, showtime.getShowDate(), showtime.getStartTime());
             showtime.setBasePrice(price);
         }
 
         // Fetch movie name for display
-        Movie movie = moviesDao.getMovieById(showtime.getMovieId());
+        Movie movie = showtimeService.getMovieById(showtime.getMovieId());
         // Fetch affected bookings/tickets
-        java.util.List<java.util.Map<String, Object>> affected = showtimesDao.getBookingsByShowtime(showtimeId);
+        java.util.List<java.util.Map<String, Object>> affected = showtimeService.getBookingsByShowtime(showtimeId);
 
         request.setAttribute("showtime", showtime);
         request.setAttribute("movie", movie);
@@ -601,37 +455,34 @@ public class ManageShowtimesServlet extends HttpServlet {
             int showtimeId = Integer.parseInt(request.getParameter("showtimeId"));
             String reason = request.getParameter("reason");
 
-            // Validate showtime belongs to this branch (security check)
-            Showtime existing = showtimesDao.getShowtimeById(showtimeId);
-            if (existing == null || !"SCHEDULED".equals(existing.getStatus())) {
-                response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-showtimes?error=noteditable");
-                return;
-            }
+            try {
+                java.util.Map<String, Object> result = showtimeService.cancelShowtimeWithRefund(showtimeId, reason);
 
-            java.util.Map<String, Object> result = showtimesDao.cancelShowtimeWithRefund(showtimeId, reason);
-
-            if (Boolean.TRUE.equals(result.get("success"))) {
-                int online = (int) result.get("onlineRefunds");
-                int counter = (int) result.get("counterRefunds");
-                java.math.BigDecimal refundAmt = (java.math.BigDecimal) result.get("totalRefundAmount");
-                String amt = refundAmt != null ? refundAmt.toPlainString() : "0";
-                response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-showtimes?message=cancelled"
-                        + "&onlineRefunds=" + online
-                        + "&counterRefunds=" + counter
-                        + "&refundAmt=" + amt);
-            } else {
-                String err = (String) result.getOrDefault("errorMsg", "unknown");
-                response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-showtimes?error=cancelfailed&detail="
-                        + java.net.URLEncoder.encode(err, "UTF-8"));
+                if (Boolean.TRUE.equals(result.get("success"))) {
+                    int online = (int) result.get("onlineRefunds");
+                    int counter = (int) result.get("counterRefunds");
+                    java.math.BigDecimal refundAmt = (java.math.BigDecimal) result.get("totalRefundAmount");
+                    String amt = refundAmt != null ? refundAmt.toPlainString() : "0";
+                    response.sendRedirect(request.getContextPath()
+                            + "/branch-manager/manage-showtimes?message=cancelled"
+                            + "&onlineRefunds=" + online
+                            + "&counterRefunds=" + counter
+                            + "&refundAmt=" + amt);
+                } else {
+                    String err = (String) result.getOrDefault("errorMsg", "unknown");
+                    response.sendRedirect(request.getContextPath()
+                            + "/branch-manager/manage-showtimes?error=cancelfailed&detail="
+                            + java.net.URLEncoder.encode(err, "UTF-8"));
+                }
+            } catch (IllegalArgumentException e) {
+                if ("noteditable".equals(e.getMessage())) {
+                    response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=noteditable");
+                }
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath()
-                    + "/branch-manager/manage-showtimes?error=invalid");
+            response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=invalid");
         }
     }
 
@@ -643,53 +494,27 @@ public class ManageShowtimesServlet extends HttpServlet {
         try {
             int showtimeId = Integer.parseInt(request.getParameter("showtimeId"));
 
-            // Verify showtime exists
-            Showtime existing = showtimesDao.getShowtimeById(showtimeId);
-            if (existing == null) {
-                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notfound");
-                return;
-            }
-
-            // Verify room belongs to this branch (security)
-            ScreeningRoom room = roomsDao.getRoomById(existing.getRoomId());
-            if (room == null || room.getBranchId() != branchId) {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                return;
-            }
-
-            // Only COMPLETED or CANCELLED can be deleted
-            String status = existing.getStatus();
-            if (!"COMPLETED".equals(status) && !"CANCELLED".equals(status)) {
-                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notdeletable");
-                return;
-            }
-
-            boolean deleted;
-            if ("CANCELLED".equals(status)) {
-                // Force-delete: cascade-remove all associated tickets/bookings first
-                deleted = showtimesDao.forceDeleteCancelledShowtime(showtimeId);
-            } else {
-                // COMPLETED: simple delete (no pending tickets expected)
-                deleted = showtimesDao.deleteShowtime(showtimeId);
-            }
-
-            if (deleted) {
+            try {
+                showtimeService.deleteShowtime(showtimeId, branchId);
                 response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?message=deleted");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=deletefailed");
+            } catch (IllegalArgumentException e) {
+                if ("notfound".equals(e.getMessage())) {
+                    response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notfound");
+                } else if ("notdeletable".equals(e.getMessage())) {
+                    response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=notdeletable");
+                }
+            } catch (SecurityException e) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            } catch (RuntimeException e) {
+                if ("deletefailed".equals(e.getMessage())) {
+                    response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=deletefailed");
+                }
             }
 
         } catch (Exception e) {
             e.printStackTrace();
             response.sendRedirect(request.getContextPath() + "/branch-manager/manage-showtimes?error=invalid");
         }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Helper: update room_id for a showtime
-    // ─────────────────────────────────────────────────────────────────────────
-    private void updateShowtimeRoom(int showtimeId, int roomId) {
-        showtimesDao.updateShowtimeRoom(showtimeId, roomId);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -707,14 +532,14 @@ public class ManageShowtimesServlet extends HttpServlet {
         request.setAttribute("prefDate", date);
         request.setAttribute("prefStartTime", startTime);
 
-        List<Movie> movies = moviesDao.getAllActiveMovies();
-        List<ScreeningRoom> rooms = roomsDao.getAllRoomsByBranch(branchId);
+        List<Movie> movies = showtimeService.getAllActiveMovies();
+        List<ScreeningRoom> rooms = showtimeService.getRoomsByBranch(branchId);
         request.setAttribute("movies", movies);
         request.setAttribute("rooms", rooms);
 
         if ("edit".equals(formType) && showtimeId != null) {
-            Showtime st = showtimesDao.getShowtimeById(showtimeId);
-            Movie currentMovie = moviesDao.getMovieById(movieId);
+            Showtime st = showtimeService.getShowtimeById(showtimeId);
+            Movie currentMovie = showtimeService.getMovieById(movieId);
             request.setAttribute("showtime", st);
             request.setAttribute("currentMovie", currentMovie);
             request.getRequestDispatcher("/pages/manager/manage-showtimes/edit.jsp")
@@ -724,9 +549,4 @@ public class ManageShowtimesServlet extends HttpServlet {
                     .forward(request, response);
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Removed: getBranchOfCurrentUser method is no longer used since branchId is
-    // taken from session attribute
-    // ─────────────────────────────────────────────────────────────────────────
 }

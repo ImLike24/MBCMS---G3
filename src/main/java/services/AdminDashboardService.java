@@ -58,8 +58,8 @@ public class AdminDashboardService {
 
         // 2. Charts
         dto.put("revenueByBranch", dashboardRepo.getRevenueByBranch());
-        dto.put("topMovies", dashboardRepo.getTopMovies(5)); // Top 5
-        dto.put("revenueTrend", dashboardRepo.getRevenueTrend(6)); // Last 6 months
+        dto.put("topMovies", dashboardRepo.getTopMovies(5));
+        dto.put("revenueTrend", dashboardRepo.getRevenueTrend(6));
 
         // 3. Transactions
         dto.put("recentTransactions", dashboardRepo.getRecentTransactions(10));

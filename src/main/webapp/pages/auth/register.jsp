@@ -220,7 +220,7 @@
                         name="email"
                         class="form-input"
                         required
-                        pattern="[a-zA-Z0-9._%25+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+                        pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$/,}"
                         title="Email không hợp lệ"
                         value="${email != null ? email : param.email}"
                         placeholder="vidu@email.com"
@@ -236,7 +236,7 @@
                         name="phone"
                         placeholder="0xxxxxxxxx"
                         required
-                        pattern="^0\d{9,10}$"
+                        pattern="^0\d{9}$"
                         title="Số điện thoại phải bắt đầu bằng 0 và có 10-11 số"
                         value="${phone != null ? phone : param.phone}"
                 >
@@ -251,6 +251,7 @@
                     name="birthday"
                     class="form-input"
                     value="${birthday != null ? birthday : param.birthday}"
+                    max="2026-01-01"
             >
         </div>
 
@@ -266,7 +267,7 @@
                         placeholder="Tối thiểu 8 ký tự"
                         pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$"
                         title="Mật khẩu >8 ký tự, gồm chữ, số và ký tự đặc biệt"
-                >
+                />
             </div>
             <div class="form-group">
                 <label for="confirmPassword" class="form-label">Xác nhận mật khẩu</label>
@@ -277,7 +278,7 @@
                         class="form-input"
                         required
                         placeholder="Nhập lại mật khẩu"
-                >
+                />
             </div>
         </div>
 
@@ -307,6 +308,7 @@
         const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
+        const birthday = document.getElementById('birthday').value;
 
         const clientErrorMessage = document.getElementById('clientErrorMessage');
         if(clientErrorMessage) clientErrorMessage.style.display = 'none';
@@ -340,6 +342,15 @@
         // Validate Username
         if (!Validator.isValid('username', username)) {
             return showError(Validator.messages.username);
+        }
+
+        // Validate Birthday
+        if (birthday) {
+            const selectedDate = new Date(birthday);
+            const maxDate = new Date('2026-01-01');
+            if (selectedDate > maxDate) {
+                return showError('Ngày sinh không được vượt quá ngày 01/01/2026');
+            }
         }
 
         // Validate Password

@@ -52,7 +52,7 @@ public class MovieDetail extends HttpServlet {
             request.setAttribute("avgRating", avgRating);
             request.setAttribute("reviews", reviews);
 
-            // Check if user has watched the movie
+            
             HttpSession session = request.getSession(false);
             User user = (session != null) ? (User) session.getAttribute("user") : null;
             boolean hasWatched = false;

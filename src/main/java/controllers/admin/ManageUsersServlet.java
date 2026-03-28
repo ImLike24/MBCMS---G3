@@ -9,8 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import models.Role;
 import models.User;
-import repositories.Roles;
-import repositories.Users;
+import services.UserService;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -19,6 +18,8 @@ import java.util.Map;
 
 @WebServlet("/admin/manage-users")
 public class ManageUsersServlet extends HttpServlet {
+
+    private final UserService userService = new UserService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -37,8 +38,7 @@ public class ManageUsersServlet extends HttpServlet {
         DBContext dbContext = null;
         try {
             dbContext = new DBContext();
-            Roles rolesRepo = new Roles();
-            Role userRole = rolesRepo.getRoleById(currentUser.getRoleId());
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
 
             if (userRole == null || !"ADMIN".equals(userRole.getRoleName())) {
                 response.sendRedirect(request.getContextPath() + "/home");
@@ -60,29 +60,24 @@ public class ManageUsersServlet extends HttpServlet {
         String searchKeyword = request.getParameter("search");
 
         DBContext usersDbContext = null;
-        DBContext rolesDbContext = null;
 
         try {
             usersDbContext = new DBContext();
-            rolesDbContext = new DBContext();
-
-            Users usersRepo = new Users();
-            Roles rolesRepo = new Roles();
 
             // Get users based on filters
             List<User> allUsers;
             if (searchKeyword != null && !searchKeyword.trim().isEmpty()) {
-                allUsers = usersRepo.searchUsers(searchKeyword.trim());
+                allUsers = userService.searchUsers(searchKeyword.trim());
             } else if (roleFilter != null && !roleFilter.isEmpty()) {
-                allUsers = usersRepo.getUsersByRole(Integer.parseInt(roleFilter));
+                allUsers = userService.getUsersByRole(Integer.parseInt(roleFilter));
             } else if (statusFilter != null && !statusFilter.isEmpty()) {
-                allUsers = usersRepo.getUsersByStatus(statusFilter);
+                allUsers = userService.getUsersByStatus(statusFilter);
             } else {
-                allUsers = usersRepo.getAllUsers();
+                allUsers = userService.getAllUsers();
             }
 
             // Get all roles for filter dropdown
-            List<Role> allRoles = rolesRepo.getAllRoles();
+            List<Role> allRoles = userService.getAllRoles();
 
             // Create a map of roleId -> roleName for display
             Map<Integer, String> roleMap = new HashMap<>();
@@ -136,9 +131,6 @@ public class ManageUsersServlet extends HttpServlet {
             if (usersDbContext != null) {
                 usersDbContext.closeConnection();
             }
-            if (rolesDbContext != null) {
-                rolesDbContext.closeConnection();
-            }
         }
     }
 
@@ -159,8 +151,7 @@ public class ManageUsersServlet extends HttpServlet {
         DBContext dbContext = null;
         try {
             dbContext = new DBContext();
-            Roles rolesRepo = new Roles();
-            Role userRole = rolesRepo.getRoleById(currentUser.getRoleId());
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
 
             if (userRole == null || !"ADMIN".equals(userRole.getRoleName())) {
                 response.sendRedirect(request.getContextPath() + "/home");
@@ -189,57 +180,17 @@ public class ManageUsersServlet extends HttpServlet {
         try {
             int userId = Integer.parseInt(userIdStr);
             usersDbContext = new DBContext();
-            Users usersRepo = new Users();
-            Roles rolesRepo = new Roles();
-
-            // Prevent lock/delete on admin accounts (server-side guard)
-            if ("lock".equals(action) || "delete".equals(action) || "deactivate".equals(action)) {
-                User targetUser = usersRepo.getUserById(userId);
-                if (targetUser != null) {
-                    Role targetRole = rolesRepo.getRoleById(targetUser.getRoleId());
-                    if (targetRole != null && "ADMIN".equals(targetRole.getRoleName())) {
-                        response.sendRedirect(request.getContextPath()
-                                + "/admin/manage-users?error=Không thể khóa hoặc xóa tài khoản Admin");
-                        return;
-                    }
-                }
-            }
-
-            boolean success = false;
-            String message = "";
-
-            switch (action) {
-                case "lock":
-                    success = usersRepo.updateUserStatus(userId, "LOCKED");
-                    message = success ? "User locked successfully" : "Failed to lock user";
-                    break;
-                case "unlock":
-                    success = usersRepo.updateUserStatus(userId, "ACTIVE");
-                    message = success ? "User unlocked successfully" : "Failed to unlock user";
-                    break;
-                case "deactivate":
-                    success = usersRepo.updateUserStatus(userId, "INACTIVE");
-                    message = success ? "User deactivated successfully" : "Failed to deactivate user";
-                    break;
-                case "delete":
-                    success = usersRepo.deleteUser(userId);
-                    message = success ? "User deleted successfully" : "Failed to delete user";
-                    break;
-                default:
-                    message = "Invalid action";
-            }
-
-            if (success) {
-                response.sendRedirect(request.getContextPath() + "/admin/manage-users?success=" + message);
-            } else {
-                response.sendRedirect(request.getContextPath() + "/admin/manage-users?error=" + message);
-            }
+            
+            userService.updateUserStatus(userId, action);
+            response.sendRedirect(request.getContextPath() + "/admin/manage-users?success=User updated successfully");
 
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/admin/manage-users?error=Invalid user ID");
+        } catch (IllegalArgumentException e) {
+            response.sendRedirect(request.getContextPath() + "/admin/manage-users?error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/admin/manage-users?error=" + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/admin/manage-users?error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
         } finally {
             if (usersDbContext != null) {
                 usersDbContext.closeConnection();

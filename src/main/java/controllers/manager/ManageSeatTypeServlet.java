@@ -7,7 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import models.*;
-import repositories.*;
+import services.SeatService;
+import services.UserService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,6 +18,9 @@ import java.util.Map;
 
 @WebServlet("/branch-manager/manage-seat-type")
 public class ManageSeatTypeServlet extends HttpServlet {
+
+    private final SeatService seatService = new SeatService();
+    private final UserService userService = new UserService();
 
     // ─── Shared auth check ─────────────────────────────────────────────────────
     private boolean isAuthorized(HttpServletRequest request, HttpServletResponse response)
@@ -28,8 +32,7 @@ public class ManageSeatTypeServlet extends HttpServlet {
         }
         User currentUser = (User) session.getAttribute("user");
         try {
-            Roles rolesRepo = new Roles();
-            Role userRole = rolesRepo.getRoleById(currentUser.getRoleId());
+            Role userRole = userService.getRoleById(currentUser.getRoleId());
             if (userRole == null || !"BRANCH_MANAGER".equals(userRole.getRoleName())) {
                 response.sendRedirect(request.getContextPath() + "/home");
                 return false;
@@ -52,12 +55,7 @@ public class ManageSeatTypeServlet extends HttpServlet {
         User currentUser = (User) request.getSession(false).getAttribute("user");
 
         try {
-            CinemaBranches branchesRepo = new CinemaBranches();
-            ScreeningRooms roomsRepo = new ScreeningRooms();
-            Seats seatsRepo = new Seats();
-            SeatTypeSurcharges surchargesRepo = new SeatTypeSurcharges();
-
-            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
+            List<CinemaBranch> managedBranches = seatService.getManagedBranches(currentUser.getUserId());
 
             if (managedBranches == null || managedBranches.isEmpty()) {
                 request.setAttribute("error", "You are not assigned to any branch");
@@ -78,7 +76,7 @@ public class ManageSeatTypeServlet extends HttpServlet {
             }
 
             // Surcharge configs for this branch (map: seatType -> rate)
-            List<SeatTypeSurcharge> surchargeList = surchargesRepo.getSurchargesByBranch(branch.getBranchId());
+            List<SeatTypeSurcharge> surchargeList = seatService.getSurchargesByBranch(branch.getBranchId());
             Map<String, Double> surchargeMap = new HashMap<>();
             for (SeatTypeSurcharge s : surchargeList) {
                 surchargeMap.put(s.getSeatType(), s.getSurchargeRate());
@@ -89,7 +87,7 @@ public class ManageSeatTypeServlet extends HttpServlet {
             surchargeMap.putIfAbsent("COUPLE", 0.0);
 
             // Rooms
-            List<ScreeningRoom> rooms = roomsRepo.getAllRoomsByBranch(branch.getBranchId());
+            List<ScreeningRoom> rooms = seatService.getRoomsByBranch(branch.getBranchId());
 
             // Selected room
             String roomIdParam = request.getParameter("roomId");
@@ -99,9 +97,9 @@ public class ManageSeatTypeServlet extends HttpServlet {
             if (roomIdParam != null && !roomIdParam.isEmpty()) {
                 try {
                     int roomId = Integer.parseInt(roomIdParam);
-                    selectedRoom = roomsRepo.getRoomById(roomId);
+                    selectedRoom = seatService.getRoomById(roomId);
                     if (selectedRoom != null && selectedRoom.getBranchId() == branch.getBranchId()) {
-                        seats = seatsRepo.getSeatsByRoom(roomId);
+                        seats = seatService.getSeatsByRoom(roomId);
                     } else {
                         selectedRoom = null;
                     }
@@ -140,9 +138,7 @@ public class ManageSeatTypeServlet extends HttpServlet {
         }
 
         try {
-            CinemaBranches branchesRepo = new CinemaBranches();
-
-            List<CinemaBranch> managedBranches = branchesRepo.findListByManagerId(currentUser.getUserId());
+            List<CinemaBranch> managedBranches = seatService.getManagedBranches(currentUser.getUserId());
             if (managedBranches == null || managedBranches.isEmpty()) {
                 response.sendRedirect(request.getContextPath()
                         + "/branch-manager/manage-seat-type?error=You+are+not+assigned+to+any+branch");
@@ -163,24 +159,12 @@ public class ManageSeatTypeServlet extends HttpServlet {
 
             // ── Action: updateSurcharge ──────────────────────────────────────────
             if ("updateSurcharge".equals(action)) {
-                String[] seatTypes = { "NORMAL", "VIP", "COUPLE" };
-                String[] rateParamKeys = { "rateNORMAL", "rateVIP", "rateCOUPLE" };
+                String rateNORMAL = request.getParameter("rateNORMAL");
+                String rateVIP = request.getParameter("rateVIP");
+                String rateCOUPLE = request.getParameter("rateCOUPLE");
 
-                SeatTypeSurcharges surchargesRepo = new SeatTypeSurcharges();
-                int updated = 0;
-                for (int i = 0; i < seatTypes.length; i++) {
-                    String rateStr = request.getParameter(rateParamKeys[i]);
-                    if (rateStr == null)
-                        continue;
-                    try {
-                        double rate = Double.parseDouble(rateStr);
-                        if (rate < 0)
-                            continue;
-                        if (surchargesRepo.upsertSurcharge(branch.getBranchId(), seatTypes[i], rate))
-                            updated++;
-                    } catch (NumberFormatException e) {
-                        /* skip */ }
-                }
+                int updated = seatService.updateSurcharges(selectedBranchId, rateNORMAL, rateVIP, rateCOUPLE);
+                
                 if (updated > 0) {
                     response.sendRedirect(request.getContextPath()
                             + "/branch-manager/manage-seat-type?branchId=" + selectedBranchId + "&success=Surcharge+rates+updated+successfully");
@@ -191,7 +175,7 @@ public class ManageSeatTypeServlet extends HttpServlet {
                 return;
             }
 
-            // ── Action: updateBulk ───────────────────────────────────────────────
+            // ── Action: updateBulk or updateSingle ──────────────────────────────
             String roomIdStr = request.getParameter("roomId");
             if (roomIdStr == null) {
                 response.sendRedirect(request.getContextPath() + "/branch-manager/manage-seat-type?error=Missing+room");
@@ -199,70 +183,56 @@ public class ManageSeatTypeServlet extends HttpServlet {
             }
             int roomId = Integer.parseInt(roomIdStr);
 
-            ScreeningRooms roomsRepo = new ScreeningRooms();
-            ScreeningRoom room = roomsRepo.getRoomById(roomId);
-            if (room == null || room.getBranchId() != branch.getBranchId()) {
-                response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-seat-type?error=Room+not+found+or+access+denied");
-                return;
-            }
-
-            Seats seatsRepo = new Seats();
-            boolean success = false;
             String message = "";
+            boolean success = true;
 
             if ("updateBulk".equals(action)) {
                 String[] seatIds = request.getParameterValues("seatIds[]");
                 String seatType = request.getParameter("seatType");
 
-                if (seatIds == null || seatIds.length == 0 || seatType == null) {
-                    message = "No seats selected or invalid seat type";
-                } else if (!seatType.equals("NORMAL") && !seatType.equals("VIP") && !seatType.equals("COUPLE")) {
-                    message = "Invalid seat type";
-                } else {
-                    List<Integer> idList = new ArrayList<>();
+                List<Integer> idList = new ArrayList<>();
+                if (seatIds != null) {
                     for (String id : seatIds) {
                         try {
                             idList.add(Integer.parseInt(id));
-                        } catch (NumberFormatException ignore) {
-                        }
+                        } catch (NumberFormatException ignore) {}
                     }
-                    if (!idList.isEmpty()) {
-                        success = seatsRepo.updateSeatTypesInBatch(idList, seatType);
-                        message = success ? "Updated " + idList.size() + " seat(s) to " + seatType
-                                : "Failed to update seat types";
-                    } else {
-                        message = "No valid seats selected";
-                    }
+                }
+                
+                try {
+                    message = seatService.updateSeatTypesBulk(selectedBranchId, roomId, idList, seatType);
+                } catch (Exception e) {
+                    success = false;
+                    message = e.getMessage();
                 }
 
             } else if ("updateSingle".equals(action)) {
                 String seatIdStr = request.getParameter("seatId");
                 String seatType = request.getParameter("seatType");
+                
                 if (seatIdStr == null || seatType == null) {
+                    success = false;
                     message = "Invalid parameters";
-                } else if (!seatType.equals("NORMAL") && !seatType.equals("VIP") && !seatType.equals("COUPLE")) {
-                    message = "Invalid seat type";
                 } else {
-                    int seatId = Integer.parseInt(seatIdStr);
-                    Seat seat = seatsRepo.getSeatById(seatId);
-                    if (seat == null || seat.getRoomId() != roomId) {
-                        message = "Seat not found or access denied";
-                    } else {
-                        success = seatsRepo.updateSeatType(seatId, seatType);
-                        message = success ? "Seat type updated to " + seatType : "Failed to update seat type";
+                    try {
+                        int seatId = Integer.parseInt(seatIdStr);
+                        message = seatService.updateSeatTypeSingle(selectedBranchId, roomId, seatId, seatType);
+                    } catch (Exception e) {
+                        success = false;
+                        message = e.getMessage();
                     }
                 }
             } else {
+                success = false;
                 message = "Invalid action";
             }
 
             if (success) {
                 response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-seat-type?branchId=" + selectedBranchId + "&roomId=" + roomId + "&success=" + message);
+                        + "/branch-manager/manage-seat-type?branchId=" + selectedBranchId + "&roomId=" + roomId + "&success=" + java.net.URLEncoder.encode(message, "UTF-8"));
             } else {
                 response.sendRedirect(request.getContextPath()
-                        + "/branch-manager/manage-seat-type?branchId=" + selectedBranchId + "&roomId=" + roomId + "&error=" + message);
+                        + "/branch-manager/manage-seat-type?branchId=" + selectedBranchId + "&roomId=" + roomId + "&error=" + java.net.URLEncoder.encode(message, "UTF-8"));
             }
 
         } catch (NumberFormatException e) {
@@ -271,7 +241,7 @@ public class ManageSeatTypeServlet extends HttpServlet {
         } catch (Exception e) {
             e.printStackTrace();
             response.sendRedirect(request.getContextPath()
-                    + "/branch-manager/manage-seat-type?error=" + e.getMessage());
+                    + "/branch-manager/manage-seat-type?error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
         }
     }
 }
