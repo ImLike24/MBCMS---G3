@@ -83,14 +83,15 @@
                         <label for="quantity" class="form-label">Số lượng tồn kho <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" id="quantity" name="quantity"
                                value="${concession.quantity != null ? concession.quantity : 0}"
-                               min="0" required>
+                               min="0" max="1000" oninput="this.value = Math.max(0, Math.min(200000, this.value)); required>
                     </div>
 
                     <!-- Giá cơ bản -->
                     <div class="col-md-6">
                         <label for="priceBase" class="form-label">Giá cơ bản (VNĐ) <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" id="priceBase" name="priceBase"
-                               value="${concession.priceBase}" min="0"required>
+                               value="${concession.priceBase}" min="0" max="200000"required
+                               oninput="this.value = Math.max(0, Math.min(200000, this.value));>
                         <small class="text-muted">Nhập giá theo đơn vị nghìn đồng (ví dụ: 45000 = 45.000 ₫)</small>
                     </div>
                 </div>

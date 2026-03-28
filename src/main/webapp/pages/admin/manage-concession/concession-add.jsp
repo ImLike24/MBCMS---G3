@@ -64,25 +64,34 @@
                     </select>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Số lượng tồn kho</label>
-                    <input type="number" name="quantity" class="form-control" min="0" 
-                           value="${concession.quantity != null ? concession.quantity : '0'}">
-                    <div class="form-text text-muted">Để trống hoặc 0 nếu không giới hạn tồn kho hoặc chưa nhập hàng.</div>
-                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Số lượng tồn kho</label>
+                        <input type="number" name="quantity" class="form-control" 
+                               min="0" max="1000" 
+                               value="${concession.quantity != null ? concession.quantity : '0'}"
+                               oninput="this.value = Math.max(0, Math.min(1000, this.value));">
+                        <div class="form-text text-muted small">Tối đa 1,000 đơn vị.</div>
+                    </div>
 
-                <div class="mb-3">
-                    <label class="form-label required">Giá cơ bản (VND)</label>
-                    <input type="number" name="priceBase" class="form-control" step="100" min="1000" max="200000"required
-                           value="${concession.priceBase > 0 ? concession.priceBase : ''}"
-                           placeholder="Ví dụ: 45000">
+                    <div class="col-md-6">
+                        <label class="form-label required">Giá cơ bản (VND)</label>
+                        <div class="input-group">
+                            <input type="number" name="priceBase" class="form-control" 
+                                   step="100" min="1000" max="200000" required
+                                   value="${concession.priceBase > 0 ? concession.priceBase : ''}"
+                                   oninput="this.value = Math.max(0, Math.min(200000, this.value));"
+                                   placeholder="Ví dụ: 45000">
+                            <span class="input-group-text">₫</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="d-flex gap-2 mt-4">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary px-4">
                         <i class="fas fa-save me-1"></i> Thêm mới
                     </button>
-                    <a href="${pageContext.request.contextPath}/admin/concessions" class="btn btn-outline-secondary">
+                    <a href="${pageContext.request.contextPath}/admin/concessions" class="btn btn-outline-secondary px-4">
                         Hủy
                     </a>
                 </div>
